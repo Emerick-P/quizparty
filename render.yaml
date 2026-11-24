@@ -1,0 +1,25 @@
+# Plan Render (« Blueprint ») : Render → New → Blueprint → choisir le dépôt.
+# Les valeurs « sync: false » sont demandées dans le tableau de bord (jamais dans Git).
+# Passer en formule payante plus tard : changer « plan: free » en « plan: starter »
+# (ou Service → Compute → Edit dans le tableau de bord), sans rien migrer.
+services:
+  - type: web
+    name: quizparty
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ACCESS_CODE
+        sync: false
+      - key: TWITCH_CLIENT_ID
+        sync: false
+      - key: TWITCH_CLIENT_SECRET
+        sync: false

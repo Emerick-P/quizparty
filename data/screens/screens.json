@@ -1,0 +1,883 @@
+{
+  "screens": [
+    {
+      "id": "hud-aniimo",
+      "type": "hud",
+      "title": "Aniimo",
+      "year": 2026,
+      "from": "basehud/aniimo.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "bafN5PvMAevBsgq2.webp",
+        "easy": "AXTuXwG6tBuqJBsT.webp"
+      },
+      "edits": {
+        "private": [
+          [
+            0.88,
+            0.975,
+            0.12,
+            0.025
+          ]
+        ],
+        "masks": [
+          [
+            0.905,
+            0.18,
+            0.075,
+            0.385
+          ],
+          [
+            0.025,
+            0.685,
+            0.12,
+            0.03
+          ],
+          [
+            0.04,
+            0.265,
+            0.215,
+            0.055
+          ],
+          [
+            0.88,
+            0.975,
+            0.12,
+            0.025
+          ]
+        ],
+        "hud": [
+          [
+            0.035,
+            0.015,
+            0.115,
+            0.235
+          ],
+          [
+            0.015,
+            0.23,
+            0.11,
+            0.04
+          ],
+          [
+            0.02,
+            0.265,
+            0.24,
+            0.135
+          ],
+          [
+            0.71,
+            0.01,
+            0.27,
+            0.085
+          ],
+          [
+            0.83,
+            0.14,
+            0.15,
+            0.035
+          ],
+          [
+            0.86,
+            0.19,
+            0.13,
+            0.37
+          ],
+          [
+            0.91,
+            0.62,
+            0.07,
+            0.18
+          ],
+          [
+            0.79,
+            0.84,
+            0.19,
+            0.11
+          ],
+          [
+            0.39,
+            0.845,
+            0.22,
+            0.15
+          ],
+          [
+            0.02,
+            0.85,
+            0.16,
+            0.145
+          ],
+          [
+            0.02,
+            0.565,
+            0.13,
+            0.185
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-destiny-2",
+      "type": "hud",
+      "slug": "destiny-2",
+      "from": "basehud/destiny2.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "QSQSuhQTL4gA9xQj.webp",
+        "easy": "wylyE3YzRduPWSXE.webp"
+      },
+      "edits": {
+        "hud": [
+          [
+            0.05,
+            0.095,
+            0.035,
+            0.04
+          ],
+          [
+            0.0,
+            0.235,
+            0.27,
+            0.07
+          ],
+          [
+            0.05,
+            0.295,
+            0.145,
+            0.11
+          ],
+          [
+            0.06,
+            0.405,
+            0.11,
+            0.035
+          ],
+          [
+            0.305,
+            0.49,
+            0.03,
+            0.05
+          ],
+          [
+            0.458,
+            0.485,
+            0.015,
+            0.04
+          ],
+          [
+            0.527,
+            0.485,
+            0.015,
+            0.04
+          ],
+          [
+            0.015,
+            0.805,
+            0.055,
+            0.09
+          ],
+          [
+            0.063,
+            0.865,
+            0.105,
+            0.075
+          ],
+          [
+            0.168,
+            0.855,
+            0.137,
+            0.13
+          ],
+          [
+            0.39,
+            0.89,
+            0.08,
+            0.03
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-final-fantasy-vii-remake",
+      "type": "hud",
+      "title": "Final Fantasy VII Remake",
+      "year": 2020,
+      "aliases": [
+        "FF7 Remake",
+        "FFVII Remake"
+      ],
+      "from": "basehud/final fantasy 7 remake.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "ldKr4MHUi7rUW5Sl.webp",
+        "easy": "zuOOS70hCIbguwTA.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.72,
+            0.28,
+            0.12,
+            0.035
+          ],
+          [
+            0.105,
+            0.665,
+            0.065,
+            0.045
+          ],
+          [
+            0.19,
+            0.655,
+            0.04,
+            0.05
+          ],
+          [
+            0.15,
+            0.705,
+            0.065,
+            0.055
+          ],
+          [
+            0.785,
+            0.785,
+            0.04,
+            0.03
+          ],
+          [
+            0.765,
+            0.84,
+            0.045,
+            0.035
+          ]
+        ],
+        "hud": [
+          [
+            0.72,
+            0.28,
+            0.12,
+            0.06
+          ],
+          [
+            0.73,
+            0.425,
+            0.06,
+            0.08
+          ],
+          [
+            0.04,
+            0.66,
+            0.19,
+            0.255
+          ],
+          [
+            0.76,
+            0.76,
+            0.21,
+            0.17
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-final-fantasy-resonance",
+      "type": "hud",
+      "title": "Final Fantasy Resonance",
+      "year": 2026,
+      "from": "basehud/final fantasy resonance.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "uwuwIAuDamYLWmHj.webp",
+        "easy": "2t9CRDgT4Z1PNPg4.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.01,
+            0.015,
+            0.07,
+            0.14
+          ],
+          [
+            0.075,
+            0.015,
+            0.105,
+            0.085
+          ],
+          [
+            0.165,
+            0.085,
+            0.07,
+            0.065
+          ],
+          [
+            0.435,
+            0.02,
+            0.1,
+            0.08
+          ],
+          [
+            0.52,
+            0.08,
+            0.065,
+            0.07
+          ],
+          [
+            0.855,
+            0.087,
+            0.065,
+            0.04
+          ],
+          [
+            0.735,
+            0.225,
+            0.14,
+            0.042
+          ],
+          [
+            0.6,
+            0.795,
+            0.075,
+            0.03
+          ],
+          [
+            0.473,
+            0.835,
+            0.035,
+            0.04
+          ],
+          [
+            0.605,
+            0.82,
+            0.055,
+            0.04
+          ],
+          [
+            0.735,
+            0.835,
+            0.045,
+            0.04
+          ],
+          [
+            0.865,
+            0.835,
+            0.045,
+            0.04
+          ]
+        ],
+        "hud": [
+          [
+            0.01,
+            0.02,
+            0.66,
+            0.13
+          ],
+          [
+            0.72,
+            0.085,
+            0.265,
+            0.365
+          ],
+          [
+            0.205,
+            0.73,
+            0.145,
+            0.09
+          ],
+          [
+            0.47,
+            0.795,
+            0.525,
+            0.18
+          ],
+          [
+            0.005,
+            0.95,
+            0.215,
+            0.045
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-nine-sols",
+      "type": "hud",
+      "title": "Nine Sols",
+      "year": 2024,
+      "from": "basehud/nine sols.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "2NqiO3yBtugec1yO.webp",
+        "easy": "MAHXsxIPwbavybLc.webp"
+      },
+      "edits": {
+        "hud": [
+          [
+            0.055,
+            0.065,
+            0.065,
+            0.15
+          ],
+          [
+            0.065,
+            0.205,
+            0.045,
+            0.04
+          ],
+          [
+            0.145,
+            0.095,
+            0.085,
+            0.035
+          ],
+          [
+            0.143,
+            0.135,
+            0.27,
+            0.02
+          ],
+          [
+            0.145,
+            0.175,
+            0.08,
+            0.05
+          ],
+          [
+            0.045,
+            0.83,
+            0.13,
+            0.13
+          ],
+          [
+            0.875,
+            0.84,
+            0.1,
+            0.12
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-path-of-exile-2",
+      "type": "hud",
+      "title": "Path of Exile 2",
+      "year": 2024,
+      "aliases": [
+        "PoE 2"
+      ],
+      "from": "basehud/path of exile 2.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "8jIXP52bRDkldYba.webp",
+        "easy": "YSIhnBRYqS8e6kfr.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.78,
+            0.105,
+            0.09,
+            0.04
+          ],
+          [
+            0.905,
+            0.085,
+            0.075,
+            0.035
+          ],
+          [
+            0.79,
+            0.405,
+            0.19,
+            0.08
+          ]
+        ],
+        "hud": [
+          [
+            0.87,
+            0.0,
+            0.13,
+            0.2
+          ],
+          [
+            0.78,
+            0.105,
+            0.09,
+            0.04
+          ],
+          [
+            0.77,
+            0.27,
+            0.23,
+            0.22
+          ],
+          [
+            0.015,
+            0.75,
+            0.11,
+            0.055
+          ],
+          [
+            0.89,
+            0.75,
+            0.1,
+            0.055
+          ],
+          [
+            0.0,
+            0.8,
+            0.12,
+            0.2
+          ],
+          [
+            0.12,
+            0.86,
+            0.15,
+            0.14
+          ],
+          [
+            0.88,
+            0.8,
+            0.12,
+            0.2
+          ],
+          [
+            0.7,
+            0.86,
+            0.18,
+            0.14
+          ],
+          [
+            0.27,
+            0.96,
+            0.43,
+            0.04
+          ],
+          [
+            0.645,
+            0.93,
+            0.05,
+            0.035
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-replaced",
+      "type": "hud",
+      "title": "Replaced",
+      "year": 2026,
+      "from": "basehud/replaced.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "0dH97augpAZOaP2y.webp",
+        "easy": "HJhdaZxJViNs3Cqa.webp"
+      },
+      "edits": {
+        "private": [
+          [
+            0.01,
+            0.345,
+            0.065,
+            0.08
+          ]
+        ],
+        "masks": [
+          [
+            0.398,
+            0.215,
+            0.1,
+            0.035
+          ]
+        ],
+        "hud": [
+          [
+            0.395,
+            0.21,
+            0.245,
+            0.455
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-star-wars-galactic-racer",
+      "type": "hud",
+      "title": "Star Wars: Galactic Racer",
+      "year": 2026,
+      "from": "basehud/star wars galactic racer.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "RZb5AvEFFb3zdJFR.webp",
+        "easy": "QQH4Qrdh2HrurSbl.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.218,
+            0.113,
+            0.075,
+            0.022
+          ]
+        ],
+        "hud": [
+          [
+            0.215,
+            0.045,
+            0.09,
+            0.09
+          ],
+          [
+            0.22,
+            0.03,
+            0.56,
+            0.055
+          ],
+          [
+            0.655,
+            0.045,
+            0.06,
+            0.05
+          ],
+          [
+            0.055,
+            0.84,
+            0.07,
+            0.12
+          ],
+          [
+            0.03,
+            0.89,
+            0.015,
+            0.08
+          ],
+          [
+            0.135,
+            0.86,
+            0.25,
+            0.085
+          ],
+          [
+            0.865,
+            0.875,
+            0.09,
+            0.06
+          ]
+        ]
+      }
+    },
+    {
+      "id": "hud-the-binding-of-isaac-rebirth",
+      "type": "hud",
+      "title": "The Binding of Isaac: Rebirth",
+      "year": 2014,
+      "base": "The Binding of Isaac",
+      "from": "basehud/the binding of isaac.png",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "ssaP2Rnzm2nNudMS.webp",
+        "easy": "DYeYa9hwoAsLJCcN.webp"
+      },
+      "edits": {
+        "hud": [
+          [
+            0.055,
+            0.05,
+            0.05,
+            0.085
+          ],
+          [
+            0.105,
+            0.05,
+            0.012,
+            0.09
+          ],
+          [
+            0.115,
+            0.06,
+            0.075,
+            0.035
+          ],
+          [
+            0.045,
+            0.155,
+            0.055,
+            0.58
+          ],
+          [
+            0.865,
+            0.095,
+            0.06,
+            0.08
+          ],
+          [
+            0.915,
+            0.22,
+            0.03,
+            0.04
+          ]
+        ]
+      }
+    },
+    {
+      "id": "loading-aniimo",
+      "type": "loading",
+      "title": "Aniimo",
+      "year": 2026,
+      "from": "baseloading/Aniimo.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "ku3AjeNo3lXPsb7b.webp",
+        "easy": "XtRLZjA7zgbNAOqC.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.352,
+            0.75,
+            0.064,
+            0.035
+          ],
+          [
+            0.026,
+            0.853,
+            0.048,
+            0.037
+          ]
+        ]
+      }
+    },
+    {
+      "id": "loading-destiny-2",
+      "type": "loading",
+      "slug": "destiny-2",
+      "from": "baseloading/destiny 2.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "cLGP3VvHKy1McF5z.webp",
+        "easy": "hFeMuUt9bWIWGoHp.webp"
+      },
+      "edits": {
+        "private": [
+          [
+            0.008,
+            0.355,
+            0.085,
+            0.065
+          ]
+        ]
+      }
+    },
+    {
+      "id": "loading-final-fantasy-vii-remake",
+      "type": "loading",
+      "title": "Final Fantasy VII Remake",
+      "year": 2020,
+      "aliases": [
+        "FF7 Remake",
+        "FFVII Remake"
+      ],
+      "from": "baseloading/final fantasy 7.png",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "NamtEDpCOxh4Wb5E.webp",
+        "easy": "WQ8fD42kLqhPiEEa.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.062,
+            0.318,
+            0.112,
+            0.05
+          ],
+          [
+            0.245,
+            0.398,
+            0.048,
+            0.033
+          ],
+          [
+            0.276,
+            0.427,
+            0.078,
+            0.034
+          ],
+          [
+            0.098,
+            0.455,
+            0.04,
+            0.034
+          ],
+          [
+            0.683,
+            0.455,
+            0.06,
+            0.043
+          ]
+        ]
+      }
+    },
+    {
+      "id": "loading-nine-sols",
+      "type": "loading",
+      "title": "Nine Sols",
+      "year": 2024,
+      "from": "baseloading/nine sols.png",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "wDoe2vZTcI60urbf.webp",
+        "easy": "aI2S4cVTenaEsHkt.webp"
+      },
+      "edits": {}
+    },
+    {
+      "id": "loading-path-of-exile-2",
+      "type": "loading",
+      "title": "Path of Exile 2",
+      "year": 2024,
+      "aliases": [
+        "PoE 2"
+      ],
+      "from": "baseloading/path of exile 2.jpg",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "ojozLEvuIssIWMCx.webp",
+        "easy": "nBcvqQYG04exeZ7V.webp"
+      },
+      "edits": {
+        "masks": [
+          [
+            0.41,
+            0.8,
+            0.18,
+            0.05
+          ]
+        ]
+      }
+    },
+    {
+      "id": "loading-the-binding-of-isaac-rebirth",
+      "type": "loading",
+      "title": "The Binding of Isaac: Rebirth",
+      "year": 2014,
+      "base": "The Binding of Isaac",
+      "from": "baseloading/the binding of isaac.png",
+      "credit": "Capture personnelle",
+      "files": {
+        "full": "aifH4vjeAJ7brGf7.webp",
+        "easy": "365Jbxv9KNTv90Db.webp"
+      },
+      "edits": {
+        "private": [
+          [
+            0.005,
+            0.345,
+            0.03,
+            0.08
+          ]
+        ]
+      }
+    }
+  ]
+}

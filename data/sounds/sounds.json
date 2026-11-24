@@ -1,0 +1,2088 @@
+{
+  "sounds": [
+    {
+      "id": "mario-coin",
+      "slug": "super-mario-bros",
+      "seriesWide": true,
+      "what": "La pièce, reprise dans presque tous les Mario depuis 1985.",
+      "file": "A6huVvdjBzfRAAZX.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Mario coin sound",
+        "url": "https://www.myinstants.com/en/instant/mario-coin-sound/",
+        "original": "https://www.myinstants.com/media/sounds/mario_coin_sound.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mario-1up",
+      "slug": "super-mario-bros",
+      "seriesWide": true,
+      "what": "Une vie en plus (champignon vert 1-Up).",
+      "file": "aGSoJ8TMWi9XIJTc.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Mario 1UP",
+        "url": "https://www.myinstants.com/en/instant/mario-1up/",
+        "original": "https://www.myinstants.com/media/sounds/mario-1up.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sm64-herewego",
+      "slug": "super-mario-64",
+      "what": "« Here we go! » : Mario, avec la voix de Charles Martinet.",
+      "file": "gvYP8dUiTYeiq1ya.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Mario 64 here we go voice",
+        "url": "https://www.myinstants.com/en/instant/mario-64-here-we-go-voice-93308/",
+        "original": "https://www.myinstants.com/media/sounds/mario-64-here-we-go-voice.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "zelda-secret",
+      "slug": "the-legend-of-zelda-ocarina-of-time",
+      "seriesWide": true,
+      "what": "Le jingle du secret découvert, présent depuis le premier Zelda (1986).",
+      "file": "dpWWHTPlNJBW76pD.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Ocarina of Time Puzzle Solve Jingle/Secret Sound",
+        "url": "https://www.myinstants.com/en/instant/ocarina-of-time-puzzle-solve-jingle-secret-sound-97053/",
+        "original": "https://www.myinstants.com/media/sounds/ocarina-of-time-puzzle-solve-jingle-secret-sound.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "zelda-heylisten",
+      "slug": "the-legend-of-zelda-ocarina-of-time",
+      "what": "« Hey! Listen! » : Navi, la fée qui accompagne Link.",
+      "file": "c1CznUlCPzk1GhN2.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "navi_hey_listen.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "zelda-chest",
+      "slug": "the-legend-of-zelda-ocarina-of-time",
+      "seriesWide": true,
+      "what": "L'ouverture d'un coffre, suivie de la fanfare de l'objet obtenu.",
+      "file": "kKY07gwSX1NfeI2o.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "zelda chest ocarina of time",
+        "url": "https://www.myinstants.com/en/instant/zelda-chest-ocarina-of-time-45/",
+        "original": "https://www.myinstants.com/media/sounds/zelda-ocarina-of-time-open-chest-with-get-item-sound_McxxAGb.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sonic-ring",
+      "slug": "sonic-the-hedgehog",
+      "seriesWide": true,
+      "what": "Sonic ramasse un anneau.",
+      "file": "nWCooKBbCHekbWyo.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "sonic ring",
+        "url": "https://www.myinstants.com/en/instant/sonic-ring/",
+        "original": "https://www.myinstants.com/media/sounds/26f8b9_sonic_ring_sound_effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sonic-ringloss",
+      "slug": "sonic-the-hedgehog",
+      "seriesWide": true,
+      "what": "Sonic est touché et perd ses anneaux.",
+      "file": "CAU2JiJESzi4utpH.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Sonic The Hedgehog Ring Loss",
+        "url": "https://www.myinstants.com/en/instant/sonic-the-hedgehog-ring-loss-82181/",
+        "original": "https://www.myinstants.com/media/sounds/sonic-the-hedgehog-ring-loss.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sonic-sega",
+      "title": "Sega",
+      "year": null,
+      "aliases": [
+        "SEGA"
+      ],
+      "what": "Le « SEGA ! » chanté au lancement de Sonic the Hedgehog et d'autres jeux Sega sur Mega Drive.",
+      "file": "gEZfxp9bHomqfCVr.mp3",
+      "platform": "brand",
+      "source": {
+        "site": "Myinstants",
+        "name": "SEGA! (HD)",
+        "url": "https://www.myinstants.com/en/instant/sega-hd-11233/",
+        "original": "https://www.myinstants.com/media/sounds/sega-hd.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pacman-waka",
+      "slug": "pac-man",
+      "what": "Pac-Man mange les pac-gommes (« waka waka »).",
+      "file": "KvQlJ5OgcFHrjIxC.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Pacman Waka Waka",
+        "url": "https://www.myinstants.com/en/instant/pacman-waka-waka-59855/",
+        "original": "https://www.myinstants.com/media/sounds/pac-man-waka-waka.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pacman-death",
+      "slug": "pac-man",
+      "what": "Pac-Man se fait attraper par un fantôme.",
+      "file": "B29jSiTPzcPGad7D.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Pacman Death",
+        "url": "https://www.myinstants.com/en/instant/pacman-death-44465/",
+        "original": "https://www.myinstants.com/media/sounds/8d82b5_pacman_dies_sound_effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pacman-start",
+      "slug": "pac-man",
+      "what": "La musique de début de partie.",
+      "file": "nawzsDSBPukuDv5Y.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Pac-Man Intro",
+        "url": "https://www.myinstants.com/en/instant/pac-man-intro/",
+        "original": "https://www.myinstants.com/media/sounds/pacman_introduction_music-kp-826387403.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "duckhunt-dog",
+      "title": "Duck Hunt",
+      "year": 1984,
+      "what": "Le chien qui se moque de toi quand tu rates le canard.",
+      "file": "PFjm9HMf1hM2GVuM.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Dog Laugh - Duck Hunt",
+        "url": "https://www.myinstants.com/en/instant/dog-laugh-duck-hunt-82967/",
+        "original": "https://www.myinstants.com/media/sounds/dog-laugh-duck-hunt.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pokemon-center",
+      "title": "Pokémon Rouge et Bleu",
+      "year": 1996,
+      "aliases": [
+        "Pokémon Rouge",
+        "Pokémon Bleu",
+        "Pokémon Jaune",
+        "Pokémon Red",
+        "Pokémon Blue",
+        "Pokémon Red and Blue",
+        "Pokémon Rouge Bleu"
+      ],
+      "seriesWide": true,
+      "what": "Les Pokémon sont soignés au Centre Pokémon.",
+      "file": "VKUdlmMlhDQMMfsS.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Pokemon Center",
+        "url": "https://www.myinstants.com/en/instant/pokemon-center-22479/",
+        "original": "https://www.myinstants.com/media/sounds/pkmncenter.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pokemon-levelup",
+      "title": "Pokémon Rouge et Bleu",
+      "year": 1996,
+      "aliases": [
+        "Pokémon Rouge",
+        "Pokémon Bleu",
+        "Pokémon Jaune",
+        "Pokémon Red",
+        "Pokémon Blue",
+        "Pokémon Red and Blue",
+        "Pokémon Rouge Bleu"
+      ],
+      "seriesWide": true,
+      "what": "Un Pokémon monte de niveau.",
+      "file": "Yncqr65N40pqygmm.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "level_up.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "smash-homerun",
+      "slug": "super-smash-bros-ultimate",
+      "seriesWide": true,
+      "what": "Le coup de batte Home-Run qui envoie un adversaire au loin.",
+      "file": "hB5dBsduN4iYhob7.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "SSBU Home Run Bat",
+        "url": "https://www.myinstants.com/en/instant/ssbu-home-run-bat-22024/",
+        "original": "https://www.myinstants.com/media/sounds/ssbu-home-run-bat.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "animalese",
+      "title": "Animal Crossing",
+      "year": 2001,
+      "series": true,
+      "seriesWide": true,
+      "what": "Marie (Isabelle) qui parle en « animalese », la langue des habitants.",
+      "file": "lM3qMLQL85S9nYKA.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Isabelle Talking - Animal Crossing",
+        "url": "https://www.myinstants.com/en/instant/isabelle-talking-animal-crossing-35435/",
+        "original": "https://www.myinstants.com/media/sounds/isabelle-talking-animal-crossing.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "splatoon-booyah",
+      "slug": "splatoon",
+      "seriesWide": true,
+      "what": "Le « Booyah! » d'un Inkling.",
+      "file": "C5DuddRfGECygnJ1.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "splatoon inkling boy Booyah!",
+        "url": "https://www.myinstants.com/en/instant/splatoon-inkling-boy-booyah-27165/",
+        "original": "https://www.myinstants.com/media/sounds/splatoon-inkling-boy-booyah.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mc-villager",
+      "slug": "minecraft-java-edition",
+      "what": "Le « Hmm » d'un villageois.",
+      "file": "BQzqIvmR5n2V9YlR.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Minecraft Villager Sound",
+        "url": "https://www.myinstants.com/en/instant/minecraft-villager-sound/",
+        "original": "https://www.myinstants.com/media/sounds/minecraft-villager-sound-effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mc-creeper",
+      "slug": "minecraft-java-edition",
+      "what": "Le sifflement d'un Creeper juste avant qu'il explose.",
+      "file": "DriEeYUfJx5TjbHv.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Minecraft Creeper Fuse",
+        "url": "https://www.myinstants.com/en/instant/minecraft-creeper-fuse-2270/",
+        "original": "https://www.myinstants.com/media/sounds/minecraft-creeper-fuse.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mc-hurt",
+      "slug": "minecraft-java-edition",
+      "what": "Le joueur prend des dégâts.",
+      "file": "XQyA7NuPPaswRZSG.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Minecraft Damage",
+        "url": "https://www.myinstants.com/en/instant/minecraft-damage-6455/",
+        "original": "https://www.myinstants.com/media/sounds/minecraft_hit_soundmp3converter.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mgs-alert",
+      "slug": "metal-gear-solid",
+      "seriesWide": true,
+      "what": "L'alerte « ! » : Snake vient d'être repéré.",
+      "file": "LhZbXJu32FcVKrLj.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Metal Gear Solid Alert Sound Effect",
+        "url": "https://www.myinstants.com/en/instant/metal-gear-solid-alert-sound-effect-44011/",
+        "original": "https://www.myinstants.com/media/sounds/metal-gear-solid-alert-sound-effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mgs-codec",
+      "slug": "metal-gear-solid",
+      "seriesWide": true,
+      "what": "Un appel au Codec, la radio de Snake.",
+      "file": "DXFEK60oYcLvD7r9.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Metal Gear Solid - Codec",
+        "url": "https://www.myinstants.com/en/instant/metal-gear-solid-codec/",
+        "original": "https://www.myinstants.com/media/sounds/codec.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "re4-merchant",
+      "slug": "resident-evil-4",
+      "what": "« What are ya buyin'? » : le marchand.",
+      "file": "4OiYXZYaFYhNqsko.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "what are ya buyin",
+        "url": "https://www.myinstants.com/en/instant/what-are-ya-buyin-40262/",
+        "original": "https://www.myinstants.com/media/sounds/what-are-ya-buyin.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sf-hadouken",
+      "title": "Street Fighter II",
+      "year": 1991,
+      "aliases": [
+        "SF2",
+        "Street Fighter 2"
+      ],
+      "seriesWide": true,
+      "what": "« Hadouken ! » : la boule de feu de Ryu et Ken.",
+      "file": "vDtPVVdqTWvhFF7v.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Hadouken",
+        "url": "https://www.myinstants.com/en/instant/hadouken/",
+        "original": "https://www.myinstants.com/media/sounds/hadouken.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sf-shoryuken",
+      "title": "Street Fighter II",
+      "year": 1991,
+      "aliases": [
+        "SF2",
+        "Street Fighter 2"
+      ],
+      "seriesWide": true,
+      "what": "« Shoryuken ! » : l'uppercut du dragon de Ryu et Ken.",
+      "file": "kGXfQVYTqEYv99ck.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "shouryuuken.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "sf-sonicboom",
+      "title": "Street Fighter II",
+      "year": 1991,
+      "aliases": [
+        "SF2",
+        "Street Fighter 2"
+      ],
+      "seriesWide": true,
+      "what": "« Sonic Boom ! » : le projectile de Guile.",
+      "file": "IfgT5EZeDuGBX3X7.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "SF - SONIC BOOM",
+        "url": "https://www.myinstants.com/en/instant/sf-sonic-boom-50260/",
+        "original": "https://www.myinstants.com/media/sounds/sf-sonic-boom.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mk-finishhim",
+      "title": "Mortal Kombat",
+      "year": 1992,
+      "aliases": [
+        "MK"
+      ],
+      "seriesWide": true,
+      "what": "« Finish him! » : le moment de la Fatality.",
+      "file": "4tkWeRddxYEoPr0H.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "FINISH HIM!",
+        "url": "https://www.myinstants.com/en/instant/finish-him/",
+        "original": "https://www.myinstants.com/media/sounds/finish-him.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mk-fatality",
+      "title": "Mortal Kombat",
+      "year": 1992,
+      "aliases": [
+        "MK"
+      ],
+      "seriesWide": true,
+      "what": "« Fatality ».",
+      "file": "v0jKA58tR6K8KeSj.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "fatality.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "mk-getoverhere",
+      "title": "Mortal Kombat",
+      "year": 1992,
+      "aliases": [
+        "MK"
+      ],
+      "seriesWide": true,
+      "what": "« Get over here! » : le harpon de Scorpion.",
+      "file": "HEztZcuGRPbrjIGg.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "GET OVER HERE Scorpion",
+        "url": "https://www.myinstants.com/en/instant/get-over-here-scorpion/",
+        "original": "https://www.myinstants.com/media/sounds/scorpion-get_over_here.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "halo-shield",
+      "slug": "halo-combat-evolved",
+      "seriesWide": true,
+      "what": "Le bouclier du Master Chief qui se recharge.",
+      "file": "q8d5EwYE6mfTLBaj.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Halo shield recharge sound",
+        "url": "https://www.myinstants.com/en/instant/halo-shield-recharge-sound-66778/",
+        "original": "https://www.myinstants.com/media/sounds/halo-shield-recharge-sound_aJRP2Um.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "cs-fireinthehole",
+      "title": "Counter-Strike",
+      "year": 2000,
+      "aliases": [
+        "CS"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "« Fire in the hole! » : une grenade est lancée.",
+      "file": "5XRuhtrXqtGPVe9p.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Counter Strike",
+        "url": "https://www.myinstants.com/en/instant/counter-strike/",
+        "original": "https://www.myinstants.com/media/sounds/cs_fire_in_the_hole.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "cs-bomb",
+      "title": "Counter-Strike",
+      "year": 2000,
+      "aliases": [
+        "CS"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "« The bomb has been planted ».",
+      "file": "Zngc7IXIVl2NJOPp.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Counter-Strike - bomb has been planted",
+        "url": "https://www.myinstants.com/en/instant/counter-strike-bomb-has-been-planted-52122/",
+        "original": "https://www.myinstants.com/media/sounds/counter-strike-bomb-has-been-planted.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "hl2-can",
+      "slug": "half-life-2",
+      "what": "« Pick up that can » : le garde de la Cité 17 qui t'ordonne de ramasser la canette.",
+      "file": "2RjolENM5RQ2mNLJ.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "HL2 - Pick Up That Can 1",
+        "url": "https://www.myinstants.com/en/instant/hl2-pick-up-that-can-1-77126/",
+        "original": "https://www.myinstants.com/media/sounds/hl2-pick-up-that-can-1.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "portal-turret",
+      "slug": "portal",
+      "seriesWide": true,
+      "what": "« Are you still there? » : une tourelle d'Aperture Science.",
+      "file": "JFDxhSHGCWefgHjv.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Portal Turret: Are you still there?",
+        "url": "https://www.myinstants.com/en/instant/portal-turret-are-you-still-there-56563/",
+        "original": "https://www.myinstants.com/media/sounds/portal-turret-are-you-still-there_pGWToTI.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "portal-target",
+      "slug": "portal",
+      "seriesWide": true,
+      "what": "« Target acquired » : une tourelle t'a repéré.",
+      "file": "R6L7zk7KsPNU3rw4.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Portal - Target acquired",
+        "url": "https://www.myinstants.com/en/instant/portal-target-acquired-4271/",
+        "original": "https://www.myinstants.com/media/sounds/portal-target-acquired.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "tf2-sappin",
+      "slug": "team-fortress-2",
+      "what": "« Spy sappin' my sentry! » : l'Ingénieur.",
+      "file": "fOHLjwlftVJcf6bF.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Spy sappin my sentry - TF2",
+        "url": "https://www.myinstants.com/en/instant/spy-sappin-my-sentry-tf2/",
+        "original": "https://www.myinstants.com/media/sounds/engineer_autoattackedbyspy03_1.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "tf2-medic",
+      "slug": "team-fortress-2",
+      "what": "« Medic! » crié par le Heavy.",
+      "file": "g7uRS7rTSVYELdG6.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "medic! by heavy TF2",
+        "url": "https://www.myinstants.com/en/instant/medic-by-heavy-tf2/",
+        "original": "https://www.myinstants.com/media/sounds/heavy_medic02.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "l4d-witch",
+      "slug": "left-4-dead",
+      "seriesWide": true,
+      "what": "Les pleurs de la Witch : surtout ne pas la déranger.",
+      "file": "n2LCwdLJ2kWrdulI.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "witch_cry.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "doom-shotgun",
+      "slug": "doom",
+      "seriesWide": true,
+      "what": "Le fusil à pompe.",
+      "file": "cKXQlmDaBs8HloTO.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Doom Shotgun",
+        "url": "https://www.myinstants.com/en/instant/doom-shotgun/",
+        "original": "https://www.myinstants.com/media/sounds/8d82b5_doom_shotgun_firing_sound_effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "q3-excellent",
+      "title": "Quake III Arena",
+      "year": 1999,
+      "aliases": [
+        "Quake 3",
+        "Quake III"
+      ],
+      "seriesWide": true,
+      "what": "« Excellent » : deux frags en moins de deux secondes.",
+      "file": "v8DjHekEB71C0rRX.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Excellent Quake",
+        "url": "https://www.myinstants.com/en/instant/excellent-quake/",
+        "original": "https://www.myinstants.com/media/sounds/excellent.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "q3-impressive",
+      "title": "Quake III Arena",
+      "year": 1999,
+      "aliases": [
+        "Quake 3",
+        "Quake III"
+      ],
+      "seriesWide": true,
+      "what": "« Impressive » : deux tirs au railgun réussis d'affilée.",
+      "file": "o6jPxs51k0oWW0Em.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Quake 3 Impressive",
+        "url": "https://www.myinstants.com/en/instant/quake-3-impressive-48553/",
+        "original": "https://www.myinstants.com/media/sounds/impressive-quake-iii-arena-announcer.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ut-godlike",
+      "title": "Unreal Tournament",
+      "year": 1999,
+      "aliases": [
+        "UT"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "« Godlike » : série de frags sans mourir.",
+      "file": "zY089ct4orYMSEJ4.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "UT - Godlike",
+        "url": "https://www.myinstants.com/en/instant/ut-godlike-9009/",
+        "original": "https://www.myinstants.com/media/sounds/ut-godlike.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ut-monsterkill",
+      "title": "Unreal Tournament",
+      "year": 1999,
+      "aliases": [
+        "UT"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "« Monster Kill » : une série de frags en quelques secondes.",
+      "file": "HbyQMmbPSjX2kc7f.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "UT - Monster Kill",
+        "url": "https://www.myinstants.com/en/instant/ut-monster-kill-84903/",
+        "original": "https://www.myinstants.com/media/sounds/ut-monster-kill_1iyCEdo.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "wc3-workwork",
+      "slug": "warcraft-iii-reign-of-chaos",
+      "seriesWide": true,
+      "what": "« Work, work » : le péon orc.",
+      "file": "Ppk3Mxq2GdD9DgxQ.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Warcraft Peon - Work work",
+        "url": "https://www.myinstants.com/en/instant/warcraft-peon-work-work/",
+        "original": "https://www.myinstants.com/media/sounds/wc3-peon-says-work-work-only-.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "wow-levelup",
+      "slug": "world-of-warcraft",
+      "what": "Le passage de niveau.",
+      "file": "mAD2BffInCbUJ3l0.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "WoW Level Up",
+        "url": "https://www.myinstants.com/en/instant/wow-level-up/",
+        "original": "https://www.myinstants.com/media/sounds/world-of-warcraft-lvl-up.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sc-pylons",
+      "slug": "starcraft",
+      "what": "« You must construct additional pylons » : il manque des pylônes aux Protoss.",
+      "file": "c1q0PhNLnbciCqkg.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Additional Pylons",
+        "url": "https://www.myinstants.com/en/instant/additional-pylons/",
+        "original": "https://www.myinstants.com/media/sounds/null-you_must_construct_additional_pylons.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sc-nuke",
+      "slug": "starcraft",
+      "what": "« Nuclear launch detected » : une bombe nucléaire arrive.",
+      "file": "m3fuLwyq2rZJG7se.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "nuclear launch detected",
+        "url": "https://www.myinstants.com/en/instant/nuclear-launch-detected/",
+        "original": "https://www.myinstants.com/media/sounds/tadupd04.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "aoe-wololo",
+      "slug": "age-of-empires-ii-the-age-of-kings",
+      "seriesWide": true,
+      "what": "« Wololo » : le moine convertit une unité ennemie.",
+      "file": "2a0yai5lBndyHkgj.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "wololo.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "diablo-stay",
+      "title": "Diablo",
+      "year": 1996,
+      "series": true,
+      "seriesWide": true,
+      "what": "« Stay awhile and listen » : Deckard Cain.",
+      "file": "XCMJunaSm1YtMZfR.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Deckard Cain - Stay Awhile",
+        "url": "https://www.myinstants.com/en/instant/deckard-cain-stay-awhile-41519/",
+        "original": "https://www.myinstants.com/media/sounds/sub_welcome.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "lol-welcome",
+      "slug": "league-of-legends",
+      "what": "« Welcome to Summoner's Rift » : le début de partie.",
+      "file": "GlUKuXv5jrNq7QIi.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Welcome to Summoner's Rift!",
+        "url": "https://www.myinstants.com/en/instant/welcome-to-summoners-rift/",
+        "original": "https://www.myinstants.com/media/sounds/league-of-legends-original-sounds-welcome-to-summoners-rift.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "lol-penta",
+      "slug": "league-of-legends",
+      "what": "« Pentakill » : les cinq adversaires éliminés par le même joueur.",
+      "file": "IWLaOKMkSsBdaLiF.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "PENTAKILL LoL",
+        "url": "https://www.myinstants.com/en/instant/pentakill-lol/",
+        "original": "https://www.myinstants.com/media/sounds/pentakill-lol.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ow-highnoon",
+      "slug": "overwatch",
+      "seriesWide": true,
+      "also": [
+        "Overwatch 2"
+      ],
+      "what": "« It's high noon » : l'ultime de McCree (Cassidy).",
+      "file": "6DqmzLdZqDiXjwRv.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "McCree - It's high noon",
+        "url": "https://www.myinstants.com/en/instant/mccree-its-high-noon/",
+        "original": "https://www.myinstants.com/media/sounds/mccree-its-high-noon.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ow-nerfthis",
+      "slug": "overwatch",
+      "seriesWide": true,
+      "also": [
+        "Overwatch 2"
+      ],
+      "what": "« Nerf this! » : l'ultime de D.Va.",
+      "file": "o56nUlP5I7vqFFsF.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Nerf this (actual D.va voiceline)",
+        "url": "https://www.myinstants.com/en/instant/nerf-this-actual-d-va-voiceline-63454/",
+        "original": "https://www.myinstants.com/media/sounds/nerf-this-actual-d-va-voiceline.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "fortnite-chest",
+      "slug": "fortnite",
+      "what": "Le coffre qui scintille, avant qu'on l'ouvre.",
+      "file": "F56OntzvznbQ44m9.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Fortnite Chest",
+        "url": "https://www.myinstants.com/en/instant/fortnite-chest-58292/",
+        "original": "https://www.myinstants.com/media/sounds/fortnite.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "amongus-meeting",
+      "slug": "among-us",
+      "what": "La réunion d'urgence.",
+      "file": "rB4pVuVZjnecxIM5.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Emergency meeting - Among Us",
+        "url": "https://www.myinstants.com/en/instant/emergency-meeting-among-us-5641/",
+        "original": "https://www.myinstants.com/media/sounds/emergency-meeting.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "amongus-role",
+      "slug": "among-us",
+      "what": "La révélation des rôles en début de partie.",
+      "file": "jQJDKnOmEK9l3VtA.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Among Us role reveal sound",
+        "url": "https://www.myinstants.com/en/instant/among-us-role-reveal-sound-34956/",
+        "original": "https://www.myinstants.com/media/sounds/among-us-role-reveal-sound.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "gtasa-again",
+      "slug": "grand-theft-auto-san-andreas",
+      "what": "« Ah shit, here we go again » : CJ.",
+      "file": "A4v3mcn9zvnKBCQA.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "here we go again - gta san andreas CJ",
+        "url": "https://www.myinstants.com/en/instant/here-we-go-again-gta-san-andreas-cj-48848/",
+        "original": "https://www.myinstants.com/media/sounds/gta-san-andreas-ah-shit-here-we-go-again_4WUig8O.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "gtasa-passed",
+      "slug": "grand-theft-auto-san-andreas",
+      "what": "Mission réussie (« Mission passed! Respect + »).",
+      "file": "XDc3hM9vGNpElLbd.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Grand Theft Auto San Andreas Mission Passed!",
+        "url": "https://www.myinstants.com/en/instant/grand-theft-auto-san-andreas-mission-passed-65006/",
+        "original": "https://www.myinstants.com/media/sounds/y2mate_xvijLIk.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "gtav-wasted",
+      "slug": "grand-theft-auto-v",
+      "what": "« Wasted » : le personnage meurt.",
+      "file": "LkT0zUPjxCT9lKq8.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "gta_wasted.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "skyrim-fusrodah",
+      "slug": "the-elder-scrolls-v-skyrim",
+      "what": "« Fus Ro Dah » : le cri Force implacable.",
+      "file": "9leKCJoUgK0rAhUc.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Skyrim - Fus Ro Dah! (short)",
+        "url": "https://www.myinstants.com/en/instant/skyrim-fus-ro-dah-short-25320/",
+        "original": "https://www.myinstants.com/media/sounds/skyrim-fus-ro-dah-short.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "skyrim-knee",
+      "slug": "the-elder-scrolls-v-skyrim",
+      "what": "« I used to be an adventurer like you… » : le garde et sa flèche dans le genou.",
+      "file": "8f0pXrWb8urLKfJ1.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Skyrim - Arrow in the Knee",
+        "url": "https://www.myinstants.com/en/instant/skyrim-arrow-in-the-knee/",
+        "original": "https://www.myinstants.com/media/sounds/botonskyrim_1.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "cuphead-knockout",
+      "slug": "cuphead",
+      "what": "« A knockout! » : le boss est vaincu.",
+      "file": "I89pn553VqvfdzWR.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Cuphead Knockout!",
+        "url": "https://www.myinstants.com/en/instant/cuphead-knockout-4574/",
+        "original": "https://www.myinstants.com/media/sounds/cuphead-knockout.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "crash-ooga",
+      "title": "Crash Bandicoot",
+      "year": 1996,
+      "series": true,
+      "seriesWide": true,
+      "what": "Aku Aku, le masque protecteur de Crash.",
+      "file": "JpX3Jq0W02lsgZ2h.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Aku Aku (Crash Bandicoot)",
+        "url": "https://www.myinstants.com/en/instant/aku-aku-crash-bandicoot/",
+        "original": "https://www.myinstants.com/media/sounds/aku_aku.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "crash-whoa",
+      "title": "Crash Bandicoot",
+      "year": 1996,
+      "series": true,
+      "seriesWide": true,
+      "what": "Le « Whoa! » de Crash quand il perd une vie.",
+      "file": "8QAQHGLFvI9TH51Z.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "WOAH - Crash Bandicoot",
+        "url": "https://www.myinstants.com/en/instant/woah-crash-bandicoot-53169/",
+        "original": "https://www.myinstants.com/media/sounds/crash-bandicoot-sounds-woah_Px27tQT.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "metalslug-hmg",
+      "title": "Metal Slug",
+      "year": 1996,
+      "seriesWide": true,
+      "what": "« Heavy Machine Gun! » : la mitrailleuse lourde.",
+      "file": "7YyPHsxfA03EFCWc.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Heavy Machine Gun Metal Slug 1",
+        "url": "https://www.myinstants.com/en/instant/heavy-machine-gun-metal-slug-1-20247/",
+        "original": "https://www.myinstants.com/media/sounds/heavy-machine-gun-metal-slug-1.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "metalslug-mission",
+      "title": "Metal Slug",
+      "year": 1996,
+      "seriesWide": true,
+      "what": "« Mission complete! ».",
+      "file": "iryKeyjJLmpwWlQo.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Mission Complete - Metal Slug",
+        "url": "https://www.myinstants.com/en/instant/mission-complete-metal-slug/",
+        "original": "https://www.myinstants.com/media/sounds/metal-slug-mission-complete.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "worms-holy",
+      "title": "Worms",
+      "year": 1995,
+      "series": true,
+      "seriesWide": true,
+      "what": "L'« Alléluia » de la Sainte Grenade.",
+      "file": "2VtB57WsloxKbZlp.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Worms - Holy Hand Grenade",
+        "url": "https://www.myinstants.com/en/instant/worms-holy-hand-grenade-54717/",
+        "original": "https://www.myinstants.com/media/sounds/worms-holy-hand-grenade-hallelujah-audio-clip.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "lemmings-letsgo",
+      "title": "Lemmings",
+      "year": 1991,
+      "what": "« Let's go! » : les lemmings sortent de la trappe.",
+      "file": "gg9vBrrRMotiyAfR.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "lemmings let's go",
+        "url": "https://www.myinstants.com/en/instant/lemmings-lets-go-35349/",
+        "original": "https://www.myinstants.com/media/sounds/lemmings-lets-go.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "pvz-coming",
+      "title": "Plants vs. Zombies",
+      "year": 2009,
+      "aliases": [
+        "PvZ",
+        "Plantes contre Zombies"
+      ],
+      "what": "« The zombies are coming! » : le début d'un niveau.",
+      "file": "9IIdLdKWRd4R4iFn.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "The Zombies are Coming",
+        "url": "https://www.myinstants.com/en/instant/the-zombies-are-coming-95363/",
+        "original": "https://www.myinstants.com/media/sounds/the-zombies-are-coming.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "angrybirds",
+      "title": "Angry Birds",
+      "year": 2009,
+      "series": true,
+      "seriesWide": true,
+      "what": "Le lance-pierre tendu.",
+      "file": "w90ti9OyYrUdcRoc.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Angry Birds Slingshot Sound Effect",
+        "url": "https://www.myinstants.com/en/instant/angry-birds-slingshot-sound-effect-68711/",
+        "original": "https://www.myinstants.com/media/sounds/angry-birds-slingshot-sound-effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "candycrush",
+      "title": "Candy Crush Saga",
+      "year": 2012,
+      "aliases": [
+        "Candy Crush"
+      ],
+      "what": "« Delicious! » : un bon combo de bonbons.",
+      "file": "udfd1m3OTmfVuMJT.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "CC Delicious",
+        "url": "https://www.myinstants.com/en/instant/cc-delicious/",
+        "original": "https://www.myinstants.com/media/sounds/candy-crush-delicious1.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "clashroyale-laugh",
+      "title": "Clash Royale",
+      "year": 2016,
+      "what": "Le rire moqueur du roi (« Hé hé hé ha »).",
+      "file": "1Nc78NQugOBjTmKH.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "HEHEHEHAWW",
+        "url": "https://www.myinstants.com/en/instant/hehehehaww-78923/",
+        "original": "https://www.myinstants.com/media/sounds/hehehehaww.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ds-youdied",
+      "slug": "dark-souls",
+      "seriesWide": true,
+      "what": "« You died » : encore raté.",
+      "file": "Z4W5kufEwFHdOjOA.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "dark_souls_you_died.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "ds-bonfire",
+      "slug": "dark-souls",
+      "seriesWide": true,
+      "what": "Un feu de camp vient d'être allumé.",
+      "file": "8IbWh6x8Vv8pezCU.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Dark Souls Bonfire Lit",
+        "url": "https://www.myinstants.com/en/instant/dark-souls-bonfire-lit-58990/",
+        "original": "https://www.myinstants.com/media/sounds/dark-souls-bonfire-lit.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "ff-victory",
+      "slug": "final-fantasy-vii",
+      "seriesWide": true,
+      "what": "La fanfare de victoire après un combat, reprise dans presque tous les Final Fantasy.",
+      "file": "fpNavvI5FQ3W0x2o.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "ff7.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "duke-comegetsome",
+      "title": "Duke Nukem 3D",
+      "year": 1996,
+      "what": "« Come get some! » : Duke Nukem.",
+      "file": "UfMQF65TQw5LKkUf.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Duke nukem 3D - Come Get Some",
+        "url": "https://www.myinstants.com/en/instant/duke-nukem-3d-come-get-some-84/",
+        "original": "https://www.myinstants.com/media/sounds/duke-nukem-3d-come-get-some.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "serioussam-kamikaze",
+      "title": "Serious Sam: The First Encounter",
+      "year": 2001,
+      "aliases": [
+        "Serious Sam"
+      ],
+      "seriesWide": true,
+      "what": "Le cri du kamikaze sans tête qui fonce sur toi.",
+      "file": "5juUXJ1Txpv5tFAt.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Serious Sam Kamikaze scream",
+        "url": "https://www.myinstants.com/en/instant/serious-sam-kamikaze-scream-36470/",
+        "original": "https://www.myinstants.com/media/sounds/serious-sam-kamikaze-scream.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "cod-nuke",
+      "title": "Call of Duty: Modern Warfare 2",
+      "year": 2009,
+      "aliases": [
+        "MW2",
+        "Modern Warfare 2"
+      ],
+      "seriesWide": true,
+      "what": "L'alarme de la frappe nucléaire tactique (série de 25 éliminations).",
+      "file": "hYHXUQNmAvi8IXdn.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "snd - \"Tactical Nuke. Incoming!\"",
+        "url": "https://www.myinstants.com/en/instant/snd-tactical-nuke-incoming-216/",
+        "original": "https://www.myinstants.com/media/sounds/snd-tacnukealarm.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "cod-uav",
+      "title": "Call of Duty: Modern Warfare 2",
+      "year": 2009,
+      "aliases": [
+        "MW2",
+        "Modern Warfare 2"
+      ],
+      "seriesWide": true,
+      "what": "« UAV online » : le drone de reconnaissance.",
+      "file": "QHjqXyf4HcujnScV.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "UAV Online",
+        "url": "https://www.myinstants.com/en/instant/uav-online/",
+        "original": "https://www.myinstants.com/media/sounds/uav-online.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "sims-sulsul",
+      "title": "Les Sims",
+      "year": 2000,
+      "aliases": [
+        "The Sims"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "« Sul sul » : bonjour en simlish.",
+      "file": "4pA3n4PydetGCNIb.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Sul Sul",
+        "url": "https://www.myinstants.com/en/instant/sul-sul-82979/",
+        "original": "https://www.myinstants.com/media/sounds/sul-sul.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "tombraider-secret",
+      "title": "Tomb Raider",
+      "year": 1996,
+      "seriesWide": true,
+      "what": "Le jingle d'un secret trouvé par Lara Croft.",
+      "file": "jVMWt59BBfJumT7d.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "secret.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "qbert",
+      "title": "Q*bert",
+      "year": 1982,
+      "aliases": [
+        "Qbert"
+      ],
+      "what": "Le juron incompréhensible de Q*bert.",
+      "file": "KkQjDRIvncWxoNwx.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Q*bert",
+        "url": "https://www.myinstants.com/en/instant/qbert/",
+        "original": "https://www.myinstants.com/media/sounds/qbert.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "nbajam-fire",
+      "title": "NBA Jam",
+      "year": 1993,
+      "what": "« He's on fire! » : trois paniers d'affilée, le ballon s'enflamme.",
+      "file": "OxnFcf2zSkjDpX7P.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "He's On Fire! (NBA JAM)",
+        "url": "https://www.myinstants.com/en/instant/hes-on-fire-nba-jam-87776/",
+        "original": "https://www.myinstants.com/media/sounds/hes-on-fire-nba-jam.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "nbajam-boom",
+      "title": "NBA Jam",
+      "year": 1993,
+      "what": "« Boomshakalaka! » : un dunk spectaculaire.",
+      "file": "y4vWdGwTjjW4xu6s.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Boomshakalaka",
+        "url": "https://www.myinstants.com/en/instant/boomshakalaka/",
+        "original": "https://www.myinstants.com/media/sounds/nba-jam-boomshakalaka.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "fnaf-jumpscare",
+      "title": "Five Nights at Freddy's",
+      "year": 2014,
+      "aliases": [
+        "FNAF"
+      ],
+      "seriesWide": true,
+      "what": "Le hurlement du jumpscare quand un animatronique t'attrape.",
+      "file": "GwCekAn0s0gE0eaK.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "FNAF Jumpscare Scream",
+        "url": "https://www.myinstants.com/en/instant/fnaf-jumpscare-scream/",
+        "original": "https://www.myinstants.com/media/sounds/five-nights-at-freddys-full-scream-sound_2.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "objection",
+      "title": "Phoenix Wright: Ace Attorney",
+      "year": 2001,
+      "aliases": [
+        "Ace Attorney",
+        "Phoenix Wright"
+      ],
+      "seriesWide": true,
+      "what": "« Objection! » : Phoenix Wright.",
+      "file": "eDLeecSOQ6MnVTfx.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Objection! -Phoenix Wright",
+        "url": "https://www.myinstants.com/en/instant/objection-phoenix-wright-12497/",
+        "original": "https://www.myinstants.com/media/sounds/dd_phoenix_objection_en.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "megaman-death",
+      "title": "Mega Man",
+      "year": 1987,
+      "aliases": [
+        "Megaman",
+        "Rockman"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "Mega Man qui explose en perdant une vie.",
+      "file": "tjPvenORjnGVQIAc.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Megaman 3 - Death Sound Effect",
+        "url": "https://www.myinstants.com/en/instant/megaman-3-death-sound-effect/",
+        "original": "https://www.myinstants.com/media/sounds/megaman-3-death-sound-effect.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "mariokart-start",
+      "title": "Mario Kart",
+      "year": 1992,
+      "series": true,
+      "seriesWide": true,
+      "what": "Le compte à rebours du départ.",
+      "file": "YFnJeozD1XdsfRKK.mp3",
+      "source": {
+        "site": "Myinstants",
+        "name": "Mario kart start race",
+        "url": "https://www.myinstants.com/en/instant/mario-kart-start-race-55722/",
+        "original": "https://www.myinstants.com/media/sounds/mariostart.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur), via Myinstants"
+    },
+    {
+      "id": "bg3-darling",
+      "slug": "baldurs-gate-iii",
+      "what": "« Hello, darling » : Astarion, le vampire de ton groupe.",
+      "file": "T20ogSH8ZF1budF1.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "astarion_hello_darling.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "ape-gotcha",
+      "slug": "ape-escape",
+      "what": "« Gotcha! » : un singe vient d'être capturé au filet.",
+      "file": "HKGxyYMVD4SjeF97.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "ape_escape_gotcha.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "clank-laugh",
+      "slug": "ratchet-clank",
+      "seriesWide": true,
+      "what": "Le rire de Clank, le petit robot qui accompagne Ratchet.",
+      "file": "Fww9rFC1sb2ZGiEC.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "clank_laugh.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "tlou-clicker",
+      "slug": "the-last-of-us",
+      "seriesWide": true,
+      "also": [
+        "The Last of Us Part II"
+      ],
+      "what": "Le cliquetis d'un Claqueur (Clicker) : il te repère au son.",
+      "file": "MhydiZ15z4ytZLEG.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "clickers.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "cod-zombie",
+      "title": "Call of Duty",
+      "year": 2003,
+      "aliases": [
+        "COD"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "Un zombie du mode Zombies, apparu dans Call of Duty: World at War (2008).",
+      "file": "hlcB5L8FrH2CW8i8.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "cod_zombie.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "crash-gem",
+      "title": "Crash Bandicoot",
+      "year": 1996,
+      "series": true,
+      "seriesWide": true,
+      "what": "Crash récupère une gemme.",
+      "file": "c74lbDuXrmXaeK9G.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "crash_bandicoot_gem_so.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "destiny-exotic",
+      "title": "Destiny",
+      "year": 2014,
+      "series": true,
+      "seriesWide": true,
+      "what": "Un engramme exotique tombe : le butin le plus rare.",
+      "file": "Soc0HQY5uBLuRMES.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "destiny_exotic_drop.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "diablo-gold",
+      "title": "Diablo",
+      "year": 1996,
+      "series": true,
+      "seriesWide": true,
+      "what": "Des pièces d'or tombent au sol.",
+      "file": "Ihg9CwLYJyQ3lIvm.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "diabo_gold_drop.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "arc-dontshoot",
+      "title": "ARC Raiders",
+      "year": 2025,
+      "aliases": [
+        "Arc Raiders"
+      ],
+      "what": "« Don't shoot! » : un autre joueur qui préfère éviter le combat.",
+      "file": "KW2BfgqXES8dYSQc.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "don_t_shoot_arc_raider.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "dredge",
+      "slug": "dredge",
+      "what": "Un son de Dredge, le jeu de pêche aux créatures inquiétantes.",
+      "file": "PVcp272AT32HwdQR.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "dredge.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "hk-dungdefender",
+      "slug": "hollow-knight",
+      "what": "Le Défenseur de la Bouse (Dung Defender), un boss.",
+      "file": "Dq10YBD03q67dLBd.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "dung_defender.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "elden-grace",
+      "slug": "elden-ring",
+      "what": "Un site de grâce vient d'être découvert.",
+      "file": "W6tjIdlayFiweVte.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "elden_ring_grace_sfx.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "fable-quest",
+      "slug": "fable",
+      "seriesWide": true,
+      "what": "Une quête est accomplie.",
+      "file": "OeAUgGjnX3jW3Ehq.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "fable_quest.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "fallguys-out",
+      "slug": "fall-guys",
+      "what": "Ton haricot est éliminé.",
+      "file": "lH4CwTItklYPVKMp.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "fall_guys_eliminated.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "gt-start",
+      "slug": "gran-turismo",
+      "seriesWide": true,
+      "what": "Le compte à rebours du départ.",
+      "file": "ydSo4ZBJ96icMDEf.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "gran_turismo_start.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "hades-boon",
+      "slug": "hades",
+      "seriesWide": true,
+      "also": [
+        "Hades II"
+      ],
+      "what": "Un dieu de l'Olympe t'accorde un bienfait.",
+      "file": "eCAKYFe8k4j6J8rj.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "hades_boon.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "liesofp-gemini",
+      "slug": "lies-of-p",
+      "what": "« I'm Gemini » : le criquet-lanterne qui accompagne P.",
+      "file": "vYf3XeO5qWuy0TKV.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "i_m_gemni.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "ff-kupo",
+      "title": "Final Fantasy",
+      "year": 1987,
+      "series": true,
+      "seriesWide": true,
+      "what": "« Kupo ! » : un Mog (Moogle), mascotte de la série.",
+      "file": "PL4C9BlUXXBC14eW.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "kupo_kupo.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "ac-leap",
+      "slug": "assassins-creed",
+      "seriesWide": true,
+      "what": "Le saut de la foi et son cri d'aigle.",
+      "file": "mBBJPQFZoOecLYAL.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "leap_of_faith.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "lego-stud",
+      "title": "LEGO",
+      "year": 2005,
+      "aliases": [
+        "Jeux LEGO",
+        "LEGO Star Wars"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "Le ramassage des pièces LEGO (studs), commun à tous les jeux LEGO.",
+      "file": "C65lOoN8CIQpjdnt.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "lego.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "lis",
+      "slug": "life-is-strange",
+      "what": "Un son de Life Is Strange.",
+      "file": "pNH8X56opy6x60cQ.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "life_is_strange.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "bioshock-sister",
+      "slug": "bioshock",
+      "seriesWide": true,
+      "what": "« I smell an angel » : une Petite Sœur et son Protecteur.",
+      "file": "ZEjx8iSHQZrgcNyh.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "little_sister.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "lol-ping",
+      "slug": "league-of-legends",
+      "what": "Un ping sur la carte pour prévenir ton équipe.",
+      "file": "FMEG22H7fHDOGFLJ.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "lol_ping.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "me-reaper",
+      "slug": "mass-effect",
+      "seriesWide": true,
+      "what": "Le cri d'un Moissonneur (Reaper).",
+      "file": "yOBySfPKbkALg3Uk.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "mass_effect_reaper.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "e33-monoco",
+      "slug": "clair-obscur-expedition-33",
+      "what": "Monoco, le Gestral qui copie les techniques des ennemis.",
+      "file": "D62wsvYrIKRMm3C7.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "monoco_owowo.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "bl2-torgue",
+      "title": "Borderlands 2",
+      "year": 2012,
+      "seriesWide": true,
+      "what": "Mr. Torgue, le fabricant d'armes explosives.",
+      "file": "grh7ThuLLrt7T9Rn.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "mr_torgue.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "oddworld-chant",
+      "slug": "oddworld-abes-oddysee",
+      "seriesWide": true,
+      "what": "Abe qui chante pour libérer ses frères Mudokons.",
+      "file": "dMgaSEJA7lbV7o9p.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "oddworld_abe_chantin.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "roblox-oof",
+      "slug": "roblox",
+      "what": "« Oof » : le joueur meurt (son remplacé en 2022).",
+      "file": "BlPVtYeH2eNqkIGs.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "oof_roblox.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "poe-drop",
+      "slug": "path-of-exile",
+      "seriesWide": true,
+      "what": "Un objet de grande valeur tombe au sol.",
+      "file": "JwfoHvj2rIUY68od.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "poe_high_tier_drop.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "portal-gun",
+      "slug": "portal",
+      "seriesWide": true,
+      "what": "Le tir du pistolet à portails.",
+      "file": "GtCi4GQNBRNX3zDs.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "portalgun.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "pws-ding",
+      "title": "PowerWash Simulator",
+      "year": 2022,
+      "what": "Le « ding » quand une partie de l'objet est entièrement propre.",
+      "file": "pcQ36iPpX8shShVw.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "power_wash_ding.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "re4-welcome",
+      "slug": "resident-evil-4",
+      "what": "« Welcome! » : le marchand qui t'accueille.",
+      "file": "S5XBXGHqJ3yRP9uW.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "re4_welcome.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "re2-select",
+      "title": "Resident Evil",
+      "year": 1996,
+      "series": true,
+      "also": [
+        "Resident Evil 2"
+      ],
+      "what": "Le son de sélection dans les menus (ici celui de Resident Evil 2).",
+      "file": "FpDe3LPJLvauvVUl.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "resident_evil_2_select.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "drg-rockandstone",
+      "slug": "deep-rock-galactic",
+      "what": "« Rock and Stone! » : le cri de ralliement des nains.",
+      "file": "6jnnh6eAev3tI1oj.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "rock_and_stone.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "sekiro-danger",
+      "slug": "sekiro-shadows-die-twice",
+      "what": "Le kanji rouge 危 : une attaque périlleuse arrive, impossible à parer.",
+      "file": "1tf89sz5Bg56AMSP.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "sekiro_danger_sound.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "sh2-radio",
+      "slug": "silent-hill-2",
+      "seriesWide": true,
+      "what": "La radio qui grésille quand un monstre approche.",
+      "file": "cDCRlljx89cGQeLm.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "sh2_radio_static.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "sot-fort",
+      "slug": "sea-of-thieves",
+      "what": "Un son des forts squelettes à prendre d'assaut.",
+      "file": "lFjusu4VEtrY01Zz.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "skeleton_fort.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "valorant-spike",
+      "slug": "valorant",
+      "what": "La Spike vient d'être posée.",
+      "file": "LblIgevXZ4m4KlOH.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "spike_planted.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "spyro-thief",
+      "title": "Spyro: Year of the Dragon",
+      "year": 2000,
+      "aliases": [
+        "Spyro 3"
+      ],
+      "seriesWide": true,
+      "what": "Un voleur d'œufs, qu'il faut rattraper.",
+      "file": "wcJGdwspRsbLArqR.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "spyro_egg_thief.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "stardew",
+      "slug": "stardew-valley",
+      "what": "Un son de Stardew Valley.",
+      "file": "hU0REktd76X9ChwR.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "stardew_valley.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "celeste-strawberry",
+      "slug": "celeste",
+      "what": "Madeline attrape une fraise.",
+      "file": "jp1fVcNWyClbGK0z.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "strawberry_celeste.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "subnautica-cyclops",
+      "slug": "subnautica",
+      "what": "L'IA du Cyclops, le grand sous-marin.",
+      "file": "Af3dfICfGad2XlD8.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "subnautica_cyclops.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "terraria-hurt",
+      "slug": "terraria",
+      "what": "Le joueur prend des dégâts.",
+      "file": "mH2ZQPwYe4YS9TpP.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "terraria_damage_sound.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "rdr2-wanted",
+      "slug": "red-dead-redemption-2",
+      "what": "Tu es recherché par la loi.",
+      "file": "FvhzOn18Q3SnVjsD.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "wanted_rdr_2.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "tw3-quest",
+      "slug": "the-witcher-3-wild-hunt",
+      "seriesWide": true,
+      "what": "Une quête est accomplie (ou mise à jour).",
+      "file": "zd6IOnQCHnewmffq.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "witcher_3_quest.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "gb-start",
+      "title": "Game Boy",
+      "year": 1989,
+      "what": "Le « ding » du logo Nintendo au démarrage.",
+      "file": "6QLyQpKY9AVVIqVv.mp3",
+      "platform": "console",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "gameboy.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "gc-start",
+      "title": "GameCube",
+      "year": 2001,
+      "aliases": [
+        "Nintendo GameCube"
+      ],
+      "what": "L'écran de démarrage, avec son cube qui roule.",
+      "file": "UWGLuf6JTWDzy8Mn.mp3",
+      "platform": "console",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "nintendo_gamecube.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "ps1-start",
+      "title": "PlayStation",
+      "year": 1994,
+      "aliases": [
+        "PS1",
+        "PSone",
+        "PSX",
+        "PlayStation 1"
+      ],
+      "what": "L'écran de démarrage de la première PlayStation.",
+      "file": "ZNNN7jf3j0EfLuRM.mp3",
+      "platform": "console",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "psone_startup.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "ps2-start",
+      "title": "PlayStation 2",
+      "year": 2000,
+      "aliases": [
+        "PS2"
+      ],
+      "what": "L'écran de démarrage de la PS2.",
+      "file": "PIFyL70OCxNJpmL1.mp3",
+      "platform": "console",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "ps2_start.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "x360-achievement",
+      "title": "Xbox 360",
+      "year": 2005,
+      "what": "Un succès (achievement) débloqué.",
+      "file": "Mjr4uRBIuMEai1Bu.mp3",
+      "platform": "console",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "xbox_360_achieve.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "steam-achievement",
+      "title": "Steam",
+      "year": 2003,
+      "what": "Un succès Steam débloqué.",
+      "file": "Va7T8rT8E2Bammqh.mp3",
+      "platform": "store",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "steam_achievement.mp3"
+      },
+      "credit": "Son de la plateforme (© constructeur)"
+    },
+    {
+      "id": "bigwalk-voices",
+      "title": "Big Walk",
+      "year": 2026,
+      "what": "Les voix des personnages qui sautent.",
+      "file": "audmAtdbZcNd3pse.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "big_walk_jumping_voices.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "doometernal-combat",
+      "slug": "doom-eternal",
+      "what": "Le début d'une musique de combat.",
+      "file": "RGuSBHjkzw1B3HMp.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "doom_short.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "cs-flashbang",
+      "title": "Counter-Strike",
+      "year": 2000,
+      "aliases": [
+        "CS"
+      ],
+      "series": true,
+      "seriesWide": true,
+      "what": "Une grenade flash (flashbang) explose : tu es aveuglé.",
+      "file": "x4R9JbYg7bsfnFrd.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "flashbang.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "isaac-start",
+      "title": "The Binding of Isaac",
+      "year": 2011,
+      "aliases": [
+        "Binding of Isaac",
+        "Isaac"
+      ],
+      "what": "Le début d'une partie (run).",
+      "file": "KqQmLHhVCfmxujsK.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "title_screen_jingle.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "okami-howl",
+      "slug": "okami",
+      "what": "Le hurlement victorieux d'Amaterasu.",
+      "file": "vmgTGFdITRM7Siev.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "victorious_howl.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "wow-murloc",
+      "slug": "world-of-warcraft",
+      "what": "Le cri d'un murloc : « Mrglglgl ».",
+      "file": "Uv18jyzqXdXLAHTo.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "wow_glen.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    },
+    {
+      "id": "spiderman-web",
+      "slug": "marvels-spider-man",
+      "seriesWide": true,
+      "what": "Spider-Man lance sa toile.",
+      "file": "1CvWkefiy80Ot17T.mp3",
+      "source": {
+        "site": "Ajouté par Liargo",
+        "name": "web_shooter.mp3"
+      },
+      "credit": "Son extrait du jeu (© éditeur)"
+    }
+  ]
+}
