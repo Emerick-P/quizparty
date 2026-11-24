@@ -1044,14 +1044,17 @@ function pauseOverlay() {
 // ---- Ta bande (profils Steam)
 
 /** Image d'un jeu Steam (bannière de la boutique), cachée si elle ne charge pas. */
-const gamePicture = (pic, done = false) => `<figure class="game-pic ${done ? 'done' : ''}"><img src="${esc(pic.url)}" alt="${esc(pic.alt || '')}" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"></figure>`;
+const gamePicture = (pic, done = false) => (pic.icon
+  ? `<figure class="ach-pic"><img src="${esc(pic.url)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"><figcaption>${esc(pic.caption || pic.alt || '')}</figcaption></figure>`
+  : `<figure class="game-pic ${done ? 'done' : ''}"><img src="${esc(pic.url)}" alt="${esc(pic.alt || '')}" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"></figure>`);
 
 /** Bandeau « question sur X » : X répond sans marquer. */
 function aboutLine(r) {
   if (!r.about) return '';
-  return r.about.id === state.you
+  const ids = r.about.ids || [r.about.id];
+  return ids.includes(state.you)
     ? '<p class="about-line me">C\'est sur toi ! Réponds quand même, mais tu ne marques pas.</p>'
-    : `<p class="about-line">Question sur <b>${esc(r.about.name)}</b> · ${esc(r.about.name)} ne marque pas</p>`;
+    : `<p class="about-line">Question sur <b>${esc(r.about.name)}</b> · ${ids.length > 1 ? 'ils ne marquent pas' : `${esc(r.about.name)} ne marque pas`}</p>`;
 }
 
 /** Fenêtre d'aide : où trouver son code ami Steam, et quels réglages de confidentialité ouvrir. */
@@ -1088,7 +1091,7 @@ function steamCard() {
   let body;
   if (st?.status === 'loading') body = '<p class="muted">Chargement du profil…</p>';
   else if (st?.status === 'ok') {
-    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}, dont ${st.played ?? 0} lancé${st.played > 1 ? 's' : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
+    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}, dont ${st.played ?? 0} lancé${st.played > 1 ? 's' : ''}${st.achievements === 'loading' ? ' · succès en chargement…' : st.achievements != null ? ` · succès de ${st.achievements} jeu${st.achievements > 1 ? 'x' : ''}` : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
     if ((st.played ?? 0) < 4) body += '<p class="steam-warn">Peu de jeux lancés sur ton compte : il y aura peu de questions sur toi. Les jeux prêtés par le partage familial Steam ne sont pas visibles.</p>';
   } else {
     const msg = st?.status === 'private' && st.hiddenTime

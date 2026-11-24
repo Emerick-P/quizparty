@@ -20,7 +20,8 @@ assert.equal(parseProfile(''), null);
 assert.deepEqual(parseProfile('22202'), { id: '76561197960287930' }, 'code ami');
 
 // ---- Faux profils Steam
-const G = (appid, name, minutes, recent = 0) => ({ appid, name, playtime_forever: minutes, playtime_2weeks: recent });
+let lastT = 1_700_000_000;
+const G = (appid, name, minutes, recent = 0) => ({ appid, name, playtime_forever: minutes, playtime_2weeks: recent, rtime_last_played: minutes ? (lastT += 86400) : 0 });
 const PROFILES = {
   '76561190000000001': { name: 'AliceSteam', public: true, games: [
     G(10, 'Portal 2', 1200, 120), G(20, 'Hades', 3000), G(30, 'Celeste', 600), G(40, 'Hollow Knight', 240), G(50, 'Stardew Valley', 0), G(60, 'Terraria', 0), G(70, 'Dota 2', 90)] },
@@ -28,6 +29,9 @@ const PROFILES = {
     G(10, 'Portal 2', 300), G(20, 'Hades', 4000, 600), G(80, 'Factorio', 9000), G(90, 'Rocket League', 500), G(100, 'Outer Wilds', 0), G(30, 'Celeste', 130)] },
   '76561190000000003': { name: 'CarlSteam', public: false, games: [] },
 };
+// Succès : nombre débloqué sur 10 par jeu ; le succès n°i est détenu par (50 - 5i) % des joueurs
+const ACH = { '76561190000000001': { 30: 10, 20: 9, 10: 8, 40: 5 }, '76561190000000002': { 10: 9, 20: 2, 80: 4, 90: 1 } };
+const EXTRA = { '76561190000000001': { created: 1262304000, level: 42 }, '76561190000000002': { created: 1420070400, level: 7 } };
 const VANITY = { alice: '76561190000000001', bob: '76561190000000002', carl: '76561190000000003' };
 let calls = 0;
 const fake = http.createServer((req, res) => {
@@ -42,11 +46,28 @@ const fake = http.createServer((req, res) => {
   if (u.pathname.startsWith('/ISteamUser/GetPlayerSummaries')) {
     const id = u.searchParams.get('steamids');
     const p = PROFILES[id];
-    return json({ response: { players: p ? [{ steamid: id, personaname: p.name, communityvisibilitystate: p.public ? 3 : 1, avatarmedium: 'https://example.invalid/a.jpg', profileurl: `https://steamcommunity.com/profiles/${id}/` }] : [] } });
+    return json({ response: { players: p ? [{ steamid: id, personaname: p.name, timecreated: EXTRA[id]?.created, communityvisibilitystate: p.public ? 3 : 1, avatarmedium: 'https://example.invalid/a.jpg', profileurl: `https://steamcommunity.com/profiles/${id}/` }] : [] } });
   }
   if (u.pathname.startsWith('/IPlayerService/GetOwnedGames')) {
     const p = PROFILES[u.searchParams.get('steamid')];
     return json({ response: p?.public ? { game_count: p.games.length, games: p.games } : {} });
+  }
+  const sid = u.searchParams.get('steamid');
+  if (u.pathname.startsWith('/IPlayerService/GetSteamLevel')) return json({ response: EXTRA[sid] ? { player_level: EXTRA[sid].level } : {} });
+  if (u.pathname.startsWith('/ISteamUser/GetFriendList')) {
+    if (sid !== '76561190000000001') { res.statusCode = 401; return res.end(); } // liste d'amis de Bob privée
+    return json({ friendslist: { friends: [{ steamid: '76561190000000002', relationship: 'friend', friend_since: 1431475200 }] } });
+  }
+  if (u.pathname.startsWith('/ISteamUserStats/GetPlayerAchievements')) {
+    const done = ACH[sid]?.[u.searchParams.get('appid')];
+    if (done === undefined) return json({ playerstats: { success: false, error: 'Requested app has no stats' } });
+    return json({ playerstats: { success: true, achievements: Array.from({ length: 10 }, (_, i) => ({ apiname: `a${i}`, achieved: i < done ? 1 : 0, name: `Succès ${i}`, description: `Fais le truc ${i}` })) } });
+  }
+  if (u.pathname.startsWith('/ISteamUserStats/GetGlobalAchievementPercentagesForApp')) {
+    return json({ achievementpercentages: { achievements: Array.from({ length: 10 }, (_, i) => ({ name: `a${i}`, percent: String(50 - 5 * i) })) } });
+  }
+  if (u.pathname.startsWith('/ISteamUserStats/GetSchemaForGame')) {
+    return json({ game: { availableGameStats: { achievements: Array.from({ length: 10 }, (_, i) => ({ name: `a${i}`, icon: `https://example.invalid/${i}.jpg` })) } } });
   }
   res.statusCode = 404;
   res.end();
@@ -76,6 +97,35 @@ for (let t = 0; t < 30; t++) {
   }
 }
 assert.throws(() => buildBande(5, new Set(), { players: ctx.players.slice(0, 1) }), /2 joueurs/);
+
+// ---- Nouveaux types (données complètes, comme après chargement des succès)
+{
+  const full = (id, extra) => ({ ...steamOf(id), ...extra, games: PROFILES[id].games.map((g) => ({ appid: g.appid, name: g.name, minutes: g.playtime_forever, recent: g.playtime_2weeks, lastPlayed: g.rtime_last_played })) });
+  const ach = (id) => Object.entries(ACH[id]).map(([appid, done]) => ({ appid: Number(appid), game: PROFILES[id].games.find((g) => g.appid === Number(appid)).name, total: 10, done, pct: done / 10,
+    rarest: { name: `Succès ${done - 1}`, description: '', percent: 50 - 5 * (done - 1), icon: null } }));
+  const A = { id: 'a', name: 'Alice', steam: full('76561190000000001', { created: 1262304000, level: 42, friendSince: { '76561190000000002': 1431475200 }, achievements: ach('76561190000000001') }) };
+  const B = { id: 'b', name: 'Bob', steam: full('76561190000000002', { created: 1420070400, level: 7, friendSince: {}, achievements: ach('76561190000000002') }) };
+  const seen = new Map();
+  for (let t = 0; t < 300; t++) {
+    for (const r of buildBande(20, new Set(), { players: [A, B, { id: 'c', name: 'Carl', steam: null }] })) {
+      seen.set(r.bande, r);
+      const answer = r.kind === 'qcm' ? r.choices[r.correctIndex] : r.answer;
+      if (r.bande === 'perfect') assert.equal(answer, r.about === 'a' ? 'Celeste' : 'Portal 2');
+      if (r.bande === 'perfect') assert.equal(r.prompt.includes('100 %'), r.about === 'a', '« 100 % » seulement si le jeu est fini');
+      if (r.bande === 'rarest') assert.equal(answer, 'Alice', 'Alice a le succès le plus rare (5 %)');
+      if (r.bande === 'age') assert.equal(answer, /vieux/.test(r.prompt) ? 'Alice' : 'Bob');
+      if (r.bande === 'level') assert.equal(answer, /haut/.test(r.prompt) ? 'Alice' : 'Bob');
+      if (r.bande === 'library') assert.equal(answer, 'Alice');
+      if (r.bande === 'friends') { assert.equal(answer, 2015); assert.deepEqual(r.about, ['a', 'b']); }
+      if (r.bande === 'binge') assert.equal(answer, 'Hades');
+      if (r.bande === 'last') assert.equal(answer, r.about === 'a' ? 'Dota 2' : 'Celeste');
+      if (r.bande === 'count') assert.equal(answer, r.about === 'a' ? 7 : 6);
+    }
+  }
+  for (const t of ['top', 'shame', 'hours', 'most', 'recent', 'binge', 'last', 'perfect', 'rarest', 'age', 'level', 'library', 'count', 'friends']) assert.ok(seen.has(t), `type ${t} tiré`);
+  // À deux dans le salon, pas de question d'amitié (personne ne pourrait marquer)
+  for (let t = 0; t < 50; t++) assert.ok(buildBande(20, new Set(), { players: [A, B] }).every((r) => r.bande !== 'friends'));
+}
 
 // ---- Pile de la honte : bêtas, éditions doublons et préférence pour les jeux lancés par les autres
 {
@@ -140,6 +190,8 @@ try {
   assert.match((await B.emit('steam:link', { profile: 'alice' })).message, /déjà lié par Alice/, 'même profil refusé');
   assert.equal((await B.emit('steam:link', { profile: 'steamcommunity.com/profiles/76561190000000002' })).status, 'ok');
   await A.waitFor(() => bande().unavailable === null);
+  await A.waitFor((st) => st.players.every((p) => p.steam?.status !== 'ok' || typeof p.steam.achievements === 'number'));
+  assert.equal(A.state.players.find((p) => p.name === 'Alice').steam.achievements, 4, 'succès chargés en arrière-plan');
   const before = calls;
   assert.equal((await B.emit('steam:link', { profile: '76561190000000002' })).status, 'ok');
   assert.equal(calls, before, 'profil en cache : pas de nouvel appel à Steam');
@@ -153,7 +205,8 @@ try {
   for (let i = 0; i < 5; i++) {
     const q = await A.waitFor((st) => st.phase === 'question' && st.round.index === i);
     assert.equal(q.round.correctIndex, undefined, 'la réponse ne fuit pas');
-    const who = q.round.about?.name ?? 'groupe';
+    const ids = q.round.about?.ids ?? [];
+    const who = ids.length === 1 ? q.round.about.name : 'groupe'; // amitié (2 joueurs) : question de groupe
     about.set(who, (about.get(who) ?? 0) + 1);
     const ans = q.round.kind === 'estimation' ? 50 : 0;
     for (const c of [A, B, C]) assert.equal((await c.emit('game:answer', { roundId: q.round.id, answer: ans })).ok, true);
@@ -162,13 +215,16 @@ try {
       assert.ok(rev.reveal.results.every((x) => !x.self), 'question de groupe : tout le monde marque');
       continue;
     }
-    const subject = rev.reveal.results.find((x) => x.name === q.round.about.name);
-    assert.equal(subject.points, 0, 'le joueur concerné ne marque pas');
-    assert.equal(subject.self, true);
+    for (const id of ids) {
+      const x = rev.reveal.results.find((y) => y.playerId === id);
+      assert.equal(x.points, 0, 'le joueur concerné ne marque pas');
+      assert.equal(x.self, true);
+    }
+    const subject = rev.reveal.results.find((x) => x.playerId === ids[0]);
     selfSeen++;
     if (q.round.kind === 'estimation') {
       const ranked = rev.reveal.results.filter((x) => !x.self).map((x) => x.rank).sort();
-      assert.deepEqual(ranked, [1, 2], 'classement de la manche sans le joueur concerné');
+      assert.deepEqual(ranked, ids.length > 1 ? [1] : [1, 2], 'classement de la manche sans le joueur concerné');
     } else {
       // Même réponse pour tous : le joueur concerné a juste ou faux comme les autres, mais 0 point
       const other = rev.reveal.results.find((x) => !x.self);
@@ -188,7 +244,7 @@ try {
   const parts = [];
   for (let i = 0; i < 10; i++) {
     const q = await A.waitFor((st) => st.phase === 'question' && st.round.index === i);
-    parts.push(q.round.kind === 'qcm' && /Steam|heures|honte|plus joué/.test(q.round.prompt) || q.round.about ? 'bande' : 'quiz');
+    parts.push(q.round.bande ? 'bande' : 'quiz');
     await A.emit('game:skip');
   }
   assert.equal(parts.filter((x) => x === 'bande').length, 5, 'moitié de manches « Ta bande » dans le Mix');

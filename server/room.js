@@ -5,7 +5,7 @@ import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback } from './feedback.js';
-import { loadProfile, PRIVACY_URL } from './steam.js';
+import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
@@ -214,6 +214,15 @@ export class Room {
       const twin = [...this.players.values()].find((p) => p.id !== playerId && p.steam?.id === data.id);
       if (twin) throw new Error(`Ce profil Steam est déjà lié par ${twin.name}`);
       player.steam = { ...data, input: raw };
+      // Succès : un appel par jeu, chargés en arrière-plan ; les questions sur les succès arrivent ensuite
+      if (data.status === 'ok' && !data.achievements) {
+        const st = player.steam;
+        loadAchievements(data).then((list) => {
+          if (player.steam === st) { st.achievements = list; this.broadcast(); }
+        }, () => {
+          if (player.steam === st) { st.achievements = []; this.broadcast(); }
+        });
+      }
     } catch (err) {
       if (player.steamSeq !== seq || !this.players.has(playerId)) return { ok: true };
       player.steam = { status: 'error', input: raw, message: err.message };
@@ -240,6 +249,7 @@ export class Room {
       avatar: st.avatar ?? null,
       games: st.games?.length ?? 0,
       played: st.games?.filter((g) => g.minutes > 0).length ?? 0,
+      achievements: st.status === 'ok' ? (st.achievements ? st.achievements.length : 'loading') : null, // jeux à succès examinés
       ...(mine ? { input: st.input, message: st.message ?? null, hiddenTime: !!st.hiddenTime, profileUrl: st.profileUrl ?? null, privacyUrl: PRIVACY_URL } : {}),
     };
   }
@@ -543,11 +553,13 @@ export class Room {
     const kind = KINDS[r.kind];
     // Question sur un joueur (« Ta bande ») : il peut répondre, mais ne marque pas et ne compte pas dans
     // le classement de la manche (sinon il prendrait la 1re place des estimations à coup sûr)
-    const self = r.about && r.answers.has(r.about) ? r.answers.get(r.about) : null;
-    const scored = kind.score(r, self ? new Map([...r.answers].filter(([pid]) => pid !== r.about)) : r.answers);
-    if (self) {
-      const own = kind.score(r, new Map([[r.about, self]])).get(r.about) ?? {};
-      scored.set(r.about, { ...own, correct: own.exact ?? own.correct, rank: undefined, points: 0, self: true });
+    // (amitié Steam : deux joueurs concernés)
+    const subjects = new Set([].concat(r.about ?? []));
+    const scored = kind.score(r, subjects.size ? new Map([...r.answers].filter(([pid]) => !subjects.has(pid))) : r.answers);
+    for (const pid of subjects) {
+      if (!r.answers.has(pid)) continue;
+      const own = kind.score(r, new Map([[pid, r.answers.get(pid)]])).get(pid) ?? {};
+      scored.set(pid, { ...own, correct: own.exact ?? own.correct, rank: undefined, points: 0, self: true });
     }
     for (const p of this.players.values()) {
       p.lastPoints = scored.get(p.id)?.points ?? 0;
@@ -722,7 +734,11 @@ export class Room {
             ...KINDS[r.kind].publicRound(r),
             // « Ta bande » : image du jeu et joueur concerné (il répond sans marquer)
             picture: r.picture ?? null,
-            about: r.about ? { id: r.about, name: this.players.get(r.about)?.name ?? '?' } : null,
+            bande: r.bande ?? null, // type de question « Ta bande » (rarest, age…)
+            about: r.about ? (() => {
+              const ids = [].concat(r.about);
+              return { id: ids[0], ids, name: ids.map((id) => this.players.get(id)?.name ?? '?').join(' et ') };
+            })() : null,
             startsAt: r.startsAt,
             endsAt: r.endsAt,
             durationMs: r.durationMs,

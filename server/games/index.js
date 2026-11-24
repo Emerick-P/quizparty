@@ -680,7 +680,7 @@ export const MODES = {
   },
   bande: {
     name: 'Ta bande',
-    description: 'Questions tirées de vos profils Steam : heures de jeu, jeu préféré, pile de la honte. Pas de points sur ta propre question.',
+    description: 'Questions tirées de vos profils Steam : heures de jeu, succès, pile de la honte, vieux comptes… Pas de points sur ta propre question.',
     unavailable: bandeUnavailable,
     build: (n, used, _s, ctx) => buildBande(n, used, ctx),
   },

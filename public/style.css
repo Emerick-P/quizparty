@@ -617,3 +617,6 @@ body.propose-on { overflow: hidden; }
 .steam-help .mock-copy { background: #66c0f4; color: #171d25; border-radius: 3px; padding: 2px 8px; font-size: .8rem; }
 .steam-help .mock-row { display: flex; justify-content: space-between; gap: 10px; background: #23262e; padding: 6px 8px; border-radius: 4px; }
 .steam-help, .steam-help p, .steam-help h2, .steam-help h3 { text-align: left; }
+.ach-pic { display: flex; align-items: center; gap: 12px; margin: 8px auto; max-width: 460px; background: rgba(0,0,0,.2); border-radius: 10px; padding: 10px; }
+.ach-pic img { width: 56px; height: 56px; border-radius: 6px; flex: none; }
+.ach-pic figcaption { font-size: .9rem; text-align: left; }
