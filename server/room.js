@@ -235,7 +235,7 @@ export class Room {
       name: st.name ?? null,
       avatar: st.avatar ?? null,
       games: st.games?.length ?? 0,
-      ...(mine ? { input: st.input, message: st.message ?? null, profileUrl: st.profileUrl ?? null, privacyUrl: PRIVACY_URL } : {}),
+      ...(mine ? { input: st.input, message: st.message ?? null, hiddenTime: !!st.hiddenTime, profileUrl: st.profileUrl ?? null, privacyUrl: PRIVACY_URL } : {}),
     };
   }
 

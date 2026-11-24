@@ -605,3 +605,15 @@ body.propose-on { overflow: hidden; }
 .game-pic.done { max-width: 340px; }
 .about-line { margin: 4px 0 0; text-align: center; font-size: .9em; opacity: .85; }
 .about-line.me { color: #ffcf3f; opacity: 1; font-weight: 600; }
+.help-btn { flex: none; width: 38px; padding-left: 0; padding-right: 0; font-weight: 700; }
+.steam-warn .link { font-size: inherit; padding: 0; text-decoration: underline; }
+.steam-help h3 { margin: 6px 0 0; font-size: 1rem; }
+.steam-help .mock { background: #171d25; color: #c7d5e0; border-radius: 8px; padding: 10px; font-size: .85rem; display: flex; flex-direction: column; gap: 6px; }
+.steam-help .mock .hl { outline: 2px solid #ffcf3f; outline-offset: 2px; border-radius: 3px; color: #fff; }
+.steam-help .mock-bar { display: flex; gap: 12px; flex-wrap: wrap; color: #8f98a0; text-transform: uppercase; font-size: .75rem; letter-spacing: .04em; }
+.steam-help .mock-menu { display: flex; flex-direction: column; gap: 4px; background: #3d4450; padding: 6px 8px; border-radius: 4px; width: max-content; max-width: 100%; }
+.steam-help .mock-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #23262e; padding: 8px; border-radius: 4px; }
+.steam-help .mock-panel b { font-size: 1.2rem; letter-spacing: .05em; }
+.steam-help .mock-copy { background: #66c0f4; color: #171d25; border-radius: 3px; padding: 2px 8px; font-size: .8rem; }
+.steam-help .mock-row { display: flex; justify-content: space-between; gap: 10px; background: #23262e; padding: 6px 8px; border-radius: 4px; }
+.steam-help, .steam-help p, .steam-help h2, .steam-help h3 { text-align: left; }

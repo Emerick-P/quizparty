@@ -83,7 +83,9 @@ export async function loadProfile(raw) {
     avatar: typeof p.avatarmedium === 'string' ? p.avatarmedium : null,
     profileUrl: typeof p.profileurl === 'string' ? p.profileurl : `https://steamcommunity.com/profiles/${id}`,
     // communityvisibilitystate 3 = public ; même public, la liste des jeux peut être cachée
-    status: p.communityvisibilitystate === 3 && games.length ? 'ok' : 'private',
+    // Temps de jeu masqué (« Toujours garder mon temps de jeu total privé ») : tout est à 0, inutilisable
+    status: p.communityvisibilitystate === 3 && games.length && games.some((g) => g.minutes > 0) ? 'ok' : 'private',
+    hiddenTime: games.length > 0 && games.every((g) => g.minutes === 0),
     games,
   };
   // Profil privé : pas de cache, le joueur réessaie juste après avoir changé ses réglages Steam

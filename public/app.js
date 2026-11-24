@@ -317,6 +317,9 @@ const actions = {
     const r = await send('steam:link', { profile });
     if (r.error) toast(r.error);
   },
+  steamHelp() { steamHelpOpen = true; render(); },
+  steamHelpClose() { steamHelpOpen = false; render(); },
+  noop() {},
   async steamUnlink() {
     store.del(STEAM_KEY);
     const r = await send('steam:unlink');
@@ -1051,6 +1054,32 @@ function aboutLine(r) {
     : `<p class="about-line">Question sur <b>${esc(r.about.name)}</b> · ${esc(r.about.name)} ne marque pas</p>`;
 }
 
+/** Fenêtre d'aide : où trouver son code ami Steam, et quels réglages de confidentialité ouvrir. */
+let steamHelpOpen = false;
+function steamHelpOverlay() {
+  if (!steamHelpOpen || displayPhase() !== 'lobby') return '';
+  return `<div class="pause-overlay" data-action="steamHelpClose"><div class="pause-card card steam-help" data-action="noop">
+    <h2>Lier ton Steam</h2>
+    <h3>1. Ton code ami</h3>
+    <p>Dans l'application Steam (PC ou téléphone) : <b>Amis</b> → <b>Ajouter un ami</b>. Ton code ami est le numéro en haut. Copie-le et colle-le ici.</p>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><span>Magasin</span><span>Bibliothèque</span><span>Communauté</span><span class="hl">Amis ▾</span></div>
+      <div class="mock-menu"><span class="hl">Ajouter un ami…</span><span>Voir la liste d'amis</span></div>
+      <div class="mock-panel"><small>Votre code ami</small><b class="hl">123456789</b><span class="mock-copy">Copier</span></div>
+    </div>
+    <p class="small muted">Ça marche aussi avec l'adresse de ton profil : sur ta page de profil, clic droit → <b>Copier l'adresse de la page</b>.</p>
+    <h3>2. Profil public</h3>
+    <p>Pour qu'on voie tes jeux : ouvre tes <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener">réglages de confidentialité</a> (Profil → Modifier le profil → Paramètres de confidentialité) et règle :</p>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-row"><span>Mon profil</span><b class="hl">Public</b></div>
+      <div class="mock-row"><span>Détails des jeux</span><b class="hl">Public</b></div>
+      <div class="mock-row"><span>☐ Toujours garder mon temps de jeu total privé</span><b class="hl">décoché</b></div>
+    </div>
+    <p class="small muted">Seuls tes jeux et tes heures servent aux questions de la soirée. Rien n'est enregistré.</p>
+    <button class="btn primary" type="button" data-action="steamHelpClose">Compris</button>
+  </div></div>`;
+}
+
 /** Salon : lier son profil Steam (facultatif), pour le mode « Ta bande ». */
 function steamCard() {
   const me = state.players.find((p) => p.id === state.you);
@@ -1061,12 +1090,15 @@ function steamCard() {
   else if (st?.status === 'ok') {
     body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
   } else {
-    const msg = st?.status === 'private'
-      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Profil » et « Détails des jeux » en <b>Public</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a>), puis relie-le.</p>`
+    const msg = st?.status === 'private' && st.hiddenTime
+      ? `<p class="steam-warn">Ton temps de jeu est masqué. Dans tes <a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a> Steam, décoche « Toujours garder mon temps de jeu total privé », puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
+      : st?.status === 'private'
+      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Mon profil » et « Détails des jeux » en <b>Public</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a>), puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
       : st?.status === 'error' ? `<p class="steam-warn">${esc(st.message)}</p>` : '';
     body = `${msg}<form class="steam-form" data-form="steam">
         <input id="steam-input" autocomplete="off" placeholder="Code ami ou adresse du profil" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
         <button class="btn small" type="submit">${st ? 'Réessayer' : 'Lier'}</button>
+        <button class="btn small ghost help-btn" type="button" data-action="steamHelp" aria-label="Où trouver mon code ami ?">?</button>
       </form>
       ${st?.status === 'private' ? '<button class="link" data-action="steamUnlink">Jouer sans mon profil</button>' : ''}`;
   }
@@ -1598,7 +1630,7 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay();
+  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
