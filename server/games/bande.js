@@ -76,7 +76,7 @@ function topGame(p) {
 // ---- Pile de la honte : on écarte les « jeux » qu'on n'est pas censé lancer
 
 /** Bêtas, démos, serveurs, outils, bandes-son… : présents dans la bibliothèque, mais pas des jeux à proprement parler. */
-const JUNK = /\b(beta|playtest|public test|test server|pts|demo|prologue|dedicated server|server|sdk|editor|toolkit|tools?|benchmark|soundtrack|ost|artbook|art book|wallpaper|launcher|vr mod|bonus content|dlc|season pass|trailer|teaser)\b/i;
+const JUNK = /\b(friends?['’]?s? pass|beta|playtest|public test|test server|pts|demo|prologue|dedicated server|server|sdk|editor|toolkit|tools?|benchmark|soundtrack|ost|artbook|art book|wallpaper|launcher|vr mod|bonus content|dlc|season pass|trailer|teaser)\b/i;
 
 /** Titre sans mention d'édition ni « classic »/« legacy » : sert à repérer deux éditions d'un même jeu. */
 const LEGACY = /(?:\s*[:\-–—(]\s*|\s+)(?:classic|legacy|original|redux|reloaded|enhanced|remastered|remaster|definitive|anniversary|hd)(?:\s+(?:edition|version))?\s*\)?\s*$/i;
