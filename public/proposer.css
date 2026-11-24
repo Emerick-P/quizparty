@@ -1,6 +1,6 @@
 /* Page « Proposer » : formulaire de soumission des amis */
 .submit [hidden] { display: none !important; }
-.submit { max-width: 640px; }
+.submit { width: 100%; max-width: 640px; margin: 0 auto; }
 .submit-title { font-family: var(--display); margin: 8px 0 4px; font-size: 1.7rem; }
 .submit-intro { margin: 0 0 16px; }
 .submit-form { display: flex; flex-direction: column; gap: 18px; }
@@ -33,3 +33,9 @@
 .submit .tf .btn { flex: 1; }
 .submit .tf .btn.sel { background: var(--accent); color: var(--accent-ink); }
 .submit .two { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+/* Ouvert dans le panneau du jeu (?embed=1) */
+.embed .submit > .top { display: none; }
+.embed .submit { padding-top: 4px; }
+.embed .submit-title { font-size: 1.35rem; margin-top: 0; }
+.submit-done #back { margin-top: 10px; width: 100%; }

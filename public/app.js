@@ -326,6 +326,48 @@ const actions = {
   },
 };
 
+// =====================================================================  proposer
+// Le formulaire /proposer s'ouvre dans un panneau par-dessus le jeu (iframe de la même origine) :
+// la page du jeu et sa connexion restent en place, le brouillon est gardé quand on ferme.
+const PROPOSE_PHASES = ['lobby', 'reveal', 'end'];
+const proposeButton = (label = 'Une idée de question, de pitch, de son ? Proposer') =>
+  `<button class="btn small ghost propose-btn" data-action="propose">💡 ${esc(label)}</button>`;
+const proposePanel = () => $('#propose');
+const proposeOpen = () => !proposePanel().hidden;
+function openPropose() {
+  const panel = proposePanel();
+  if (!panel.querySelector('iframe')) {
+    const frame = document.createElement('iframe');
+    frame.src = '/proposer?embed=1';
+    frame.title = 'Proposer du contenu';
+    panel.querySelector('.propose-sheet').append(frame);
+  }
+  panel.hidden = false;
+  document.body.classList.add('propose-on');
+  updatePropose();
+}
+function closePropose() {
+  proposePanel().hidden = true;
+  document.body.classList.remove('propose-on');
+}
+/** Si une manche commence pendant que le panneau est ouvert, on le signale sans le fermer. */
+function updatePropose() {
+  if (!proposeOpen()) return;
+  const phase = displayPhase();
+  const live = !PROPOSE_PHASES.includes(phase) && !['home', 'loading'].includes(phase);
+  const head = $('#propose-live');
+  head.hidden = !live;
+  if (live && state.round) head.textContent = state.round.kind === 'crossword' ? '⏱ La grille commence · revenir au jeu' : `⏱ Question ${state.round.index + 1} · revenir au jeu`;
+}
+actions.propose = openPropose;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && proposeOpen()) closePropose(); });
+window.addEventListener('message', (e) => {
+  if (e.origin === location.origin && e.data?.type === 'quizparty:propose-close') closePropose();
+});
+$('#propose-close').addEventListener('click', closePropose);
+$('#propose-live').addEventListener('click', closePropose);
+$('#propose').addEventListener('click', (e) => { if (e.target.id === 'propose') closePropose(); });
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn || btn.disabled) return;
@@ -1118,6 +1160,7 @@ const views = {
         </ul>
       </section>
       ${globalBoard()}
+      ${proposeButton()}
       </div>
       <section class="card lb-modes">
         <h2>Jeu</h2>
@@ -1374,6 +1417,7 @@ const views = {
         </ul>
       </section>
       ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+      ${proposeButton('Une idée ? Proposer')}
       ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
     </main>`;
   },
@@ -1406,6 +1450,7 @@ const views = {
       ${isHost()
         ? '<button class="btn primary big sticky-bottom" data-action="lobby">Nouvelle partie</button>'
         : '<p class="waiting">En attente de l\'hôte pour une nouvelle partie</p>'}
+      ${proposeButton()}
       <button class="link" data-action="leave">Quitter le salon</button>
     </main>`;
   },
@@ -1482,6 +1527,7 @@ function render() {
   }
   if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;
+  updatePropose();
   updateTimers();
 }
 

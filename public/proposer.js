@@ -5,6 +5,14 @@
   const NAME_KEY = 'quizparty:name';
   const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } } };
 
+  // Ouvert depuis le jeu (panneau du salon) : pas de lien « Retour », on ferme le panneau à la place
+  const embed = new URLSearchParams(location.search).has('embed') && window.parent !== window;
+  if (embed) {
+    document.body.classList.add('embed');
+    $('back').hidden = false;
+    $('back').addEventListener('click', () => window.parent.postMessage({ type: 'quizparty:propose-close' }, location.origin));
+  }
+
   let opts = null;
   let mode = null;
   let file = null; // { dataUrl, name, type, size }

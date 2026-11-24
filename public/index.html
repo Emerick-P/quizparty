@@ -16,6 +16,15 @@
 <body>
   <div id="conn" class="conn-banner" hidden>Connexion perdue — reconnexion…</div>
   <div id="app"></div>
+  <div id="propose" class="propose-panel" hidden>
+    <div class="propose-sheet" role="dialog" aria-modal="true" aria-label="Proposer du contenu">
+      <div class="propose-head">
+        <b>💡 Proposer</b>
+        <button id="propose-close" class="btn small ghost" type="button">✕ Fermer</button>
+      </div>
+      <button id="propose-live" class="propose-live" type="button" hidden></button>
+    </div>
+  </div>
   <div id="toast" class="toast" hidden></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>
