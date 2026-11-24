@@ -1071,7 +1071,7 @@ function steamHelpOverlay() {
       <div class="mock-row"><span>Vos contacts</span><span class="mock-copy hl">Ajouter un contact</span></div>
       <div class="mock-panel"><small>Votre code de contact</small><b class="hl">12345678</b><span class="mock-copy">Copier</span></div>
     </div>
-    <p class="small muted">Ça marche aussi avec l'adresse de ton profil : sur ta page de profil, clic droit → <b>Copier l'adresse de la page</b>.</p>
+    <p class="small muted">Ça marche aussi avec l'adresse de ton profil : sur ta page de profil, clique sur l'adresse affichée sous le menu (steamcommunity.com/…), elle est copiée directement.</p>
     <h3>2. Profil public</h3>
     <p>Pour qu'on voie tes jeux : ouvre tes <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener">options de confidentialité</a> (ton pseudo → Profil → Modifier le profil → Options de confidentialité) et règle :</p>
     <div class="mock" aria-hidden="true">
