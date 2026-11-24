@@ -58,7 +58,7 @@ async function call(path, params) {
 export async function loadProfile(raw) {
   if (!steamEnabled()) throw new Error('Steam n\'est pas encore configuré sur ce serveur (clé manquante)');
   const parsed = parseProfile(raw);
-  if (!parsed) throw new Error('Colle ton code ami Steam ou l\'adresse de ton profil');
+  if (!parsed) throw new Error('Colle ton code de contact Steam ou l\'adresse de ton profil');
   let id = parsed.id;
   if (!id) {
     const r = await call('/ISteamUser/ResolveVanityURL/v1/', { vanityurl: parsed.vanity });

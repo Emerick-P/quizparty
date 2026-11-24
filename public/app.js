@@ -1063,20 +1063,22 @@ function steamHelpOverlay() {
   if (!steamHelpOpen || displayPhase() !== 'lobby') return '';
   return `<div class="pause-overlay" data-action="steamHelpClose"><div class="pause-card card steam-help" data-action="noop">
     <h2>Lier ton Steam</h2>
-    <h3>1. Ton code ami</h3>
-    <p>Dans l'application Steam (PC ou téléphone) : <b>Amis</b> → <b>Ajouter un ami</b>. Ton code ami est le numéro en haut. Copie-le et colle-le ici.</p>
+    <h3>1. Ton code de contact</h3>
+    <p>Dans Steam sur PC : clique sur <b>ton pseudo</b> (en haut, à droite de Communauté) → <b>Contacts</b> → <b>Ajouter un contact</b>. Copie <b>Votre code de contact</b> et colle-le ici.</p>
     <div class="mock" aria-hidden="true">
-      <div class="mock-bar"><span>Magasin</span><span>Bibliothèque</span><span>Communauté</span><span class="hl">Amis ▾</span></div>
-      <div class="mock-menu"><span class="hl">Ajouter un ami…</span><span>Voir la liste d'amis</span></div>
-      <div class="mock-panel"><small>Votre code ami</small><b class="hl">123456789</b><span class="mock-copy">Copier</span></div>
+      <div class="mock-bar"><span>Magasin</span><span>Bibliothèque</span><span>Communauté</span><span class="hl">Ton pseudo ▾</span></div>
+      <div class="mock-menu"><span>Activité</span><span>Profil</span><span class="hl">Contacts</span><span>Groupes</span></div>
+      <div class="mock-row"><span>Vos contacts</span><span class="mock-copy hl">Ajouter un contact</span></div>
+      <div class="mock-panel"><small>Votre code de contact</small><b class="hl">12345678</b><span class="mock-copy">Copier</span></div>
     </div>
     <p class="small muted">Ça marche aussi avec l'adresse de ton profil : sur ta page de profil, clic droit → <b>Copier l'adresse de la page</b>.</p>
     <h3>2. Profil public</h3>
-    <p>Pour qu'on voie tes jeux : ouvre tes <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener">réglages de confidentialité</a> (Profil → Modifier le profil → Paramètres de confidentialité) et règle :</p>
+    <p>Pour qu'on voie tes jeux : ouvre tes <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener">options de confidentialité</a> (ton pseudo → Profil → Modifier le profil → Options de confidentialité) et règle :</p>
     <div class="mock" aria-hidden="true">
-      <div class="mock-row"><span>Mon profil</span><b class="hl">Public</b></div>
-      <div class="mock-row"><span>Détails des jeux</span><b class="hl">Public</b></div>
-      <div class="mock-row"><span>☐ Toujours garder mon temps de jeu total privé</span><b class="hl">décoché</b></div>
+      <div class="mock-row"><span>Visibilité de mon profil</span><b class="hl">tout le monde</b></div>
+      <div class="mock-row"><span>Visibilité sur mes jeux</span><b class="hl">tout le monde</b></div>
+      <div class="mock-row"><span>☐ Garder le temps total de jeu privé…</span><b class="hl">décoché</b></div>
+      <div class="mock-row"><span>Liste de contacts <small>(facultatif)</small></span><b>tout le monde</b></div>
     </div>
     <p class="small muted">Seuls tes jeux et tes heures servent aux questions de la soirée. Rien n'est enregistré.</p>
     <button class="btn primary" type="button" data-action="steamHelpClose">Compris</button>
@@ -1095,14 +1097,14 @@ function steamCard() {
     if ((st.played ?? 0) < 4) body += '<p class="steam-warn">Peu de jeux lancés sur ton compte : il y aura peu de questions sur toi. Les jeux prêtés par le partage familial Steam ne sont pas visibles.</p>';
   } else {
     const msg = st?.status === 'private' && st.hiddenTime
-      ? `<p class="steam-warn">Ton temps de jeu est masqué. Dans tes <a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a> Steam, décoche « Toujours garder mon temps de jeu total privé », puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
+      ? `<p class="steam-warn">Ton temps de jeu est masqué. Dans tes <a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">options de confidentialité</a> Steam, décoche « Garder le temps total de jeu privé, même si mes détails de jeux sont publics », puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
       : st?.status === 'private'
-      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Mon profil » et « Détails des jeux » en <b>Public</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a>), puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
+      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Visibilité de mon profil » et « Visibilité sur mes jeux » sur <b>tout le monde</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">options de confidentialité</a>), puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
       : st?.status === 'error' ? `<p class="steam-warn">${esc(st.message)}</p>` : '';
     body = `${msg}<form class="steam-form" data-form="steam">
-        <input id="steam-input" autocomplete="off" placeholder="Code ami ou adresse du profil" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
+        <input id="steam-input" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
         <button class="btn small" type="submit">${st ? 'Réessayer' : 'Lier'}</button>
-        <button class="btn small ghost help-btn" type="button" data-action="steamHelp" aria-label="Où trouver mon code ami ?">?</button>
+        <button class="btn small ghost help-btn" type="button" data-action="steamHelp" aria-label="Où trouver mon code de contact ?">?</button>
       </form>
       ${st?.status === 'private' ? '<button class="link" data-action="steamUnlink">Jouer sans mon profil</button>' : ''}`;
   }
