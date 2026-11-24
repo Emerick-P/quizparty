@@ -36,6 +36,8 @@ h2 { font-family: var(--display); font-weight: 800; font-style: italic; font-siz
 .code-card .label { color: var(--ink-soft); text-transform: none; letter-spacing: 0; font-weight: 600; }
 .code, .lobby .code { font-family: var(--display); font-style: italic; font-weight: 800; color: var(--accent-ink); text-shadow: none; letter-spacing: .12em; }
 .lobby .code-card .share-btn { background: var(--ink); color: #fff; }
+.share-note { margin: 14px auto 4px; max-width: 640px; text-align: center; color: var(--muted); font-size: .88rem; line-height: 1.4; }
+.share-note b { color: var(--text); font-weight: 600; }
 /* joueurs */
 .players li, .list li { background: var(--surf); border-radius: 4px; }
 .avatar { border-radius: 4px; background: hsl(var(--h) 85% 70%); color: var(--ink); font-family: var(--display); font-weight: 800; }

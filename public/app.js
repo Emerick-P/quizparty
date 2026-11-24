@@ -1269,6 +1269,7 @@ const views = {
         <div class="code">${esc(state.code)}</div>
         <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
       </section>
+      <p class="share-note">🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.</p>
       <div class="lobby-cols">
       <div class="lb-players">
       <section class="card">
