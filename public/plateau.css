@@ -75,7 +75,7 @@ h2 { font-family: var(--display); font-weight: 800; font-style: italic; font-siz
 .result.good { background: var(--good); color: var(--ink); } .result.bad { background: var(--bad); color: #fff; }
 .list .pos, .list .pts { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.25rem; color: var(--text); }
 .list li.me { background: var(--accent); color: var(--accent-ink); outline: none; }
-.list li.me .pos, .list li.me .pts, .list li.me .sub { color: var(--accent-ink); }
+.list li.me .pos, .list li.me .pts, .list li.me .sub, .list li.me .delta { color: var(--accent-ink); }
 /* podium */
 .title { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 2.8rem; }
 .block { border-radius: 4px 4px 0 0; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 3rem; color: var(--accent-ink); }
