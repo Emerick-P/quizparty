@@ -22,11 +22,13 @@ const MODE_GROUPS = [
   { name: 'Culture jeu vidéo', ids: ['quiz', 'vraifaux', 'estimation'] },
   { name: 'Devine le jeu', ids: ['covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds'] },
   { name: 'Lettres et mélange', ids: ['crossword', 'mix'] },
+  { name: 'Entre amis', ids: ['bande'] },
 ];
 const MODE_ART = {
   quiz: ['🧠', '#7c5cff'], vraifaux: ['⚖️', '#3d8bff'], estimation: ['🎯', '#ff8a3d'],
   covers: ['🖼️', '#ff5d73'], pitch: ['💬', '#2fc47a'], emoji: ['😜', '#ffb020'], hud: ['🎮', '#00b8d9'],
   loading: ['⏳', '#a35cff'], sounds: ['🔊', '#ff4fa3'], crossword: ['✏️', '#5fcf3f'], mix: ['🎲', '#ffcf3f'],
+  bande: ['👥', '#3fb6ff'],
 };
 const modeArt = (id) => MODE_ART[id] || ['🕹️', '#8a7fd0'];
 
@@ -37,6 +39,21 @@ const store = {
 };
 const SESSION_KEY = 'quizparty:session';
 const NAME_KEY = 'quizparty:name';
+const THEME_KEY = 'quizparty:theme';
+const STEAM_KEY = 'quizparty:steam'; // adresse du profil Steam, retenue sur l'appareil
+
+/** Thème clair / sombre (sombre par défaut), mémorisé sur l'appareil. Appliqué dès le <head> par index.html. */
+const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  store.set(THEME_KEY, theme);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#eceef3' : '#22262e');
+}
+const themeToggle = () => {
+  const light = currentTheme() === 'light';
+  return `<div class="theme-toggle" role="group" aria-label="Thème">${[['light', 'Clair'], ['dark', 'Obscur']].map(([t, label]) =>
+    `<button type="button" data-action="theme" data-value="${t}" aria-pressed="${(t === 'light') === light}">${label}</button>`).join('')}</div>`;
+};
 
 /** Énigme du jeu en emojis : chaque groupe (séparé par une espace) reste d'un seul tenant. */
 function emojiLine(emojis, small = false) {
@@ -128,9 +145,22 @@ socket.on('state', (s) => {
   if (s.round?.image) loadImage(s.round.image.url);
   if (s.round?.sound) loadSound(s.round.sound.url);
   if (s.preload) (s.preload.startsWith('/sfx/') ? loadSound : loadImage)(s.preload);
+  if (s.round?.picture) loadImage(s.round.picture.url);
   if (pending && (!s.round || s.round.id !== pending.roundId || s.round.yourAnswer !== null)) pending = null;
+  autoLinkSteam();
   render();
 });
+
+/** Profil Steam retenu sur l'appareil : relié tout seul en entrant dans un salon (une fois par salon). */
+let steamAutoFor = null;
+function autoLinkSteam() {
+  const me = state?.players?.find((p) => p.id === state.you);
+  const saved = store.get(STEAM_KEY);
+  const key = `${state?.code}:${state?.you}`;
+  if (!me || me.steam || !saved || steamAutoFor === key) return;
+  steamAutoFor = key;
+  send('steam:link', { profile: saved });
+}
 socket.on('srv:ping', (_t, ack) => { if (typeof ack === 'function') ack(); });
 socket.on('kicked', () => leaveLocal("L'hôte t'a retiré du salon"));
 socket.on('session:replaced', () => {
@@ -240,6 +270,7 @@ async function share() {
 }
 
 const actions = {
+  theme(btn) { setTheme(btn.dataset.value === 'light' ? 'light' : 'dark'); render(); },
   async create() {
     const name = getName(); if (!name) return;
     const res = await send('room:create', { name });
@@ -278,6 +309,21 @@ const actions = {
     const r = await send('room:reset-totals');
     if (r.error) return toast(r.error);
     toast('Score global remis à zéro');
+  },
+  async steamLink() {
+    const profile = ($('#steam-input')?.value || '').trim();
+    if (!profile) return toast('Colle l\'adresse de ton profil Steam');
+    store.set(STEAM_KEY, profile);
+    const r = await send('steam:link', { profile });
+    if (r.error) toast(r.error);
+  },
+  steamHelp() { steamHelpOpen = true; render(); },
+  steamHelpClose() { steamHelpOpen = false; render(); },
+  noop() {},
+  async steamUnlink() {
+    store.del(STEAM_KEY);
+    const r = await send('steam:unlink');
+    if (r.error) toast(r.error);
   },
   async kick(btn) { const r = await send('room:kick', { playerId: btn.dataset.id }); if (r.error) toast(r.error); },
   async set(btn) {
@@ -326,6 +372,49 @@ const actions = {
   },
 };
 
+// =====================================================================  proposer
+// Le formulaire /proposer s'ouvre dans un panneau par-dessus le jeu (iframe de la même origine) :
+// la page du jeu et sa connexion restent en place, le brouillon est gardé quand on ferme.
+// Bouton seulement dans le salon (choix du client : ne pas casser le rythme d'une partie).
+const PROPOSE_PHASES = ['lobby', 'end'];
+const proposeButton = (label = 'Une idée de question, de pitch, de son ? Proposer') =>
+  `<button class="btn small ghost propose-btn" data-action="propose">💡 ${esc(label)}</button>`;
+const proposePanel = () => $('#propose');
+const proposeOpen = () => !proposePanel().hidden;
+function openPropose() {
+  const panel = proposePanel();
+  if (!panel.querySelector('iframe')) {
+    const frame = document.createElement('iframe');
+    frame.src = '/proposer?embed=1';
+    frame.title = 'Proposer du contenu';
+    panel.querySelector('.propose-sheet').append(frame);
+  }
+  panel.hidden = false;
+  document.body.classList.add('propose-on');
+  updatePropose();
+}
+function closePropose() {
+  proposePanel().hidden = true;
+  document.body.classList.remove('propose-on');
+}
+/** Si une manche commence pendant que le panneau est ouvert, on le signale sans le fermer. */
+function updatePropose() {
+  if (!proposeOpen()) return;
+  const phase = displayPhase();
+  const live = !PROPOSE_PHASES.includes(phase) && !['home', 'loading'].includes(phase);
+  const head = $('#propose-live');
+  head.hidden = !live;
+  if (live && state.round) head.textContent = state.round.kind === 'crossword' ? '⏱ La grille commence · revenir au jeu' : `⏱ Question ${state.round.index + 1} · revenir au jeu`;
+}
+actions.propose = openPropose;
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && proposeOpen()) closePropose(); });
+window.addEventListener('message', (e) => {
+  if (e.origin === location.origin && e.data?.type === 'quizparty:propose-close') closePropose();
+});
+$('#propose-close').addEventListener('click', closePropose);
+$('#propose-live').addEventListener('click', closePropose);
+$('#propose').addEventListener('click', (e) => { if (e.target.id === 'propose') closePropose(); });
+
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn || btn.disabled) return;
@@ -346,6 +435,8 @@ document.addEventListener('submit', (e) => {
     answer(guess);
   } else if (e.target.matches('[data-form="join"]')) {
     actions.join();
+  } else if (e.target.matches('[data-form="steam"]')) {
+    actions.steamLink();
   }
 });
 
@@ -950,6 +1041,80 @@ function pauseOverlay() {
     </div>
   </form></div>`;
 }
+// ---- Ta bande (profils Steam)
+
+/** Image d'un jeu Steam (bannière de la boutique), cachée si elle ne charge pas. */
+const gamePicture = (pic, done = false) => (pic.icon
+  ? `<figure class="ach-pic"><img src="${esc(pic.url)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true"><figcaption>${esc(pic.caption || pic.alt || '')}</figcaption></figure>`
+  : `<figure class="game-pic ${done ? 'done' : ''}"><img src="${esc(pic.url)}" alt="${esc(pic.alt || '')}" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"></figure>`);
+
+/** Bandeau « question sur X » : X répond sans marquer. */
+function aboutLine(r) {
+  if (!r.about) return '';
+  const ids = r.about.ids || [r.about.id];
+  return ids.includes(state.you)
+    ? '<p class="about-line me">C\'est sur toi ! Réponds quand même, mais tu ne marques pas.</p>'
+    : `<p class="about-line">Question sur <b>${esc(r.about.name)}</b> · ${ids.length > 1 ? 'ils ne marquent pas' : `${esc(r.about.name)} ne marque pas`}</p>`;
+}
+
+/** Fenêtre d'aide : où trouver son code ami Steam, et quels réglages de confidentialité ouvrir. */
+let steamHelpOpen = false;
+function steamHelpOverlay() {
+  if (!steamHelpOpen || displayPhase() !== 'lobby') return '';
+  return `<div class="pause-overlay" data-action="steamHelpClose"><div class="pause-card card steam-help" data-action="noop">
+    <h2>Lier ton Steam</h2>
+    <h3>1. Ton code de contact</h3>
+    <p>Dans Steam sur PC : clique sur <b>ton pseudo</b> (en haut, à droite de Communauté) → <b>Contacts</b> → <b>Ajouter un contact</b>. Copie <b>Votre code de contact</b> et colle-le ici.</p>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-bar"><span>Magasin</span><span>Bibliothèque</span><span>Communauté</span><span class="hl">Ton pseudo ▾</span></div>
+      <div class="mock-menu"><span>Activité</span><span>Profil</span><span class="hl">Contacts</span><span>Groupes</span></div>
+      <div class="mock-row"><span>Vos contacts</span><span class="mock-copy hl">Ajouter un contact</span></div>
+      <div class="mock-panel"><small>Votre code de contact</small><b class="hl">12345678</b><span class="mock-copy">Copier</span></div>
+    </div>
+    <p class="small muted">Ça marche aussi avec l'adresse de ton profil : sur ta page de profil, clique sur l'adresse affichée sous le menu (steamcommunity.com/…), elle est copiée directement.</p>
+    <h3>2. Profil public</h3>
+    <p>Pour qu'on voie tes jeux : ouvre tes <a href="https://steamcommunity.com/my/edit/settings" target="_blank" rel="noopener">options de confidentialité</a> (ton pseudo → Profil → Modifier le profil → Options de confidentialité) et règle :</p>
+    <div class="mock" aria-hidden="true">
+      <div class="mock-row"><span>Visibilité de mon profil</span><b class="hl">tout le monde</b></div>
+      <div class="mock-row"><span>Visibilité sur mes jeux</span><b class="hl">tout le monde</b></div>
+      <div class="mock-row"><span>☐ Garder le temps total de jeu privé…</span><b class="hl">décoché</b></div>
+      <div class="mock-row"><span>Liste de contacts <small>(facultatif)</small></span><b>tout le monde</b></div>
+    </div>
+    <p class="small muted">Seuls tes jeux et tes heures servent aux questions de la soirée. Rien n'est enregistré.</p>
+    <button class="btn primary" type="button" data-action="steamHelpClose">Compris</button>
+  </div></div>`;
+}
+
+/** Salon : lier son profil Steam (facultatif), pour le mode « Ta bande ». */
+function steamCard() {
+  const me = state.players.find((p) => p.id === state.you);
+  const st = me?.steam;
+  const linked = state.players.filter((p) => p.steam?.status === 'ok').length;
+  let body;
+  if (st?.status === 'loading') body = '<p class="muted">Chargement du profil…</p>';
+  else if (st?.status === 'ok') {
+    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}, dont ${st.played ?? 0} lancé${st.played > 1 ? 's' : ''}${st.achievements === 'loading' ? ' · succès en chargement…' : st.achievements != null ? ` · succès de ${st.achievements} jeu${st.achievements > 1 ? 'x' : ''}` : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
+    if ((st.played ?? 0) < 4) body += '<p class="steam-warn">Peu de jeux lancés sur ton compte : il y aura peu de questions sur toi. Les jeux prêtés par le partage familial Steam ne sont pas visibles.</p>';
+  } else {
+    const msg = st?.status === 'private' && st.hiddenTime
+      ? `<p class="steam-warn">Ton temps de jeu est masqué. Dans tes <a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">options de confidentialité</a> Steam, décoche « Garder le temps total de jeu privé, même si mes détails de jeux sont publics », puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
+      : st?.status === 'private'
+      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Visibilité de mon profil » et « Visibilité sur mes jeux » sur <b>tout le monde</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">options de confidentialité</a>), puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
+      : st?.status === 'error' ? `<p class="steam-warn">${esc(st.message)}</p>` : '';
+    body = `${msg}<form class="steam-form" data-form="steam">
+        <input id="steam-input" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
+        <button class="btn small" type="submit">${st ? 'Réessayer' : 'Lier'}</button>
+        <button class="btn small ghost help-btn" type="button" data-action="steamHelp" aria-label="Où trouver mon code de contact ?">?</button>
+      </form>
+      ${st?.status === 'private' ? '<button class="link" data-action="steamUnlink">Jouer sans mon profil</button>' : ''}`;
+  }
+  return `<section class="card steam-card">
+    <h2>Ton Steam <span class="muted">facultatif</span></h2>
+    ${body}
+    <p class="opt-hint">Pour le jeu « Ta bande » : ${linked} joueur${linked > 1 ? 's' : ''} lié${linked > 1 ? 's' : ''}. Tes jeux et tes heures servent aux questions, rien n'est enregistré.</p>
+  </section>`;
+}
+
 const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`;
 // À score égal, le départage éventuel (mots croisés : premier à avoir trouvé son dernier mot)
 const sortedByScore = () => [...state.players].sort((a, b) => b.score - a.score || (a.tiebreak ?? Infinity) - (b.tiebreak ?? Infinity));
@@ -1062,6 +1227,7 @@ const views = {
 
   home: () => `
     <main class="screen">
+      <div class="home-top">${themeToggle()}</div>
       <div class="brand">
         <div class="logo">Quiz<b>Party</b></div>
         <p>Le quiz jeu vidéo entre potes</p>
@@ -1097,12 +1263,13 @@ const views = {
     // Téléphone : une seule colonne, dans le même ordre.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-count muted">${state.players.length} joueur${state.players.length > 1 ? 's' : ''}</span></div>
+      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${state.players.length} joueur${state.players.length > 1 ? 's' : ''}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
         <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
       </section>
+      <p class="share-note">🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.</p>
       <div class="lobby-cols">
       <div class="lb-players">
       <section class="card">
@@ -1112,12 +1279,15 @@ const views = {
             <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
               ${avatar(p.name)}
               <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
+              ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
               ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
               ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
             </li>`).join('')}
         </ul>
       </section>
+      ${steamCard()}
       ${globalBoard()}
+      ${proposeButton()}
       </div>
       <section class="card lb-modes">
         <h2>Jeu</h2>
@@ -1227,6 +1397,8 @@ const views = {
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
       ${['pitch', 'emoji', 'sound'].includes(r.kind) ? `<h1 class="prompt small">${esc(r.prompt)}</h1>` : ''}
+      ${aboutLine(r)}
+      ${r.picture ? gamePicture(r.picture) : ''}
       ${GUESS_KINDS.includes(r.kind) ? media : `<h1 class="prompt">${esc(r.prompt)}</h1>`}
       ${body}
       </div>
@@ -1257,6 +1429,9 @@ const views = {
       const g = me?.grids ?? 0, f = me?.found ?? 0;
       banner = !me ? '<div class="result none">Aucun mot trouvé</div>'
         : `<div class="result ${me.rank === 1 ? 'good' : me.points ? '' : 'bad'}">${me.rank === 1 ? '1ᵉʳ !' : `${me.rank}ᵉ`}<small>${g} grille${g > 1 ? 's' : ''} validée${g > 1 ? 's' : ''} · ${f} mot${f > 1 ? 's' : ''} dans la suivante · +${me.points} pts</small></div>`;
+    } else if (me?.self) {
+      const good = me.correct;
+      banner = `<div class="result ${good ? 'good' : 'bad'}">${good ? 'Tu te connais bien !' : 'Même toi, tu ne savais pas !'}<small>Question sur toi : pas de points${r.kind === 'estimation' ? ` · ${esc(me.errorText)}` : ''}</small></div>`;
     } else if (!me) banner = `<div class="result none">${TYPED_KINDS.includes(r.kind) && r.yourMisses ? 'Pas trouvé' : 'Pas de réponse'}</div>`;
     else if (r.kind === 'estimation') {
       const title = me.exact ? 'Pile poil !' : me.rank === 1 ? 'Le plus proche !' : `${me.rank}ᵉ`;
@@ -1336,8 +1511,8 @@ const views = {
         <ul class="list">
           ${rv.results.map((x) => `
             <li class="${x.playerId === state.you ? 'me' : ''}">
-              <span class="pos">${x.rank}</span>
-              <span class="grow">${esc(x.name)}<span class="sub">${esc(x.answerText)} · ${esc(x.errorText)}</span></span>
+              <span class="pos">${x.rank ?? '–'}</span>
+              <span class="grow">${esc(x.name)}${x.self ? ' <em class="muted">(sa question)</em>' : ''}<span class="sub">${esc(x.answerText)} · ${esc(x.errorText)}</span></span>
               <span class="delta">+${x.points}</span>
             </li>`).join('')}
         </ul>`;
@@ -1360,6 +1535,7 @@ const views = {
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
       ${banner}
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
+      ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}
       <section class="card">
         <h2>Classement</h2>
@@ -1453,13 +1629,15 @@ function render() {
   const input = $('#est-input') || $('#guess-input') || $('#cw-word');
   const keep = input ? { value: input.value, focus: document.activeElement === input } : null;
   const nameVal = $('#name')?.value;
+  const steamIn = $('#steam-input');
+  const steamKeep = steamIn ? { value: steamIn.value, focus: document.activeElement === steamIn } : null;
   const codeVal = $('#code')?.value;
 
   // On ne remplace pas l'écran : on met à jour seulement ce qui a changé (voir morph).
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay();
+  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
@@ -1476,12 +1654,18 @@ function render() {
       newInput.focus();
     }
   }
+  const steamNew = $('#steam-input');
+  if (steamNew && steamKeep) {
+    steamNew.value = steamKeep.value;
+    if (steamKeep.focus && document.activeElement !== steamNew) steamNew.focus();
+  }
   if (phase === 'home') {
     if (nameVal) $('#name').value = nameVal;
     if (codeVal) $('#code').value = codeVal;
   }
   if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;
+  updatePropose();
   updateTimers();
 }
 

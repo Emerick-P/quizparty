@@ -57,11 +57,13 @@ export class RoomManager {
           payload = {};
         }
         const reply = typeof ack === 'function' ? ack : () => {};
+        const fail = (err) => reply({ error: err?.message || 'Erreur inattendue' });
         try {
           const res = handler(payload && typeof payload === 'object' ? payload : {});
-          reply(res ?? { ok: true });
+          if (res && typeof res.then === 'function') res.then((x) => reply(x ?? { ok: true }), fail);
+          else reply(res ?? { ok: true });
         } catch (err) {
-          reply({ error: err.message || 'Erreur inattendue' });
+          fail(err);
         }
       });
     };
@@ -125,6 +127,17 @@ export class RoomManager {
     on('game:pause', hostOnly((room) => room.pause()));
     on('game:resume', hostOnly((room) => room.resume()));
     on('game:report', hostOnly((room, payload) => room.report(socket.data.playerId, payload)));
+
+    on('steam:link', ({ profile }) => {
+      const room = this.roomOf(socket);
+      if (!room) throw new Error("Tu n'es dans aucun salon");
+      return room.linkSteam(socket.data.playerId, profile);
+    });
+    on('steam:unlink', () => {
+      const room = this.roomOf(socket);
+      if (!room) throw new Error("Tu n'es dans aucun salon");
+      room.unlinkSteam(socket.data.playerId);
+    });
 
     on('game:answer', (payload) => {
       const room = this.roomOf(socket);

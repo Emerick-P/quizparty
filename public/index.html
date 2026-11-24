@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#14102a">
+  <meta name="theme-color" content="#22262e">
   <title>QuizParty</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2314102a'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' font-family='Arial' font-weight='bold' fill='%23ffcf3f'%3E%3F%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,10 +12,22 @@
   <link rel="stylesheet" href="/style.css">
   <!-- Habillage du salon : supprimer la ligne suivante pour revenir à l'ancien graphisme -->
   <link rel="stylesheet" href="/theme.css">
+  <!-- Habillage « Plateau TV » (clair/sombre) : supprimer la ligne suivante pour revenir au précédent -->
+  <link rel="stylesheet" href="/plateau.css">
+  <script>try { if (JSON.parse(localStorage.getItem('quizparty:theme')) === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
 </head>
 <body>
   <div id="conn" class="conn-banner" hidden>Connexion perdue — reconnexion…</div>
   <div id="app"></div>
+  <div id="propose" class="propose-panel" hidden>
+    <div class="propose-sheet" role="dialog" aria-modal="true" aria-label="Proposer du contenu">
+      <div class="propose-head">
+        <b>💡 Proposer</b>
+        <button id="propose-close" class="btn small ghost" type="button">✕ Fermer</button>
+      </div>
+      <button id="propose-live" class="propose-live" type="button" hidden></button>
+    </div>
+  </div>
   <div id="toast" class="toast" hidden></div>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/app.js"></script>

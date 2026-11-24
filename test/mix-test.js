@@ -143,7 +143,7 @@ withCovers(true);
   const inputOf = (r) => (r.kind === 'typed' ? 'text' : r.kind === 'qcm' ? 'choice' : r.input);
   for (let g = 0; g < 50; g++) {
     // (HUD et chargements seuls n'ont pas assez d'images pour 10 manches : le Mix complète avec des questions)
-    const only = [...MIX_PARTS.filter((x) => !['hud', 'loading'].includes(x))].sort(() => Math.random() - 0.5).slice(0, 1 + (g % 4));
+    const only = [...MIX_PARTS.filter((x) => !['hud', 'loading', 'bande'].includes(x))].sort(() => Math.random() - 0.5).slice(0, 1 + (g % 4));
     const rounds = MODES.mix.build(10, new Set(), { mixInput: 'mixed', mixParts: only, level: 'easy' });
     assert.equal(rounds.length, 10);
     for (const r of rounds) assert.ok(only.includes(r.mixPart), `${r.mixPart} pas coché (${only.join(', ')})`);

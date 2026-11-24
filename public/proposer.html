@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#14102a">
+  <meta name="theme-color" content="#22262e">
   <title>Proposer · QuizParty</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2314102a'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' font-family='Arial' font-weight='bold' fill='%23ffcf3f'%3E%3F%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,6 +12,9 @@
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/theme.css">
   <link rel="stylesheet" href="/proposer.css">
+  <!-- Habillage « Plateau TV » (clair/sombre) : supprimer la ligne suivante pour revenir au précédent -->
+  <link rel="stylesheet" href="/plateau.css">
+  <script>try { if (JSON.parse(localStorage.getItem('quizparty:theme')) === 'light') document.documentElement.dataset.theme = 'light'; } catch (e) {}</script>
 </head>
 <body>
   <main class="screen submit">
@@ -28,6 +31,7 @@
       <p class="big-check">✓</p>
       <p><b>Merci !</b> Ta proposition est bien arrivée. Elle sera vérifiée avant d’apparaître en jeu.</p>
       <button class="btn primary" id="again" type="button">Proposer autre chose</button>
+      <button class="btn" id="back" type="button" hidden>Retour au jeu</button>
     </div>
     <datalist id="games"></datalist>
   </main>

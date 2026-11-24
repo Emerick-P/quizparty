@@ -17,7 +17,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BUCKET = 'submissions';
 
 function supabaseBackend(url, key) {
-  const base = url.replace(/\/+$/, '');
+  // Tolère une URL copiée avec /rest/v1 à la fin (« Data API » de Supabase)
+  const base = url.trim().replace(/\/+$/, '').replace(/\/(rest|storage)\/v1$/, '');
   // Nouvelles clés (sb_secret_…) : en-tête apikey seul. Anciennes clés JWT (service_role) : apikey + Bearer.
   const auth = key.startsWith('eyJ') ? { apikey: key, Authorization: `Bearer ${key}` } : { apikey: key };
   async function call(method, p, { body, headers = {}, raw = false } = {}) {
