@@ -329,7 +329,8 @@ const actions = {
 // =====================================================================  proposer
 // Le formulaire /proposer s'ouvre dans un panneau par-dessus le jeu (iframe de la même origine) :
 // la page du jeu et sa connexion restent en place, le brouillon est gardé quand on ferme.
-const PROPOSE_PHASES = ['lobby', 'reveal', 'end'];
+// Bouton seulement dans le salon (choix du client : ne pas casser le rythme d'une partie).
+const PROPOSE_PHASES = ['lobby', 'end'];
 const proposeButton = (label = 'Une idée de question, de pitch, de son ? Proposer') =>
   `<button class="btn small ghost propose-btn" data-action="propose">💡 ${esc(label)}</button>`;
 const proposePanel = () => $('#propose');
@@ -1417,7 +1418,6 @@ const views = {
         </ul>
       </section>
       ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
-      ${proposeButton('Une idée ? Proposer')}
       ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
     </main>`;
   },
@@ -1450,7 +1450,6 @@ const views = {
       ${isHost()
         ? '<button class="btn primary big sticky-bottom" data-action="lobby">Nouvelle partie</button>'
         : '<p class="waiting">En attente de l\'hôte pour une nouvelle partie</p>'}
-      ${proposeButton()}
       <button class="link" data-action="leave">Quitter le salon</button>
     </main>`;
   },
