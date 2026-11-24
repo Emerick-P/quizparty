@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { gameImage } from '../steam.js';
+import { normalize, baseTitles } from './fuzzy.js';
 
 /**
  * « Ta bande » : questions tirées des profils Steam liés par les joueurs du salon.
@@ -71,10 +72,39 @@ function topGame(p) {
   }];
 }
 
+// ---- Pile de la honte : on écarte les « jeux » qu'on n'est pas censé lancer
+
+/** Bêtas, démos, serveurs, outils, bandes-son… : présents dans la bibliothèque, mais pas des jeux à proprement parler. */
+const JUNK = /\b(beta|playtest|public test|test server|pts|demo|prologue|dedicated server|server|sdk|editor|toolkit|tools?|benchmark|soundtrack|ost|artbook|art book|wallpaper|launcher|vr mod|bonus content|dlc|season pass|trailer|teaser)\b/i;
+
+/** Titre sans mention d'édition ni « classic »/« legacy » : sert à repérer deux éditions d'un même jeu. */
+const LEGACY = /(?:\s*[:\-–—(]\s*|\s+)(?:classic|legacy|original|redux|reloaded|enhanced|remastered|remaster|definitive|anniversary|hd)(?:\s+(?:edition|version))?\s*\)?\s*$/i;
+const familyKey = (name) => {
+  let t = baseTitles(name).at(-1) ?? name;
+  for (let i = 0; i < 2; i++) t = t.replace(LEGACY, '').trim() || t;
+  return normalize(t.replace(/[™®©]/g, ''));
+};
+
+/**
+ * Jeux jamais lancés qui ont du sens pour la pile de la honte :
+ * - pas une bêta, une démo, un serveur, un outil… (JUNK) ;
+ * - pas l'autre édition d'un jeu auquel le joueur a joué (vendu avec le remaster, le classique…) ;
+ * - de préférence un jeu que quelqu'un d'autre de la bande a lancé : c'est la preuve que c'est un vrai jeu.
+ * Exporté pour les tests.
+ */
+export function shameCandidates(p, linked = []) {
+  const playedFamilies = new Set(p.steam.games.filter((g) => g.minutes > 0).map((g) => familyKey(g.name)));
+  const never = p.steam.games.filter((g) => g.minutes === 0 && !JUNK.test(g.name) && !playedFamilies.has(familyKey(g.name)));
+  const byOthers = new Set();
+  for (const o of linked) if (o.id !== p.id) for (const g of o.steam.games) if (g.minutes >= 60) byOthers.add(g.appid);
+  const proven = never.filter((g) => byOthers.has(g.appid));
+  return proven.length ? proven : never;
+}
+
 /** La pile de la honte : lequel de ces jeux X n'a jamais lancé ? (3 jeux auxquels il a joué au moins 1 h) */
-function shame(p) {
-  const never = p.steam.games.filter((g) => g.minutes === 0);
-  const played = p.steam.games.filter((g) => g.minutes >= 60);
+function shame(p, linked) {
+  const never = shameCandidates(p, linked);
+  const played = p.steam.games.filter((g) => g.minutes >= 60 && !JUNK.test(g.name));
   if (!never.length || played.length < 3) return [];
   return shuffle(never).slice(0, 6).map((g) => {
     const key = `shame:${p.steam.id}:${g.appid}`;
@@ -183,7 +213,7 @@ export function buildBande(n, used, ctx) {
   if (why) throw new Error(why);
 
   // Questions possibles, rangées par joueur concerné ; les questions de groupe comptent comme un « joueur » de plus
-  const all = new Map(linked.map((p) => [p.id, [...topGame(p), ...shame(p), ...hours(p)]]));
+  const all = new Map(linked.map((p) => [p.id, [...topGame(p), ...shame(p, linked), ...hours(p)]]));
   const group = [...mostHours(linked), ...recent(linked)];
   if (group.length) all.set(GROUP, group);
   const slots = [...all.keys()];

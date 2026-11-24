@@ -5,7 +5,7 @@ import http from 'node:http';
 import { io } from 'socket.io-client';
 import assert from 'node:assert/strict';
 import { parseProfile } from '../server/steam.js';
-import { buildBande } from '../server/games/bande.js';
+import { buildBande, shameCandidates } from '../server/games/bande.js';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -76,6 +76,18 @@ for (let t = 0; t < 30; t++) {
   }
 }
 assert.throws(() => buildBande(5, new Set(), { players: ctx.players.slice(0, 1) }), /2 joueurs/);
+
+// ---- Pile de la honte : bêtas, éditions doublons et préférence pour les jeux lancés par les autres
+{
+  const g = (appid, name, minutes) => ({ appid, name, minutes, recent: 0 });
+  const me = { id: 'x', steam: { games: [g(1, 'Skyrim Special Edition', 9000), g(2, 'The Elder Scrolls V: Skyrim', 0), g(3, 'Halo Infinite Beta', 0),
+    g(4, 'Dead Space (2008)', 0), g(5, 'Tomb Raider', 0), g(6, 'Counter-Strike 2 Dedicated Server', 0), g(7, 'Bioshock', 600), g(8, 'BioShock Remastered', 0), g(9, 'Outer Wilds', 0)] } };
+  const names = shameCandidates(me).map((x) => x.name).sort();
+  for (const n of ['Dead Space (2008)', 'Tomb Raider', 'Outer Wilds']) assert.ok(names.includes(n), `${n} gardé`);
+  assert.ok(!names.includes('Halo Infinite Beta') && !names.includes('BioShock Remastered') && !names.includes('Counter-Strike 2 Dedicated Server'));
+  const friend = { id: 'y', steam: { games: [g(9, 'Outer Wilds', 1200)] } };
+  assert.deepEqual(shameCandidates(me, [me, friend]).map((x) => x.name), ['Outer Wilds'], 'de préférence un jeu lancé par un autre');
+}
 
 // ---- Partie réelle
 const PORT = 3994;
