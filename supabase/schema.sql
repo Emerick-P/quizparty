@@ -67,3 +67,8 @@ create table if not exists public.meta (
   updated_at timestamptz not null default now()
 );
 alter table public.meta enable row level security;
+
+-- Droits du serveur (clé secrète = rôle service_role). Les projets Supabase récents ne les donnent plus
+-- automatiquement aux nouvelles tables : sans ces lignes, l'API répond « permission denied ».
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.submissions, public.reports, public.content, public.meta to service_role;
