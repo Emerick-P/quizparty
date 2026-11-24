@@ -110,6 +110,7 @@ function page({ next, error = '' }) {
   input { background: #241d47; color: #fff; text-align: center; font-size: 1.2rem; outline: 2px solid transparent; }
   input:focus { outline-color: #ffcf3f; }
   button { margin-top: 12px; background: #ffcf3f; color: #14102a; font-weight: 700; cursor: pointer; }
+  .why { font-size: .85rem; color: #8d86ad; margin: -8px 0 20px; }
   .err { color: #ff7a8a; margin: 12px 0 0; }
 </style>
 </head>
@@ -117,6 +118,7 @@ function page({ next, error = '' }) {
 <main>
   <h1>QuizParty</h1>
   <p>Entre le code d’accès que t’a donné l’organisateur.</p>
+  <p class="why">C’est un petit site perso entre amis, hébergé gratuitement, avec du contenu qu’on ne peut pas diffuser publiquement : le code se passe de pote à pote, pas sur un forum ni sur les réseaux 🙂</p>
   <form method="post" action="/entree">
     <input type="hidden" name="next" value="${esc(next)}">
     <input name="code" type="password" autocomplete="current-password" placeholder="Code d’accès" aria-label="Code d’accès" required autofocus>
