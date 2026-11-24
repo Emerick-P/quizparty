@@ -37,6 +37,20 @@ const store = {
 };
 const SESSION_KEY = 'quizparty:session';
 const NAME_KEY = 'quizparty:name';
+const THEME_KEY = 'quizparty:theme';
+
+/** Thème clair / sombre (sombre par défaut), mémorisé sur l'appareil. Appliqué dès le <head> par index.html. */
+const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  store.set(THEME_KEY, theme);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#eceef3' : '#22262e');
+}
+const themeToggle = () => {
+  const light = currentTheme() === 'light';
+  return `<div class="theme-toggle" role="group" aria-label="Thème">${[['light', 'Clair'], ['dark', 'Obscur']].map(([t, label]) =>
+    `<button type="button" data-action="theme" data-value="${t}" aria-pressed="${(t === 'light') === light}">${label}</button>`).join('')}</div>`;
+};
 
 /** Énigme du jeu en emojis : chaque groupe (séparé par une espace) reste d'un seul tenant. */
 function emojiLine(emojis, small = false) {
@@ -240,6 +254,7 @@ async function share() {
 }
 
 const actions = {
+  theme(btn) { setTheme(btn.dataset.value === 'light' ? 'light' : 'dark'); render(); },
   async create() {
     const name = getName(); if (!name) return;
     const res = await send('room:create', { name });
@@ -1105,6 +1120,7 @@ const views = {
 
   home: () => `
     <main class="screen">
+      <div class="home-top">${themeToggle()}</div>
       <div class="brand">
         <div class="logo">Quiz<b>Party</b></div>
         <p>Le quiz jeu vidéo entre potes</p>
@@ -1140,7 +1156,7 @@ const views = {
     // Téléphone : une seule colonne, dans le même ordre.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-count muted">${state.players.length} joueur${state.players.length > 1 ? 's' : ''}</span></div>
+      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${state.players.length} joueur${state.players.length > 1 ? 's' : ''}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
