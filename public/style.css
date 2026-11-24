@@ -87,11 +87,11 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 @keyframes blink { 50% { opacity: 0; } }
 .brand p { color: var(--muted); margin: 10px 0 0; }
 .field { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: .9rem; color: var(--muted); }
-.field input, .code-input, .est input {
+.field input, .code-input, .est input, .steam-form input {
   background: rgba(0,0,0,.25); border: 2px solid var(--card-border); color: var(--text);
   border-radius: 14px; padding: 14px; font-size: 1.1rem; outline: none; width: 100%;
 }
-.field input:focus, .code-input:focus, .est input:focus { border-color: var(--accent); }
+.field input:focus, .code-input:focus, .est input:focus, .steam-form input:focus { border-color: var(--accent); }
 .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .85rem; }
 .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
 .row { display: flex; gap: 10px; }
@@ -588,3 +588,20 @@ body.propose-on { overflow: hidden; }
   .propose-panel { align-items: center; }
   .propose-sheet { width: min(720px, calc(100% - 48px)); height: min(860px, calc(100% - 48px)); border-radius: 20px; border-bottom: 1px solid var(--card-border); }
 }
+
+/* ---- Ta bande (profils Steam) */
+.steam-dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: #1b2838; color: #66c0f4; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.steam-card h2 .muted { font-size: .7em; font-weight: 500; }
+.steam-form { display: flex; gap: 8px; }
+.steam-form input { flex: 1; min-width: 0; padding: 10px; font-size: .95rem; }
+.steam-me { display: flex; align-items: center; gap: 10px; }
+.steam-me img { width: 40px; height: 40px; border-radius: 6px; }
+.steam-me .grow { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.steam-me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.steam-warn { margin: 0 0 8px; font-size: .9em; color: #ffb020; }
+.steam-warn a { color: inherit; }
+.game-pic { margin: 8px auto; max-width: 460px; width: 100%; }
+.game-pic img { display: block; width: 100%; aspect-ratio: 460 / 215; object-fit: cover; border-radius: 10px; }
+.game-pic.done { max-width: 340px; }
+.about-line { margin: 4px 0 0; text-align: center; font-size: .9em; opacity: .85; }
+.about-line.me { color: #ffcf3f; opacity: 1; font-weight: 600; }

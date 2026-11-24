@@ -22,11 +22,13 @@ const MODE_GROUPS = [
   { name: 'Culture jeu vidéo', ids: ['quiz', 'vraifaux', 'estimation'] },
   { name: 'Devine le jeu', ids: ['covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds'] },
   { name: 'Lettres et mélange', ids: ['crossword', 'mix'] },
+  { name: 'Entre amis', ids: ['bande'] },
 ];
 const MODE_ART = {
   quiz: ['🧠', '#7c5cff'], vraifaux: ['⚖️', '#3d8bff'], estimation: ['🎯', '#ff8a3d'],
   covers: ['🖼️', '#ff5d73'], pitch: ['💬', '#2fc47a'], emoji: ['😜', '#ffb020'], hud: ['🎮', '#00b8d9'],
   loading: ['⏳', '#a35cff'], sounds: ['🔊', '#ff4fa3'], crossword: ['✏️', '#5fcf3f'], mix: ['🎲', '#ffcf3f'],
+  bande: ['👥', '#3fb6ff'],
 };
 const modeArt = (id) => MODE_ART[id] || ['🕹️', '#8a7fd0'];
 
@@ -38,6 +40,7 @@ const store = {
 const SESSION_KEY = 'quizparty:session';
 const NAME_KEY = 'quizparty:name';
 const THEME_KEY = 'quizparty:theme';
+const STEAM_KEY = 'quizparty:steam'; // adresse du profil Steam, retenue sur l'appareil
 
 /** Thème clair / sombre (sombre par défaut), mémorisé sur l'appareil. Appliqué dès le <head> par index.html. */
 const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -142,9 +145,22 @@ socket.on('state', (s) => {
   if (s.round?.image) loadImage(s.round.image.url);
   if (s.round?.sound) loadSound(s.round.sound.url);
   if (s.preload) (s.preload.startsWith('/sfx/') ? loadSound : loadImage)(s.preload);
+  if (s.round?.picture) loadImage(s.round.picture.url);
   if (pending && (!s.round || s.round.id !== pending.roundId || s.round.yourAnswer !== null)) pending = null;
+  autoLinkSteam();
   render();
 });
+
+/** Profil Steam retenu sur l'appareil : relié tout seul en entrant dans un salon (une fois par salon). */
+let steamAutoFor = null;
+function autoLinkSteam() {
+  const me = state?.players?.find((p) => p.id === state.you);
+  const saved = store.get(STEAM_KEY);
+  const key = `${state?.code}:${state?.you}`;
+  if (!me || me.steam || !saved || steamAutoFor === key) return;
+  steamAutoFor = key;
+  send('steam:link', { profile: saved });
+}
 socket.on('srv:ping', (_t, ack) => { if (typeof ack === 'function') ack(); });
 socket.on('kicked', () => leaveLocal("L'hôte t'a retiré du salon"));
 socket.on('session:replaced', () => {
@@ -294,6 +310,18 @@ const actions = {
     if (r.error) return toast(r.error);
     toast('Score global remis à zéro');
   },
+  async steamLink() {
+    const profile = ($('#steam-input')?.value || '').trim();
+    if (!profile) return toast('Colle l\'adresse de ton profil Steam');
+    store.set(STEAM_KEY, profile);
+    const r = await send('steam:link', { profile });
+    if (r.error) toast(r.error);
+  },
+  async steamUnlink() {
+    store.del(STEAM_KEY);
+    const r = await send('steam:unlink');
+    if (r.error) toast(r.error);
+  },
   async kick(btn) { const r = await send('room:kick', { playerId: btn.dataset.id }); if (r.error) toast(r.error); },
   async set(btn) {
     const r = await send('room:settings', { [btn.dataset.key]: btn.dataset.value });
@@ -404,6 +432,8 @@ document.addEventListener('submit', (e) => {
     answer(guess);
   } else if (e.target.matches('[data-form="join"]')) {
     actions.join();
+  } else if (e.target.matches('[data-form="steam"]')) {
+    actions.steamLink();
   }
 });
 
@@ -1008,6 +1038,45 @@ function pauseOverlay() {
     </div>
   </form></div>`;
 }
+// ---- Ta bande (profils Steam)
+
+/** Image d'un jeu Steam (bannière de la boutique), cachée si elle ne charge pas. */
+const gamePicture = (pic, done = false) => `<figure class="game-pic ${done ? 'done' : ''}"><img src="${esc(pic.url)}" alt="${esc(pic.alt || '')}" referrerpolicy="no-referrer" onerror="this.parentNode.hidden=true"></figure>`;
+
+/** Bandeau « question sur X » : X répond sans marquer. */
+function aboutLine(r) {
+  if (!r.about) return '';
+  return r.about.id === state.you
+    ? '<p class="about-line me">C\'est sur toi ! Réponds quand même, mais tu ne marques pas.</p>'
+    : `<p class="about-line">Question sur <b>${esc(r.about.name)}</b> · ${esc(r.about.name)} ne marque pas</p>`;
+}
+
+/** Salon : lier son profil Steam (facultatif), pour le mode « Ta bande ». */
+function steamCard() {
+  const me = state.players.find((p) => p.id === state.you);
+  const st = me?.steam;
+  const linked = state.players.filter((p) => p.steam?.status === 'ok').length;
+  let body;
+  if (st?.status === 'loading') body = '<p class="muted">Chargement du profil…</p>';
+  else if (st?.status === 'ok') {
+    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
+  } else {
+    const msg = st?.status === 'private'
+      ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Profil » et « Détails des jeux » en <b>Public</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a>), puis relie-le.</p>`
+      : st?.status === 'error' ? `<p class="steam-warn">${esc(st.message)}</p>` : '';
+    body = `${msg}<form class="steam-form" data-form="steam">
+        <input id="steam-input" autocomplete="off" placeholder="steamcommunity.com/id/…" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
+        <button class="btn small" type="submit">${st ? 'Réessayer' : 'Lier'}</button>
+      </form>
+      ${st?.status === 'private' ? '<button class="link" data-action="steamUnlink">Jouer sans mon profil</button>' : ''}`;
+  }
+  return `<section class="card steam-card">
+    <h2>Ton Steam <span class="muted">facultatif</span></h2>
+    ${body}
+    <p class="opt-hint">Pour le jeu « Ta bande » : ${linked} joueur${linked > 1 ? 's' : ''} lié${linked > 1 ? 's' : ''}. Tes jeux et tes heures servent aux questions, rien n'est enregistré.</p>
+  </section>`;
+}
+
 const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`;
 // À score égal, le départage éventuel (mots croisés : premier à avoir trouvé son dernier mot)
 const sortedByScore = () => [...state.players].sort((a, b) => b.score - a.score || (a.tiebreak ?? Infinity) - (b.tiebreak ?? Infinity));
@@ -1171,11 +1240,13 @@ const views = {
             <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
               ${avatar(p.name)}
               <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
+              ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
               ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
               ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
             </li>`).join('')}
         </ul>
       </section>
+      ${steamCard()}
       ${globalBoard()}
       ${proposeButton()}
       </div>
@@ -1287,6 +1358,8 @@ const views = {
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
       ${['pitch', 'emoji', 'sound'].includes(r.kind) ? `<h1 class="prompt small">${esc(r.prompt)}</h1>` : ''}
+      ${aboutLine(r)}
+      ${r.picture ? gamePicture(r.picture) : ''}
       ${GUESS_KINDS.includes(r.kind) ? media : `<h1 class="prompt">${esc(r.prompt)}</h1>`}
       ${body}
       </div>
@@ -1317,6 +1390,9 @@ const views = {
       const g = me?.grids ?? 0, f = me?.found ?? 0;
       banner = !me ? '<div class="result none">Aucun mot trouvé</div>'
         : `<div class="result ${me.rank === 1 ? 'good' : me.points ? '' : 'bad'}">${me.rank === 1 ? '1ᵉʳ !' : `${me.rank}ᵉ`}<small>${g} grille${g > 1 ? 's' : ''} validée${g > 1 ? 's' : ''} · ${f} mot${f > 1 ? 's' : ''} dans la suivante · +${me.points} pts</small></div>`;
+    } else if (me?.self) {
+      const good = me.correct;
+      banner = `<div class="result ${good ? 'good' : 'bad'}">${good ? 'Tu te connais bien !' : 'Même toi, tu ne savais pas !'}<small>Question sur toi : pas de points${r.kind === 'estimation' ? ` · ${esc(me.errorText)}` : ''}</small></div>`;
     } else if (!me) banner = `<div class="result none">${TYPED_KINDS.includes(r.kind) && r.yourMisses ? 'Pas trouvé' : 'Pas de réponse'}</div>`;
     else if (r.kind === 'estimation') {
       const title = me.exact ? 'Pile poil !' : me.rank === 1 ? 'Le plus proche !' : `${me.rank}ᵉ`;
@@ -1396,8 +1472,8 @@ const views = {
         <ul class="list">
           ${rv.results.map((x) => `
             <li class="${x.playerId === state.you ? 'me' : ''}">
-              <span class="pos">${x.rank}</span>
-              <span class="grow">${esc(x.name)}<span class="sub">${esc(x.answerText)} · ${esc(x.errorText)}</span></span>
+              <span class="pos">${x.rank ?? '–'}</span>
+              <span class="grow">${esc(x.name)}${x.self ? ' <em class="muted">(sa question)</em>' : ''}<span class="sub">${esc(x.answerText)} · ${esc(x.errorText)}</span></span>
               <span class="delta">+${x.points}</span>
             </li>`).join('')}
         </ul>`;
@@ -1420,6 +1496,7 @@ const views = {
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
       ${banner}
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
+      ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}
       <section class="card">
         <h2>Classement</h2>
@@ -1513,6 +1590,8 @@ function render() {
   const input = $('#est-input') || $('#guess-input') || $('#cw-word');
   const keep = input ? { value: input.value, focus: document.activeElement === input } : null;
   const nameVal = $('#name')?.value;
+  const steamIn = $('#steam-input');
+  const steamKeep = steamIn ? { value: steamIn.value, focus: document.activeElement === steamIn } : null;
   const codeVal = $('#code')?.value;
 
   // On ne remplace pas l'écran : on met à jour seulement ce qui a changé (voir morph).
@@ -1535,6 +1614,11 @@ function render() {
     } else if (renderedPhase !== 'question') {
       newInput.focus();
     }
+  }
+  const steamNew = $('#steam-input');
+  if (steamNew && steamKeep) {
+    steamNew.value = steamKeep.value;
+    if (steamKeep.focus && document.activeElement !== steamNew) steamNew.focus();
   }
   if (phase === 'home') {
     if (nameVal) $('#name').value = nameVal;

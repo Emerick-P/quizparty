@@ -5,6 +5,7 @@ import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback } from './feedback.js';
+import { loadProfile, PRIVACY_URL } from './steam.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
@@ -87,6 +88,7 @@ export class Room {
       wins: 0,  // parties gagnées (ex aequo compris)
       rtt: 80,
       timers: {},
+      steam: null, // profil Steam lié (voir linkSteam) : { status, input, name, avatar, id, games, message }
     };
     // Un joueur parti puis revenu avec le même pseudo retrouve son score global
     const key = player.name.toLowerCase();
@@ -184,6 +186,59 @@ export class Room {
     return [...this.players.values()].filter((p) => p.connected);
   }
 
+  // ------------------------------------------------------------------ profils Steam (« Ta bande »)
+
+  /** Ce qui dépend du salon pour les modes : les joueurs et leur profil Steam. */
+  ctx() {
+    return { players: [...this.players.values()].map((p) => ({ id: p.id, name: p.name, steam: p.steam })) };
+  }
+
+  /**
+   * Lie le profil Steam d'un joueur (adresse du profil, identifiant personnalisé ou SteamID64).
+   * Le chargement prend une seconde ou deux : le joueur voit « chargement » puis le résultat.
+   * Les questions de la partie en cours ne changent pas (elles sont tirées au lancement).
+   */
+  async linkSteam(playerId, input) {
+    const player = this.players.get(playerId);
+    if (!player) throw new Error("Tu n'es dans aucun salon");
+    const raw = String(input ?? '').trim().slice(0, 200);
+    if (!raw) throw new Error('Colle l\'adresse de ton profil Steam');
+    const seq = (player.steamSeq = (player.steamSeq ?? 0) + 1);
+    player.steam = { status: 'loading', input: raw };
+    this.broadcast();
+    try {
+      const data = await loadProfile(raw);
+      if (player.steamSeq !== seq || !this.players.has(playerId)) return { ok: true };
+      player.steam = { ...data, input: raw };
+    } catch (err) {
+      if (player.steamSeq !== seq || !this.players.has(playerId)) return { ok: true };
+      player.steam = { status: 'error', input: raw, message: err.message };
+    }
+    this.broadcast();
+    return { ok: true, status: player.steam.status, message: player.steam.message ?? null };
+  }
+
+  unlinkSteam(playerId) {
+    const player = this.players.get(playerId);
+    if (!player) throw new Error("Tu n'es dans aucun salon");
+    player.steamSeq = (player.steamSeq ?? 0) + 1;
+    player.steam = null;
+    this.broadcast();
+  }
+
+  /** Ce que les autres voient du profil Steam d'un joueur (jamais la liste de ses jeux). */
+  steamView(p, mine) {
+    const st = p.steam;
+    if (!st) return null;
+    return {
+      status: st.status,
+      name: st.name ?? null,
+      avatar: st.avatar ?? null,
+      games: st.games?.length ?? 0,
+      ...(mine ? { input: st.input, message: st.message ?? null, profileUrl: st.profileUrl ?? null, privacyUrl: PRIVACY_URL } : {}),
+    };
+  }
+
   // ------------------------------------------------------------------ latence
 
   /** Mesure l'aller-retour serveur → client → serveur, lissé dans le temps. */
@@ -208,7 +263,7 @@ export class Room {
     if (!['lobby', 'end'].includes(this.phase)) throw new Error('Partie en cours');
     if (s.mode !== undefined) {
       if (!MODES[s.mode]) throw new Error('Mode inconnu');
-      const why = MODES[s.mode].unavailable?.();
+      const why = MODES[s.mode].unavailable?.(this.ctx());
       if (why) throw new Error(why);
       this.settings.mode = s.mode;
     }
@@ -263,7 +318,9 @@ export class Room {
   start() {
     if (!['lobby', 'end'].includes(this.phase)) throw new Error('Partie déjà en cours');
     const mode = MODES[this.settings.mode];
-    this.rounds = mode.build(this.settings.rounds, this.used, this.settings);
+    const why = mode.unavailable?.(this.ctx());
+    if (why) throw new Error(why);
+    this.rounds = mode.build(this.settings.rounds, this.used, this.settings, this.ctx());
     if (!this.rounds.length) throw new Error('Aucune question disponible');
     for (const p of this.players.values()) {
       p.score = 0;
@@ -479,7 +536,14 @@ export class Room {
     for (const id of r.answers.keys()) if (!this.players.has(id)) r.answers.delete(id);
 
     const kind = KINDS[r.kind];
-    const scored = kind.score(r, r.answers);
+    // Question sur un joueur (« Ta bande ») : il peut répondre, mais ne marque pas et ne compte pas dans
+    // le classement de la manche (sinon il prendrait la 1re place des estimations à coup sûr)
+    const self = r.about && r.answers.has(r.about) ? r.answers.get(r.about) : null;
+    const scored = kind.score(r, self ? new Map([...r.answers].filter(([pid]) => pid !== r.about)) : r.answers);
+    if (self) {
+      const own = kind.score(r, new Map([[r.about, self]])).get(r.about) ?? {};
+      scored.set(r.about, { ...own, correct: own.exact ?? own.correct, rank: undefined, points: 0, self: true });
+    }
     for (const p of this.players.values()) {
       p.lastPoints = scored.get(p.id)?.points ?? 0;
       p.score += p.lastPoints;
@@ -510,7 +574,7 @@ export class Room {
         if (res) { if (!res.correct) res.guesses = guesses; } else missed.push({ playerId: pid, name: player.name, guesses });
       }
     }
-    this.reveal = { ...kind.reveal(r, r.answers), info: r.info ?? null, results, ...(missed ? { missed } : {}) };
+    this.reveal = { ...kind.reveal(r, r.answers), info: r.info ?? null, picture: r.revealPicture ?? null, results, ...(missed ? { missed } : {}) };
     const now = Date.now();
     // Correction plus longue pour une grille : on a le temps de lire la solution
     this.setPhase('reveal', now, now + REVEAL_MS * (kind.revealFactor ?? 1));
@@ -622,7 +686,7 @@ export class Room {
       you: pid,
       serverNow: Date.now(),
       settings: this.settings,
-      options: { modes: modeList(), ...OPTIONS },
+      options: { modes: modeList(this.ctx()), ...OPTIONS },
       phaseStartedAt: this.phaseStartedAt,
       phaseEndsAt: this.phaseEndsAt,
       gamesPlayed: this.gamesPlayed,
@@ -642,6 +706,7 @@ export class Room {
         tiebreak: p.tiebreak ?? null, // départage des ex aequo (mots croisés), plus petit = mieux classé
         // Mots croisés : grilles validées et mots trouvés dans la grille en cours (jamais lesquels)
         progress: kind?.progressOf ? kind.progressOf(r, r.answers.get(p.id)?.value) : null,
+        steam: this.steamView(p, p.id === pid),
       })),
       round: inRound
         ? {
@@ -650,6 +715,9 @@ export class Room {
             total: this.rounds.length,
             kind: r.kind,
             ...KINDS[r.kind].publicRound(r),
+            // « Ta bande » : image du jeu et joueur concerné (il répond sans marquer)
+            picture: r.picture ?? null,
+            about: r.about ? { id: r.about, name: this.players.get(r.about)?.name ?? '?' } : null,
             startsAt: r.startsAt,
             endsAt: r.endsAt,
             durationMs: r.durationMs,
@@ -667,7 +735,7 @@ export class Room {
         : null,
       reveal: this.phase === 'reveal' ? this.reveal : null,
       // Image de la manche suivante, préchargée pendant la correction : elle sera prête pour tous à l'heure
-      preload: this.phase === 'reveal' ? this.rounds[this.roundIndex + 1]?.image?.url ?? this.rounds[this.roundIndex + 1]?.sound?.url ?? null : null,
+      preload: this.phase === 'reveal' ? this.rounds[this.roundIndex + 1]?.image?.url ?? this.rounds[this.roundIndex + 1]?.sound?.url ?? this.rounds[this.roundIndex + 1]?.picture?.url ?? null : null,
     };
   }
 

@@ -9,6 +9,7 @@ import emoji from './emoji.js';
 import sound from './sound.js';
 import crossword, { makeGrid } from './crossword.js';
 import { normalize, answersFor, baseTitles } from './fuzzy.js';
+import { buildBande, bandeUnavailable } from './bande.js';
 import { QCM, TRUE_FALSE, ESTIMATION } from '../data/questions.js';
 import { PITCHES } from '../data/pitches.js';
 import { EMOJI_PUZZLES } from '../data/emojis.js';
@@ -463,7 +464,7 @@ function buildCrosswords(used, level = 'easy') {
  * Réponse (4 choix / tapée) pour le Quiz et les modes « Quel est ce jeu ? », Niveau pour le Pitch et les emojis.
  * Chaque manche garde son propre fonctionnement (essais, 5 s de plus pour taper, dépixelisation…).
  */
-export const MIX_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds'];
+export const MIX_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds', 'bande'];
 const QUIZ_PARTS = ['quiz', 'vraifaux', 'estimation'];
 
 /** Manches « Quel est ce jeu ? » : jamais deux fois le même jeu dans la partie (avoid). */
@@ -474,7 +475,10 @@ const GUESS_BUILD = {
   hud: (k, used, s, avoid) => buildScreens('hud', s.input, k, used, avoid),
   loading: (k, used, s, avoid) => buildScreens('loading', s.input, k, used, avoid),
   sounds: (k, used, s, avoid) => buildSounds(s.input, k, used, avoid),
+  // Ta bande : toujours à choix ou estimation, quel que soit le réglage Réponse
+  bande: (k, used, s) => buildBande(k, used, s.ctx),
 };
+const FIXED_INPUT = new Set(['bande']);
 /** Questions : celles qui citent un jeu à deviner dans la même partie sont écartées (elles le souffleraient). */
 const QUIZ_BUILD = {
   quiz: (k, used, s, skip) =>
@@ -518,11 +522,11 @@ export const mixPartsOf = (settings = {}) => {
   return wanted.length ? wanted : MIX_PARTS;
 };
 
-function buildMix(n, used, settings = {}) {
+function buildMix(n, used, settings = {}, ctx = null) {
   const mixInput = MIX_INPUTS.includes(settings.mixInput) ? settings.mixInput : settings.input === 'text' ? 'text' : 'choice';
   const level = settings.level === 'hard' ? 'hard' : 'easy';
-  const s = { input: mixInput === 'text' ? 'text' : 'choice', level };
-  const parts = mixPartsOf(settings).filter((id) => !MODES[id].unavailable?.());
+  const s = { input: mixInput === 'text' ? 'text' : 'choice', level, ctx };
+  const parts = mixPartsOf(settings).filter((id) => !MODES[id].unavailable?.(ctx));
   if (!parts.length) throw new Error('Aucun des jeux cochés pour le Mix n\'est disponible');
   // Réponse au hasard : chaque manche à réponse réglable est tirée en 4 choix ou en réponse tapée,
   // avec au moins une de chaque dès qu'il y a deux manches de ce genre (tirage préparé dans draws)
@@ -537,7 +541,7 @@ function buildMix(n, used, settings = {}) {
   const counts = new Map(parts.map((id) => [id, 0]));
   shuffle(parts).forEach((id, i) => counts.set(id, Math.floor(n / parts.length) + (i < n % parts.length ? 1 : 0)));
 
-  const flexible = parts.filter((id) => GUESS_BUILD[id] || id === 'quiz').reduce((t, id) => t + counts.get(id), 0);
+  const flexible = parts.filter((id) => (GUESS_BUILD[id] && !FIXED_INPUT.has(id)) || id === 'quiz').reduce((t, id) => t + counts.get(id), 0);
   if (flexible >= 2) draws = shuffle(['choice', 'text', ...Array.from({ length: flexible - 2 }, () => (Math.random() < 0.5 ? 'text' : 'choice'))]);
 
   const out = [];
@@ -546,7 +550,7 @@ function buildMix(n, used, settings = {}) {
   const avoid = new Set();
   const guess = (id, k) => {
     const rounds = [];
-    for (const [input, c] of split(k)) {
+    for (const [input, c] of FIXED_INPUT.has(id) ? [['choice', k]] : split(k)) {
       try {
         rounds.push(...GUESS_BUILD[id](c, used, { ...s, input }, avoid).map(tag(id)));
       } catch {
@@ -574,7 +578,7 @@ function buildMix(n, used, settings = {}) {
       missing--;
     }
   }
-  const names = out.flatMap((r) => [...spoilers(r.title), ...(r.base ? spoilers(r.base) : [])]);
+  const names = out.flatMap((r) => (r.title ? [...spoilers(r.title), ...(r.base ? spoilers(r.base) : [])] : []));
   const skip = (q) => mentions(q, names);
   for (const id of QUIZ_PARTS) {
     if (!counts.get(id)) continue;
@@ -668,14 +672,21 @@ export const MODES = {
   },
   mix: {
     name: 'Mix',
-    description: 'Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, HUD, chargements, sons.',
+    description: 'Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, HUD, chargements, sons, ta bande.',
     levels: true,
     inputs: true,
     mix: true, // réglages propres : jeux cochés (mixParts) et réponse au hasard (mixInput)
-    build: (n, used, s) => buildMix(n, used, s),
+    build: (n, used, s, ctx) => buildMix(n, used, s, ctx),
+  },
+  bande: {
+    name: 'Ta bande',
+    description: 'Questions tirées de vos profils Steam : heures de jeu, jeu préféré, pile de la honte. Pas de points sur ta propre question.',
+    unavailable: bandeUnavailable,
+    build: (n, used, _s, ctx) => buildBande(n, used, ctx),
   },
 };
 
 /** Liste envoyée aux clients. `unavailable` : raison pour laquelle le mode est grisé, sinon null. */
-export const modeList = () =>
-  Object.entries(MODES).map(([id, m]) => ({ id, name: m.name, description: m.description, levels: !!m.levels, inputs: !!m.inputs, grids: !!m.grids, mix: !!m.mix, unavailable: m.unavailable?.() ?? null }));
+/** ctx : ce qui dépend du salon (joueurs ayant lié leur profil Steam, pour « Ta bande »). */
+export const modeList = (ctx = null) =>
+  Object.entries(MODES).map(([id, m]) => ({ id, name: m.name, description: m.description, levels: !!m.levels, inputs: !!m.inputs, grids: !!m.grids, mix: !!m.mix, unavailable: m.unavailable?.(ctx) ?? null }));

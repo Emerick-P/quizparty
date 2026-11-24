@@ -85,7 +85,7 @@ h2 { font-family: var(--display); font-weight: 800; font-style: italic; font-siz
 .prompt { text-wrap: balance; }
 
 /* ---------- éléments communs à tous les modes */
-.field input, .code-input, .est input, .guess input, .report-fields textarea, .cw-entry input {
+.field input, .code-input, .est input, .guess input, .report-fields textarea, .cw-entry input, .steam-form input {
   background: var(--deep); border-color: var(--line); color: var(--text); border-radius: 6px;
 }
 .field input:focus, .code-input:focus, .est input:focus, .guess input:focus, .report-fields textarea:focus { border-color: var(--accent); }
