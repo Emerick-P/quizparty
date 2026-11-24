@@ -172,6 +172,30 @@ Une partie = une seule manche au chrono fixe (5, 10, 15 ou 20 min : le réglage 
 - Pas dans le Mix.
 - Test : `node test/crossword-test.js`.
 
+## Propositions des amis et Supabase
+
+Page **/proposer** (lien sur l'accueil), derrière le même code d'accès : tous les modes sauf les mots croisés.
+Chaque proposition arrive avec le statut `pending` ; elle est vérifiée puis intégrée dans `server/data/…`
+(ou refusée), et son statut passe à `accepted`, `rejected` ou `doubt` (question à trancher par le client).
+
+Stockage (`server/store.js`) :
+- **En ligne** : Supabase gratuit (`SUPABASE_URL`, `SUPABASE_SECRET_KEY` dans Render et `.env`). Tables créées
+  par `supabase/schema.sql` (à coller une fois dans SQL Editor). Les images et sons vont dans le bucket privé
+  `submissions`. La clé secrète reste sur le serveur : le navigateur ne parle jamais à Supabase.
+- **Sans ces variables** (PC, tests) : `data/submissions/` en local (non suivi par git).
+
+Aussi dans Supabase :
+- `reports` : les signalements ⚑ de l'hôte (le disque de Render est effacé à chaque mise en veille).
+- `content` : une **copie en lecture** de tout le contenu du jeu, pour filtrer et trier dans le Table Editor.
+  Réécrite au démarrage du serveur quand le contenu a changé. La modifier ne change pas le jeu.
+
+Commandes : `npm run submissions` (en attente), `npm run submissions -- --all`,
+`npm run submissions -- --status <id> accepted "note" "questions.js"`, `npm run submissions -- --file <id>`,
+`npm run feedback` (lit Supabase si les clés sont dans `.env`).
+
+Pause d'un projet Supabase gratuit après 7 jours sans activité : le serveur interroge Supabase à chaque
+démarrage et une fois par jour, et `.github/workflows/keepalive.yml` réveille le serveur tous les 3 jours.
+
 ## Structure
 
 ```

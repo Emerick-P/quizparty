@@ -1,10 +1,17 @@
 // Affiche les retours de l'hôte enregistrés pendant les parties : npm run feedback
-// (sur la VM : cd ~/quizparty && npm run feedback). Fichier brut : data/feedback.jsonl.
+// Avec SUPABASE_URL / SUPABASE_SECRET_KEY dans .env : lit la table « reports » de Supabase (retours faits en ligne).
+// Sinon : fichier local data/feedback.jsonl.
+import '../server/env.js';
 import { feedback, FEEDBACK_TYPES } from '../server/feedback.js';
+import { store } from '../server/store.js';
 
-const list = feedback.list();
+const online = store.name === 'supabase';
+const list = online
+  ? (await store.list('reports', { status: 'pending' })).map((r) => ({ ...r.data, id: r.id, at: r.created_at, type: r.type })).reverse()
+  : feedback.list();
+const where = online ? 'Supabase (table reports, statut pending)' : feedback.file;
 if (!list.length) {
-  console.log(`Aucun retour pour l'instant (${feedback.file}).`);
+  console.log(`Aucun retour pour l'instant (${where}).`);
 } else {
   for (const f of list) {
     const q = f.question || {};
@@ -15,5 +22,5 @@ if (!list.length) {
     if (f.accept) console.log(`  À accepter : ${f.accept}`);
     if (f.comment) console.log(`  Commentaire : ${f.comment}`);
   }
-  console.log(`\n${list.length} retour(s) dans ${feedback.file}`);
+  console.log(`\n${list.length} retour(s) dans ${where}`);
 }

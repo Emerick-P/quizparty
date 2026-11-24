@@ -236,6 +236,7 @@ const startServer = (extraEnv = {}) => {
     env: {
       ...process.env,
       PORT: String(PORT),
+    SUPABASE_URL: '', // jamais la vraie base pendant les tests (même si .env la définit)
       COUNTDOWN_MS: '300',
       REVEAL_MS: '600',
       TWITCH_CLIENT_ID: 'test-id',

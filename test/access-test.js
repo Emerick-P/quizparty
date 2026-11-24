@@ -8,7 +8,8 @@ const URL = `http://localhost:${PORT}`;
 const CODE = 'Mario64';
 
 const server = spawn(process.execPath, ['server/index.js'], {
-  env: { ...process.env, PORT: String(PORT), ACCESS_CODE: CODE, TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '' },
+  env: { ...process.env, PORT: String(PORT),
+    SUPABASE_URL: '', /* jamais la vraie base pendant les tests */ ACCESS_CODE: CODE, TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 await new Promise((resolve, reject) => {

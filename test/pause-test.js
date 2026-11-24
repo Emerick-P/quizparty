@@ -19,6 +19,7 @@ const server = spawn(process.execPath, ['server/index.js'], {
   env: {
     ...process.env,
     PORT: String(PORT),
+    SUPABASE_URL: '', // jamais la vraie base pendant les tests (même si .env la définit)
     COUNTDOWN_MS: '200',
     REVEAL_MS: String(REVEAL_MS),
     TWITCH_CLIENT_ID: '',

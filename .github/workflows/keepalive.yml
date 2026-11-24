@@ -1,0 +1,21 @@
+# Réveille QuizParty tous les 3 jours. Au démarrage, le serveur interroge Supabase,
+# ce qui empêche le projet Supabase gratuit de se mettre en pause (pause après 7 jours sans activité).
+# Aucun secret nécessaire : /health est public. Lancement manuel possible (onglet Actions → Run workflow).
+# Note : GitHub suspend les tâches planifiées d'un dépôt sans commit depuis 60 jours (il prévient par e-mail).
+name: Réveil hebdomadaire
+on:
+  schedule:
+    - cron: '17 6 */3 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Réveiller le serveur
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS --max-time 60 "${{ vars.APP_URL || 'https://quizparty-3g8q.onrender.com' }}/health"; then exit 0; fi
+            sleep 20
+          done
+          exit 1

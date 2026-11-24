@@ -8,3 +8,5 @@ basesound/
 backup/
 # Retours de l'hôte enregistrés pendant les parties (bouton ⚑ Signaler)
 data/feedback.jsonl
+# Soumissions enregistrées en local (sans Supabase)
+data/submissions/

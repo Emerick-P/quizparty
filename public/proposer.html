@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14102a">
+  <title>Proposer · QuizParty</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2314102a'/%3E%3Ctext x='32' y='46' font-size='40' text-anchor='middle' font-family='Arial' font-weight='bold' fill='%23ffcf3f'%3E%3F%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/theme.css">
+  <link rel="stylesheet" href="/proposer.css">
+</head>
+<body>
+  <main class="screen submit">
+    <div class="top"><a class="link" href="/">← Retour au jeu</a></div>
+    <h1 class="submit-title">Proposer du contenu</h1>
+    <p class="muted submit-intro">Une question, un pitch, une capture, un son… Chaque proposition est vérifiée avant d’arriver en jeu.</p>
+    <form id="form" class="card submit-form" novalidate>
+      <div class="field"><span>1. Pour quel mode ?</span><div id="modes" class="modes"></div></div>
+      <div id="fields" hidden></div>
+      <p id="error" class="submit-error" role="alert" hidden></p>
+      <button id="send" class="btn primary big" type="submit" hidden>Envoyer</button>
+    </form>
+    <div id="done" class="card submit-done" hidden>
+      <p class="big-check">✓</p>
+      <p><b>Merci !</b> Ta proposition est bien arrivée. Elle sera vérifiée avant d’apparaître en jeu.</p>
+      <button class="btn primary" id="again" type="button">Proposer autre chose</button>
+    </div>
+    <datalist id="games"></datalist>
+  </main>
+  <script src="/proposer.js"></script>
+</body>
+</html>

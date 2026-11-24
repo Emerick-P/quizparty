@@ -18,7 +18,8 @@ const URL = `http://localhost:${PORT}`;
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qp-quiztext-'));
 const server = spawn(process.execPath, ['server/index.js'], {
   env: {
-    ...process.env, PORT: String(PORT), COUNTDOWN_MS: '200', REVEAL_MS: '300',
+    ...process.env, PORT: String(PORT),
+    SUPABASE_URL: '', /* jamais la vraie base pendant les tests */ COUNTDOWN_MS: '200', REVEAL_MS: '300',
     TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', IMAGE_CACHE_DIR: tmp, BLACKLIST_FILE: path.join(tmp, 'blacklist.json'),
   },
   stdio: ['ignore', 'pipe', 'inherit'],

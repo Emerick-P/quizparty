@@ -9,7 +9,8 @@ const PORT = 3997;
 const URL = `http://localhost:${PORT}`;
 
 const server = spawn(process.execPath, ['server/index.js'], {
-  env: { ...process.env, PORT: String(PORT), COUNTDOWN_MS: '200', REVEAL_MS: '200' },
+  env: { ...process.env, PORT: String(PORT),
+    SUPABASE_URL: '', /* jamais la vraie base pendant les tests */ COUNTDOWN_MS: '200', REVEAL_MS: '200' },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 await new Promise((resolve) => server.stdout.on('data', (d) => d.toString().includes('prêt') && resolve()));

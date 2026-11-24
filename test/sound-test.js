@@ -125,7 +125,8 @@ fs.writeFileSync(BLACKLIST, JSON.stringify({ games: [], images: [], sounds: ['so
 const PORT = 3994;
 const URL = `http://localhost:${PORT}`;
 const server = spawn(process.execPath, ['server/index.js'], {
-  env: { ...process.env, PORT: String(PORT), COUNTDOWN_MS: '300', REVEAL_MS: '500', TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', IMAGE_CACHE_DIR: path.join(tmp, 'cache'), BLACKLIST_FILE: BLACKLIST },
+  env: { ...process.env, PORT: String(PORT),
+    SUPABASE_URL: '', /* jamais la vraie base pendant les tests */ COUNTDOWN_MS: '300', REVEAL_MS: '500', TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', IMAGE_CACHE_DIR: path.join(tmp, 'cache'), BLACKLIST_FILE: BLACKLIST },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 await new Promise((resolve) => server.stdout.on('data', (d) => d.toString().includes('prêt') && resolve()));

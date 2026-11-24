@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { store } from './store.js';
 
 /**
  * Retours de l'hôte sur une question (bouton ⚑ Signaler pendant la partie).
@@ -9,6 +10,8 @@ import { fileURLToPath } from 'node:url';
  * Une ligne JSON par retour dans data/feedback.jsonl (ou FEEDBACK_FILE) : ajout seulement, jamais réécrit,
  * donc rien n'est perdu si le serveur s'arrête. Le fichier est sur le disque du serveur : sur le PC
  * en local, et sur la VM une fois en ligne (il n'est pas suivi par git, une mise à jour ne l'efface pas).
+ * En ligne (Render), le disque est effacé à chaque mise en veille : chaque retour est donc aussi copié dans
+ * la table « reports » de Supabase quand SUPABASE_URL / SUPABASE_SECRET_KEY sont définis.
  * Lecture : npm run feedback.
  */
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,6 +63,10 @@ export const feedback = {
   add(entry) {
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     fs.appendFileSync(this.file, JSON.stringify(entry) + '\n');
+    if (store.name === 'supabase') {
+      const { id, at, ...data } = entry;
+      store.insert('reports', { id, created_at: at, type: entry.type, status: 'pending', data }).catch((err) => console.error('[signalements]', err.message));
+    }
     return entry;
   },
   list() {

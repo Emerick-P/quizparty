@@ -1078,6 +1078,7 @@ const views = {
         </form>
         ${urlCode() ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
       </div>
+      <a class="link propose-link" href="/proposer">💡 Proposer une question, un pitch, une capture…</a>
       <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
     </main>`,
 

@@ -10,6 +10,9 @@ import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { createAccess } from './access.js';
+import { installSubmissions } from './submissions.js';
+import { store } from './store.js';
+import { syncContent } from './content-sync.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +34,9 @@ if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PRO
 const access = createAccess();
 access.install(app);
 io.use(access.socketGuard);
+
+// Formulaire « Proposer » (/proposer) : soumissions des amis, derrière le même code d'accès
+installSubmissions(app);
 
 // Page d'accueil : les liens vers app.js / style.css portent une version tirée des fichiers
 // (?v=…). Dès qu'un fichier change, son URL change : ni le navigateur ni le tunnel Cloudflare
@@ -95,6 +101,18 @@ covers
   .catch((err) => console.error('[jaquettes]', err))
   .finally(() => { for (const room of rooms.rooms.values()) room.broadcast(); }); // dégrise les modes dans les salons ouverts
 
+// Supabase gratuit se met en pause après 7 jours sans activité : une petite requête au démarrage
+// (chaque réveil de Render) et une par jour tant que le serveur tourne.
+if (store.name === 'supabase') {
+  const ping = () => store.ping().catch((err) => console.error('[supabase]', err.message));
+  ping();
+  setInterval(ping, 24 * 3600_000).unref();
+  // Copie en lecture du contenu (questions, pitchs…) pour l'explorer dans Supabase, si elle a changé
+  syncContent(store)
+    .then((r) => r.updated && console.log(`[supabase] contenu copié : ${r.count} lignes`))
+    .catch((err) => console.error('[supabase] copie du contenu :', err.message));
+}
+
 server.listen(PORT, HOST, () => {
-  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}`);
+  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}`);
 });

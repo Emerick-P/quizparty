@@ -554,3 +554,6 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .report-picks { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .report-actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
 .report-actions .link { align-self: center; }
+
+/* Lien vers la page « Proposer » */
+.propose-link { display: block; text-align: center; margin-top: 14px; text-decoration: none; }
