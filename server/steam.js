@@ -22,7 +22,7 @@ export const steamEnabled = () => !!KEY();
 export const gameImage = (appid) => `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`;
 
 /**
- * Lit ce que le joueur a collé. Renvoie { id } (SteamID64), { vanity } (identifiant personnalisé) ou null.
+ * Lit ce que le joueur a collé (adresse du profil, identifiant personnalisé, SteamID64 ou code ami). Renvoie { id } (SteamID64), { vanity } (identifiant personnalisé) ou null.
  */
 export function parseProfile(raw) {
   const s = String(raw ?? '').trim();
@@ -30,6 +30,8 @@ export function parseProfile(raw) {
   const url = s.match(/steamcommunity\.com\/(id|profiles)\/([^/?#\s]+)/i);
   if (url) return url[1].toLowerCase() === 'profiles' ? (/^7656\d{13}$/.test(url[2]) ? { id: url[2] } : null) : { vanity: url[2] };
   if (/^7656\d{13}$/.test(s)) return { id: s };
+  // Code ami (Steam → Amis → Ajouter un ami) : SteamID64 = 76561197960265728 + code
+  if (/^\d{3,10}$/.test(s)) return { id: String(76561197960265728n + BigInt(s)) };
   if (/^[\w-]{2,64}$/.test(s)) return { vanity: s };
   return null;
 }
@@ -56,7 +58,7 @@ async function call(path, params) {
 export async function loadProfile(raw) {
   if (!steamEnabled()) throw new Error('Steam n\'est pas encore configuré sur ce serveur (clé manquante)');
   const parsed = parseProfile(raw);
-  if (!parsed) throw new Error('Colle l\'adresse de ton profil Steam (steamcommunity.com/id/…)');
+  if (!parsed) throw new Error('Colle ton code ami Steam ou l\'adresse de ton profil');
   let id = parsed.id;
   if (!id) {
     const r = await call('/ISteamUser/ResolveVanityURL/v1/', { vanityurl: parsed.vanity });

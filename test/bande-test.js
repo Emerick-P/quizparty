@@ -17,6 +17,7 @@ assert.deepEqual(parseProfile('  gaben '), { vanity: 'gaben' });
 assert.equal(parseProfile('https://steamcommunity.com/profiles/123'), null);
 assert.equal(parseProfile('pas une adresse !'), null);
 assert.equal(parseProfile(''), null);
+assert.deepEqual(parseProfile('22202'), { id: '76561197960287930' }, 'code ami');
 
 // ---- Faux profils Steam
 const G = (appid, name, minutes, recent = 0) => ({ appid, name, playtime_forever: minutes, playtime_2weeks: recent });

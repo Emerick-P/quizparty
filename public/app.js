@@ -1065,7 +1065,7 @@ function steamCard() {
       ? `<p class="steam-warn">Ton profil est privé : on ne voit pas tes jeux. Sur Steam, mets « Profil » et « Détails des jeux » en <b>Public</b> (<a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a>), puis relie-le.</p>`
       : st?.status === 'error' ? `<p class="steam-warn">${esc(st.message)}</p>` : '';
     body = `${msg}<form class="steam-form" data-form="steam">
-        <input id="steam-input" autocomplete="off" placeholder="steamcommunity.com/id/…" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
+        <input id="steam-input" autocomplete="off" placeholder="Code ami ou adresse du profil" value="${esc(st?.input || store.get(STEAM_KEY) || '')}" enterkeyhint="send">
         <button class="btn small" type="submit">${st ? 'Réessayer' : 'Lier'}</button>
       </form>
       ${st?.status === 'private' ? '<button class="link" data-action="steamUnlink">Jouer sans mon profil</button>' : ''}`;
