@@ -60,9 +60,9 @@ const ctx = { players: [{ id: 'a', name: 'Alice', steam: steamOf('76561190000000
 for (let t = 0; t < 30; t++) {
   const rounds = buildBande(10, new Set(), ctx);
   assert.equal(rounds.length, 10);
-  const per = rounds.reduce((m, r) => m.set(r.about, (m.get(r.about) ?? 0) + 1), new Map());
-  assert.deepEqual([...per.keys()].sort(), ['a', 'b'], 'seuls les joueurs liés sont concernés');
-  assert.equal(per.get('a'), 5, 'autant de questions sur chacun');
+  const per = rounds.reduce((m, r) => m.set(r.about ?? 'groupe', (m.get(r.about ?? 'groupe') ?? 0) + 1), new Map());
+  assert.deepEqual([...per.keys()].sort(), ['a', 'b', 'groupe'], 'joueurs liés et questions de groupe');
+  assert.deepEqual([...per.values()].sort(), [3, 3, 4], 'autant de questions sur chacun');
   for (const r of rounds) {
     if (r.kind === 'qcm') {
       assert.equal(new Set(r.choices).size, r.choices.length, 'pas de proposition en double');
@@ -70,8 +70,9 @@ for (let t = 0; t < 30; t++) {
     }
     if (r.bande === 'shame') assert.ok(['Stardew Valley', 'Terraria', 'Outer Wilds'].includes(r.choices[r.correctIndex]), 'pile de la honte : un jeu jamais lancé');
     if (r.bande === 'top') assert.ok(['Hades', 'Factorio'].includes(r.choices[r.correctIndex]), 'jeu le plus joué');
-    if (r.bande === 'most') assert.equal(r.choices[r.correctIndex], r.about === 'a' ? 'Alice' : 'Bob');
-    if (r.bande === 'recent') assert.equal(r.about, 'b', 'Bob a le plus joué ces 2 semaines');
+    if (['most', 'recent', 'top', 'shame', 'hours'].includes(r.bande)) assert.equal(r.about == null, ['most', 'recent'].includes(r.bande), 'questions de groupe sans joueur concerné');
+    if (r.bande === 'most') assert.ok(['Alice', 'Bob'].includes(r.choices[r.correctIndex]));
+    if (r.bande === 'recent') assert.equal(r.choices[r.correctIndex], 'Bob', 'Bob a le plus joué ces 2 semaines');
   }
 }
 assert.throws(() => buildBande(5, new Set(), { players: ctx.players.slice(0, 1) }), /2 joueurs/);
@@ -124,6 +125,7 @@ try {
   assert.equal(s.players.find((p) => p.name === 'Alice').steam.input, undefined, 'les autres ne voient pas l\'adresse collée');
   assert.equal(s.players.find((p) => p.name === 'Alice').steam.games, 7);
   assert.match(bande().unavailable ?? '', /1\/2/);
+  assert.match((await B.emit('steam:link', { profile: 'alice' })).message, /déjà lié par Alice/, 'même profil refusé');
   assert.equal((await B.emit('steam:link', { profile: 'steamcommunity.com/profiles/76561190000000002' })).status, 'ok');
   await A.waitFor(() => bande().unavailable === null);
   const before = calls;
@@ -138,12 +140,16 @@ try {
   let selfSeen = 0;
   for (let i = 0; i < 5; i++) {
     const q = await A.waitFor((st) => st.phase === 'question' && st.round.index === i);
-    assert.ok(q.round.about, 'chaque question porte sur un joueur');
     assert.equal(q.round.correctIndex, undefined, 'la réponse ne fuit pas');
-    about.set(q.round.about.name, (about.get(q.round.about.name) ?? 0) + 1);
+    const who = q.round.about?.name ?? 'groupe';
+    about.set(who, (about.get(who) ?? 0) + 1);
     const ans = q.round.kind === 'estimation' ? 50 : 0;
     for (const c of [A, B, C]) assert.equal((await c.emit('game:answer', { roundId: q.round.id, answer: ans })).ok, true);
     const rev = await A.waitFor((st) => st.phase === 'reveal' && st.round.index === i);
+    if (!q.round.about) {
+      assert.ok(rev.reveal.results.every((x) => !x.self), 'question de groupe : tout le monde marque');
+      continue;
+    }
     const subject = rev.reveal.results.find((x) => x.name === q.round.about.name);
     assert.equal(subject.points, 0, 'le joueur concerné ne marque pas');
     assert.equal(subject.self, true);
@@ -157,8 +163,7 @@ try {
       assert.equal(subject.correct, other.correct);
     }
   }
-  assert.equal(selfSeen, 5);
-  assert.deepEqual([...about.values()].sort(), [2, 3], 'questions réparties entre Alice et Bob');
+  assert.deepEqual([...about.values()].sort(), [1, 2, 2], 'questions réparties entre Alice, Bob et le groupe');
   assert.ok(!about.has('Carl'));
   await A.waitFor((st) => st.phase === 'end', 8000);
 
@@ -171,7 +176,7 @@ try {
   const parts = [];
   for (let i = 0; i < 10; i++) {
     const q = await A.waitFor((st) => st.phase === 'question' && st.round.index === i);
-    parts.push(q.round.about ? 'bande' : 'quiz');
+    parts.push(q.round.kind === 'qcm' && /Steam|heures|honte|plus joué/.test(q.round.prompt) || q.round.about ? 'bande' : 'quiz');
     await A.emit('game:skip');
   }
   assert.equal(parts.filter((x) => x === 'bande').length, 5, 'moitié de manches « Ta bande » dans le Mix');

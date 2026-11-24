@@ -209,6 +209,10 @@ export class Room {
     try {
       const data = await loadProfile(raw);
       if (player.steamSeq !== seq || !this.players.has(playerId)) return { ok: true };
+      // Un profil Steam ne peut être lié qu'à un seul joueur du salon (deux onglets sur le même navigateur
+      // partagent le profil retenu sur l'appareil)
+      const twin = [...this.players.values()].find((p) => p.id !== playerId && p.steam?.id === data.id);
+      if (twin) throw new Error(`Ce profil Steam est déjà lié par ${twin.name}`);
       player.steam = { ...data, input: raw };
     } catch (err) {
       if (player.steamSeq !== seq || !this.players.has(playerId)) return { ok: true };
@@ -235,6 +239,7 @@ export class Room {
       name: st.name ?? null,
       avatar: st.avatar ?? null,
       games: st.games?.length ?? 0,
+      played: st.games?.filter((g) => g.minutes > 0).length ?? 0,
       ...(mine ? { input: st.input, message: st.message ?? null, hiddenTime: !!st.hiddenTime, profileUrl: st.profileUrl ?? null, privacyUrl: PRIVACY_URL } : {}),
     };
   }

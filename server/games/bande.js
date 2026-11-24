@@ -4,13 +4,15 @@ import { gameImage } from '../steam.js';
 /**
  * « Ta bande » : questions tirées des profils Steam liés par les joueurs du salon.
  *
- * Chaque question porte sur un joueur (`about`) : il peut répondre, mais ne marque pas dessus (voir
- * Room.endQuestion). Les questions tournent entre les joueurs liés pour que chacun soit concerné autant
- * de fois que les autres. Les manches réutilisent les types existants : `qcm` (choix) et `estimation`.
+ * La plupart des questions portent sur un joueur (`about`) : il peut répondre, mais ne marque pas dessus
+ * (voir Room.endQuestion). Les questions de groupe (qui a le plus d'heures sur tel jeu…) n'ont pas de
+ * joueur concerné : tout le monde marque. Les questions tournent entre les joueurs liés et le groupe pour
+ * que chacun soit concerné autant de fois que les autres. Les manches réutilisent les types existants : `qcm` (choix) et `estimation`.
  *
  * ctx.players : joueurs du salon dont le profil Steam est public, [{ id, name, steam: { id, games } }].
  */
 export const MIN_LINKED = 2;
+const GROUP = '_group'; // questions sur toute la bande (personne n'est « concerné »)
 
 const shuffle = (arr) => {
   const a = [...arr];
@@ -111,8 +113,8 @@ function hours(p) {
 }
 
 /**
- * Qui a le plus d'heures sur tel jeu ? Jeux possédés par au moins 2 joueurs liés, avec un meneur net.
- * La question porte sur le meneur (c'est lui qui ne marque pas).
+ * Qui a le plus d'heures sur tel jeu ? Jeux joués par au moins 2 joueurs liés, avec un meneur net.
+ * Question de groupe : personne ne connaît les heures des autres, donc tout le monde marque.
  */
 function mostHours(linked) {
   const byApp = new Map();
@@ -124,18 +126,19 @@ function mostHours(linked) {
   for (const { game, owners } of byApp.values()) {
     if (owners.length < 2) continue;
     owners.sort((a, b) => b.minutes - a.minutes);
-    if (owners[0].minutes < 60 || owners[0].minutes === owners[1].minutes) continue;
+    // Au moins deux joueurs y ont joué, avec un meneur net
+    if (owners[0].minutes < 60 || owners[1].minutes <= 0 || owners[0].minutes === owners[1].minutes) continue;
     const winner = owners[0].p;
     const key = `most:${game.appid}`;
     out.push({
-      type: 'most', key, about: winner.id,
+      type: 'most', key,
       make: () => {
         const owning = new Set(owners.map((o) => o.p.id));
         const others = [...shuffle(owners.slice(1).map((o) => o.p)), ...shuffle(linked.filter((x) => !owning.has(x.id)))];
         const mins = new Map(owners.map((o) => [o.p.id, o.minutes]));
         const shown = [winner, ...others.slice(0, 3)];
         return choiceRound({
-          type: 'most', key, about: winner.id,
+          type: 'most', key, about: null,
           prompt: `Qui a le plus d'heures sur ${game.name} ?`,
           choices: playerChoices(winner, others),
           info: shown.map((x) => `${x.name} : ${mins.has(x.id) ? hoursText(mins.get(x.id)) : 'ne l\'a pas'}`).join(' · '),
@@ -147,20 +150,20 @@ function mostHours(linked) {
   return out;
 }
 
-/** Qui a le plus joué ces 2 dernières semaines ? Une seule par partie, sur le meneur. */
+/** Qui a le plus joué ces 2 dernières semaines ? Une seule par partie, question de groupe (tout le monde marque). */
 function recent(linked) {
   const rows = linked.map((p) => ({ p, minutes: p.steam.games.reduce((t, g) => t + (g.recent || 0), 0) })).sort((a, b) => b.minutes - a.minutes);
   if (rows[0].minutes < 60 || rows[0].minutes === rows[1].minutes) return [];
   const winner = rows[0].p;
   const key = `recent:${new Date().toISOString().slice(0, 10)}`;
   return [{
-    type: 'recent', key, about: winner.id,
+    type: 'recent', key,
     make: () => {
       const others = shuffle(rows.slice(1).map((r) => r.p));
       const shown = [winner, ...others.slice(0, 3)];
       const mins = new Map(rows.map((r) => [r.p.id, r.minutes]));
       return choiceRound({
-        type: 'recent', key, about: winner.id,
+        type: 'recent', key, about: null,
         prompt: 'Qui a le plus joué sur Steam ces 2 dernières semaines ?',
         choices: playerChoices(winner, others),
         info: shown.map((x) => `${x.name} : ${mins.get(x.id) ? hoursText(mins.get(x.id)) : 'rien'}`).join(' · '),
@@ -179,17 +182,19 @@ export function buildBande(n, used, ctx) {
   const why = bandeUnavailable(ctx);
   if (why) throw new Error(why);
 
-  // Questions possibles, rangées par joueur concerné
+  // Questions possibles, rangées par joueur concerné ; les questions de groupe comptent comme un « joueur » de plus
   const all = new Map(linked.map((p) => [p.id, [...topGame(p), ...shame(p), ...hours(p)]]));
-  for (const c of [...mostHours(linked), ...recent(linked)]) all.get(c.about).push(c);
+  const group = [...mostHours(linked), ...recent(linked)];
+  if (group.length) all.set(GROUP, group);
+  const slots = [...all.keys()];
   const fresh = (id) => {
     const list = all.get(id).filter((c) => !used.has(`b:${c.key}`));
     return list.length ? list : all.get(id); // tout déjà vu : on recommence
   };
 
   const quota = new Map();
-  shuffle(linked).forEach((p, i) => quota.set(p.id, Math.floor(n / linked.length) + (i < n % linked.length ? 1 : 0)));
-  const got = new Map(linked.map((p) => [p.id, []]));
+  shuffle(slots).forEach((id, i) => quota.set(id, Math.floor(n / slots.length) + (i < n % slots.length ? 1 : 0)));
+  const got = new Map(slots.map((id) => [id, []]));
   const taken = new Set();
   const draw = (id) => {
     const mine = got.get(id);
@@ -206,10 +211,10 @@ export function buildBande(n, used, ctx) {
   };
 
   const stuck = new Set();
-  for (const p of linked) for (let i = 0; i < quota.get(p.id); i++) if (!draw(p.id)) { stuck.add(p.id); break; }
+  for (const id of slots) for (let i = 0; i < quota.get(id); i++) if (!draw(id)) { stuck.add(id); break; }
   let missing = n - [...got.values()].reduce((t, l) => t + l.length, 0);
   while (missing > 0) {
-    const id = shuffle(linked.map((p) => p.id).filter((x) => !stuck.has(x))).sort((a, b) => got.get(a).length - got.get(b).length)[0];
+    const id = shuffle(slots.filter((x) => !stuck.has(x))).sort((a, b) => got.get(a).length - got.get(b).length)[0];
     if (!id) break;
     if (draw(id)) missing--;
     else stuck.add(id);

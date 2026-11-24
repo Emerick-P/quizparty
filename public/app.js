@@ -1088,7 +1088,8 @@ function steamCard() {
   let body;
   if (st?.status === 'loading') body = '<p class="muted">Chargement du profil…</p>';
   else if (st?.status === 'ok') {
-    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
+    body = `<div class="steam-me">${st.avatar ? `<img src="${esc(st.avatar)}" alt="" referrerpolicy="no-referrer">` : ''}<span class="grow"><b>${esc(st.name)}</b><small class="muted">${st.games} jeu${st.games > 1 ? 'x' : ''}, dont ${st.played ?? 0} lancé${st.played > 1 ? 's' : ''}</small></span><button class="link" data-action="steamUnlink">Délier</button></div>`;
+    if ((st.played ?? 0) < 4) body += '<p class="steam-warn">Peu de jeux lancés sur ton compte : il y aura peu de questions sur toi. Les jeux prêtés par le partage familial Steam ne sont pas visibles.</p>';
   } else {
     const msg = st?.status === 'private' && st.hiddenTime
       ? `<p class="steam-warn">Ton temps de jeu est masqué. Dans tes <a href="${esc(st.privacyUrl)}" target="_blank" rel="noopener">réglages de confidentialité</a> Steam, décoche « Toujours garder mon temps de jeu total privé », puis réessaie. <button type="button" class="link" data-action="steamHelp">Aide</button></p>`
