@@ -1,5 +1,6 @@
 import { store as defaultStore } from './store.js';
 import { contentRows } from './content-sync.js';
+import { MODES } from './games/index.js';
 
 /**
  * Stats des joueurs connectés (comptes Supabase).
@@ -123,6 +124,7 @@ export function createStats(store = defaultStore) {
 /** Un jeu ne peut pas être à la fois « bien reconnu » et « qui résiste » : on le garde du côté où il pèse le plus. */
 function normalize(s) {
   if (!s) return s;
+  for (const m of s.modes ?? []) m.name = MODES[m.mode]?.name ?? m.mode;
   const best = new Set((s.best ?? []).map((x) => x.game));
   s.worst = (s.worst ?? []).filter((x) => !best.has(x.game) || x.n - x.good > x.good);
   s.best = (s.best ?? []).filter((x) => !s.worst.some((w) => w.game === x.game));

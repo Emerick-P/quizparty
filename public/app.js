@@ -1795,7 +1795,8 @@ function playersList(host) {
           ${state.players.map((p) => `
             <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
               ${avatar(p.name)}
-              <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
+              ${p.account ? `<button class="pname pstats" data-action="pstats" data-id="${p.id}" aria-label="Stats de ${esc(p.name)}">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''} <span class="pstats-ico" aria-hidden="true">📊</span></button>`
+                : `<span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>`}
               ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
               ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
               ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
@@ -1839,6 +1840,7 @@ const SHEETS = {
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: 'lobby', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
+  stats: { phase: ['home', 'lobby'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
     <button class="btn" data-action="sheet" data-value="account">👤 Profil</button>
@@ -1870,6 +1872,7 @@ function profileBody() {
     <button class="btn primary" type="submit">Enregistrer</button>
   </form>
   <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
+  ${u ? `<button class="btn pf-stats" data-action="mystats">📊 Mes stats</button>` : ''}
   ${u ? `<div class="acc">
     <h3>Compte</h3>
     <button class="btn" data-action="logout">Se déconnecter</button>
@@ -1892,16 +1895,94 @@ function accountBlock() {
   if (!cfg?.enabled) return '';
   return `<div class="acc">
     <h3>Compte <small>facultatif</small></h3>
-    <p class="sh-note">Pour retrouver ton profil sur tous tes appareils (bientôt : stats et défis entre potes). Sans compte, tu joues en invité, comme avant.</p>
+    <p class="sh-note">Pour retrouver ton profil sur tous tes appareils et garder tes stats de parties. Sans compte, tu joues en invité, comme avant.</p>
     <div class="acc-btns">${cfg.providers.map((p) => `<button class="btn acc-btn acc-${p}" data-action="login" data-value="${p}">${providerIcon(p)}Continuer avec ${PROVIDER_LABEL[p] || p}</button>`).join('')}</div>
   </div>`;
+}
+
+// ---------------------------------------------------------------- stats de joueur
+// Mes stats (page Profil) ou celles d'un joueur connecté du salon (en touchant son nom).
+// Trois onglets qu'on fait glisser au doigt, pour tenir sur un écran de téléphone sans défiler.
+const statsUi = { title: 'Stats', who: null, data: null, error: null, loading: false, tab: 0, req: 0 };
+const STATS_TABS = ['Résumé', 'Modes', 'Jeux'];
+const pct = (good, n) => (n ? Math.round((100 * good) / n) : 0);
+const secs = (ms) => `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', ',')} s`;
+async function openStats(who, title) {
+  const req = ++statsUi.req;
+  Object.assign(statsUi, { who, title, data: null, error: null, loading: true, tab: 0 });
+  openSheet('stats');
+  const r = who === 'me' ? await send('stats:me') : await send('stats:player', { playerId: who });
+  if (req !== statsUi.req) return;
+  statsUi.loading = false;
+  if (r.error) statsUi.error = r.error;
+  else statsUi.data = r.stats ?? {};
+  if (ui.sheet === 'stats') render();
+}
+actions.mystats = () => openStats('me', 'Mes stats');
+actions.pstats = (btn) => {
+  const p = state?.players.find((x) => x.id === btn.dataset.id);
+  if (!p) return;
+  openStats(p.id === state.you ? 'me' : p.id, p.id === state.you ? 'Mes stats' : `Stats de ${p.name}`);
+};
+actions.stab = (btn) => { statsUi.tab = Number(btn.dataset.value) || 0; showStatsTab(true); };
+function showStatsTab(smooth) {
+  const track = $('.st-track');
+  if (!track) return;
+  track.scrollTo({ left: statsUi.tab * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+  document.querySelectorAll('.st-tabs button').forEach((b, i) => b.classList.toggle('on', i === statsUi.tab));
+}
+// Glissé au doigt : l'onglet suit la page affichée
+document.addEventListener('scroll', (e) => {
+  if (!e.target.classList?.contains('st-track')) return;
+  const t = e.target;
+  const i = Math.round(t.scrollLeft / Math.max(1, t.clientWidth));
+  if (i !== statsUi.tab) { statsUi.tab = i; document.querySelectorAll('.st-tabs button').forEach((b, j) => b.classList.toggle('on', j === i)); }
+}, true);
+function statsBody() {
+  if (statsUi.loading) return '<p class="sh-note st-wait">Chargement des stats…</p>';
+  if (statsUi.error) return `<p class="sh-note">${esc(statsUi.error)}</p>`;
+  const s = statsUi.data || {};
+  const me = statsUi.who === 'me';
+  if (!s.answers && !s.games) {
+    return `<div class="st-empty"><span aria-hidden="true">📊</span><p>${me ? 'Pas encore de stats : elles commencent à ta première partie finie, connecté à ton compte.' : 'Pas encore de partie finie avec son compte.'}</p></div>`;
+  }
+  const tile = (v, label, sub = '') => `<div class="st-tile"><b>${v}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  const summary = `
+    <div class="st-tiles">
+      ${tile(s.games ?? 0, s.games > 1 ? 'parties' : 'partie', s.daily ? `+ ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : '')}
+      ${tile(s.wins ?? 0, s.wins > 1 ? 'victoires' : 'victoire', s.games ? `${pct(s.wins, s.games)} % des parties` : '')}
+      ${tile(s.podiums ?? 0, s.podiums > 1 ? 'podiums' : 'podium', 'top 3, à 2 joueurs ou plus')}
+      ${tile(`${pct(s.correct, s.answers)} %`, 'bonnes réponses', `${s.correct ?? 0} sur ${s.answers ?? 0}`)}
+    </div>
+    <h3 class="st-h">Records</h3>
+    <ul class="st-recs">
+      <li><span aria-hidden="true">🏆</span><div><b>${s.bestScore ?? '–'}</b><small>meilleur score en une partie</small></div></li>
+      <li><span aria-hidden="true">🔥</span><div><b>${s.streak ?? 0}</b><small>bonnes réponses d’affilée</small></div></li>
+      <li><span aria-hidden="true">⚡</span><div><b>${s.fastest ? secs(s.fastest.ms) : '–'}</b><small>${s.fastest ? `réponse juste la plus rapide${s.fastest.game ? ` · ${esc(s.fastest.game)}` : ''}` : 'réponse juste la plus rapide'}</small></div></li>
+    </ul>`;
+  const modes = (s.modes || []).length ? `<ul class="st-modes">${s.modes.map((m) => `
+      <li style="--mc:${modeArt(m.mode)[1]}"><span class="st-mi" aria-hidden="true">${modeArt(m.mode)[0]}</span>
+        <div class="st-mb"><div class="st-ml"><b>${esc(m.name || m.mode)}</b><span>${pct(m.good, m.n)} %</span></div>
+        <div class="st-bar"><i style="width:${pct(m.good, m.n)}%"></i></div><small>${m.good} / ${m.n} question${m.n > 1 ? 's' : ''}</small></div></li>`).join('')}</ul>`
+    : '<p class="sh-note">Aucun mode joué pour l’instant.</p>';
+  const gameRow = (g) => `<li><b>${esc(g.game)}</b><span>${g.good} / ${g.n}</span></li>`;
+  const games = `
+    <h3 class="st-h">${me ? 'Les jeux que tu reconnais le mieux' : 'Ses jeux les mieux reconnus'}</h3>
+    ${(s.best || []).length ? `<ol class="st-games">${s.best.map(gameRow).join('')}</ol>` : '<p class="sh-note">Pas encore de jeu trouvé.</p>'}
+    <h3 class="st-h">${me ? 'Ceux qui te résistent' : 'Ceux qui lui résistent'}</h3>
+    ${(s.worst || []).length ? `<ol class="st-games st-worst">${s.worst.map(gameRow).join('')}</ol>` : '<p class="sh-note">Aucun pour l’instant. Bravo !</p>'}
+    <p class="sh-note small">Jaquettes, pitchs, emojis, sons, HUD et écrans de chargement : trouvé / posé.</p>`;
+  setTimeout(() => showStatsTab(false), 0);
+  return `
+    <div class="st-tabs" role="tablist">${STATS_TABS.map((t, i) => `<button role="tab" class="${i === statsUi.tab ? 'on' : ''}" data-action="stab" data-value="${i}">${t}</button>`).join('')}</div>
+    <div class="st-track"><section class="st-page">${summary}</section><section class="st-page">${modes}</section><section class="st-page">${games}</section></div>`;
 }
 
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
   const def = SHEETS[ui.sheet];
   const phase = displayPhase();
-  if (!def || def.phase !== phase || (phase === 'lobby' && !state)) { ui.sheet = null; return ''; }
+  if (!def || ![].concat(def.phase).includes(phase) || (phase === 'lobby' && !state)) { ui.sheet = null; return ''; }
   const { title, body } = def.render();
   const page = def.page;
   return `

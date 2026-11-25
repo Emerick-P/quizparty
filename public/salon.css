@@ -377,3 +377,71 @@
 .pf-links a { color: var(--muted); }
 .me-chip.mini { margin-left: 0; padding: 3px; }
 [data-key="sh:name"] .sh-body, [data-key="sh:account"] .sh-body { max-width: 560px; width: 100%; margin: 0 auto; }
+
+/* ---------- stats de joueur : 3 pages qu'on fait glisser au doigt (téléphone), 3 colonnes (ordinateur) */
+.sh[data-key="sh:stats"] { overflow: hidden; }
+.sh[data-key="sh:stats"] .sh-body { flex: 1; min-height: 0; gap: 12px; }
+.pf-stats { text-align: left; font-weight: 700; }
+.pname.pstats { background: none; border: 0; padding: 0; color: inherit; font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.pstats-ico { font-size: .8em; opacity: .75; }
+.st-tabs { display: flex; gap: 6px; background: var(--deep); border-radius: 8px; padding: 4px; flex: none; }
+.st-tabs button { flex: 1; border: 0; border-radius: 6px; padding: 9px 4px; background: none; color: var(--muted); font-weight: 700; font-size: .95rem; cursor: pointer; }
+.st-tabs button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 0 var(--line); }
+.st-track { flex: 1; min-height: 0; display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.st-track::-webkit-scrollbar { display: none; }
+.st-page { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 2px 2px 8px; box-sizing: border-box; }
+.st-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.st-tile { background: var(--surf); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; min-width: 0; }
+.st-tile b { font-family: var(--display); font-size: 1.9rem; line-height: 1.1; color: var(--text); }
+.st-tile span { font-weight: 700; color: var(--text); }
+.st-tile small, .st-recs small, .st-modes small { color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.st-h { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-size: .95rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.st-recs, .st-modes, .st-games { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.st-recs li { display: flex; align-items: center; gap: 12px; background: var(--surf); border-radius: 8px; padding: 8px 12px; }
+.st-recs li > span { font-size: 1.4rem; }
+.st-recs li div { display: flex; flex-direction: column; min-width: 0; }
+.st-recs b { font-size: 1.2rem; }
+.st-recs small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-modes li { display: flex; align-items: center; gap: 10px; }
+.st-mi { font-size: 1.4rem; width: 1.8rem; text-align: center; flex: none; }
+.st-mb { flex: 1; min-width: 0; }
+.st-ml { display: flex; justify-content: space-between; gap: 8px; }
+.st-ml b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .95rem; }
+.st-ml span { font-weight: 800; }
+.st-bar { height: 8px; border-radius: 4px; background: var(--deep); overflow: hidden; margin: 3px 0 1px; }
+.st-bar i { display: block; height: 100%; background: var(--mc, var(--accent)); border-radius: 4px; min-width: 2px; }
+.st-games { counter-reset: g; }
+.st-games li { counter-increment: g; display: flex; align-items: center; gap: 10px; background: var(--surf); border-radius: 8px; padding: 8px 12px; }
+.st-games li::before { content: counter(g); font-family: var(--display); font-weight: 800; color: var(--good); width: 1.1rem; }
+.st-worst li::before { color: var(--bad); }
+.st-games b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-games span { color: var(--muted); font-weight: 700; font-size: .9rem; }
+.st-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; color: var(--muted); }
+.st-empty span { font-size: 3rem; }
+.st-wait { text-align: center; padding: 30px 0; }
+
+@media (min-width: 640px) {
+  .st-tiles { grid-template-columns: repeat(4, 1fr); }
+}
+/* Téléphone en paysage : deux colonnes dans chaque page */
+@media (orientation: landscape) and (max-height: 520px) {
+  .sh[data-key="sh:stats"] .sh-head h2 { font-size: 1.4rem; }
+  .sh[data-key="sh:stats"] { padding-top: max(8px, env(safe-area-inset-top)); gap: 8px; }
+  .st-tabs button { padding: 6px 4px; }
+  .st-page { display: grid; grid-template-columns: 1fr 1fr; align-content: start; column-gap: 14px; row-gap: 6px; }
+  .st-page > .st-tiles { grid-row: span 3; grid-template-columns: 1fr 1fr; align-self: start; }
+  .st-tile { padding: 6px 10px; }
+  .st-tile b { font-size: 1.5rem; }
+  .st-page > .st-h { display: none; }
+  .st-recs li, .st-games li { padding: 6px 10px; }
+  .st-modes { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; column-gap: 14px; row-gap: 4px; }
+  .st-page > .sh-note { grid-column: 1 / -1; }
+}
+/* Ordinateur : les trois pages côte à côte, sans onglets */
+@media (min-width: 1000px) and (min-height: 521px) {
+  .sh[data-key="sh:stats"] { height: min(640px, 86vh); }
+  .st-tabs { display: none; }
+  .st-track { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 22px; overflow: hidden; }
+  .st-page { overflow-y: auto; }
+  .st-tiles { grid-template-columns: 1fr 1fr; }
+}
