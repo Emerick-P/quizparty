@@ -49,3 +49,6 @@
 .install-link { display: block; margin: 0 auto; }
 .install-help { margin: 0; text-align: center; color: var(--muted); font-size: .92rem; line-height: 1.45; }
 .install-help b { color: var(--text); }
+
+/* Les messages passent au-dessus de la feuille « Afficher sur la télé » (sinon une erreur de code serait invisible) */
+#toast.toast { z-index: 60; }
