@@ -360,3 +360,8 @@
 .acc-avatar.sm { width: 32px; height: 32px; }
 .player-bar .report-btn { opacity: .75; }
 .credits a { color: inherit; }
+.login-top { flex: none; display: inline-flex; align-items: center; gap: 6px; background: transparent; color: var(--text); border: 2px solid var(--line); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .88rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.login-top:hover { border-color: var(--accent); }
+.lm-right { display: flex; align-items: center; gap: 8px; }
+.lobby-end .login-top { margin-right: 4px; }
+@media (max-width: 380px) { .h-top .logo { font-size: 1.6rem; } .h-top .me-chip span:not(.avatar) { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }

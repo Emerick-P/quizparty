@@ -285,7 +285,7 @@ async function accountConfig() {
   } catch { /* hors ligne : pas de bouton de connexion pour l'instant */ }
   return account.cfg;
 }
-if (!SCREEN) accountConfig().then(() => { if (account.cfg?.enabled && !state) render(); });
+if (!SCREEN) accountConfig().then(() => { if (account.cfg?.enabled) render(); });
 async function accountRefresh(s) {
   try {
     const r = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) });
@@ -1804,6 +1804,8 @@ const SHEETS = {
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
+  account: { phase: 'lobby', render: () => ({ title: account.user ? 'Ton compte' : 'Se connecter', body: `${accountBlock()}
+    <p class="sh-note">Tu reviens dans ce salon juste après la connexion.</p>` }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
     <button class="btn" data-action="sheet" data-value="players">👥 Joueurs (${state.players.length})</button>
@@ -1814,6 +1816,8 @@ const SHEETS = {
 
 /** Bloc « Compte » du profil : connexion facultative (Discord, Google), ou compte connecté. */
 const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
+/** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
+const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
 function accountBlock() {
   const cfg = account.cfg;
   const u = account.user;
@@ -1880,7 +1884,7 @@ const views = {
     <main class="screen home2">
       <div class="h-top">
         <div class="logo">Quiz<b>Party</b></div>
-        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Ton profil">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>
+        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Ton profil">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>${loginTop('name')}
       </div>
       <section class="h-play">
         <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
@@ -1897,7 +1901,6 @@ const views = {
       <div class="h-extras">
         ${TOUCH ? '<button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>' : ''}
         <button class="chip-btn" data-action="propose">💡 Proposer une question</button>
-        ${!account.user && account.cfg?.enabled ? '<button class="chip-btn" data-action="sheet" data-value="name">👤 Se connecter</button>' : ''}
         ${installCard()}
       </div>
       <div class="h-foot">${themeToggle()}</div>
@@ -1917,7 +1920,7 @@ const views = {
       const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
       return `
     <main class="screen lobby lobby-m">
-      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></div>
+      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><span class="lm-right">${loginTop('account')}<button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></span></div>
       <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
         <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
@@ -1943,7 +1946,7 @@ const views = {
     // Ordinateur : joueurs à gauche, jeu choisi au centre, réglages à droite, « Lancer » en bas.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
+      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end">${loginTop('account')}<span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
