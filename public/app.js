@@ -170,6 +170,7 @@ addEventListener('popstate', () => {
   if (SCREEN || !state) return;
   history.pushState({ qp: 1 }, '');
   if (tv.sheet) { tv.sheet = false; render(); }
+  else if (ui.sheet) closeSheet();
   else if (typeof proposeOpen === 'function' && proposeOpen()) closePropose();
   else toast('Pour quitter le salon, utilise « ← Quitter »');
 });
@@ -329,8 +330,9 @@ function displayPhase() {
 
 // =====================================================================  actions
 function getName() {
-  const name = ($('#name')?.value || '').trim();
-  if (!name) { toast('Choisis un pseudo'); $('#name')?.focus(); return null; }
+  const field = $('#name');
+  const name = (field ? field.value : store.get(NAME_KEY) || '').trim();
+  if (!name) { toast('Choisis un pseudo'); field ? field.focus() : openSheet('create'); return null; }
   store.set(NAME_KEY, name);
   return name;
 }
@@ -570,6 +572,10 @@ document.addEventListener('submit', (e) => {
     if (!guess) return toast(state?.round?.kind === 'typed' ? 'Tape ta réponse' : 'Tape le nom du jeu');
     rememberGuess(guess);
     answer(guess);
+  } else if (e.target.matches('[data-form="name"]')) {
+    if (getName()) closeSheet();
+  } else if (e.target.matches('[data-form="create"]')) {
+    actions.create();
   } else if (e.target.matches('[data-form="join"]')) {
     actions.join();
   } else if (e.target.matches('[data-form="steam"]')) {
@@ -1512,93 +1518,56 @@ function padQuestion(r, body, answered) {
   </main>`;
 }
 
-const views = {
-  tvpair: tvPairView,
-  tvlobby: tvLobbyView,
-  loading: () => `<main class="screen center"><p class="muted">Reconnexion…</p></main>`,
+// =====================================================================  accueil et salon : pages et panneaux
+// Sur téléphone, le salon garde l'essentiel à l'écran ; le choix du jeu s'ouvre en page, le reste en panneau du bas.
+// Sur ordinateur (1000 px et plus), salon sur trois colonnes, et le choix du jeu s'ouvre en fenêtre.
+const SHARE_NOTE = '🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.';
+const WIDE_MQ = matchMedia('(min-width: 1000px)');
+const wide = () => WIDE_MQ.matches;
+WIDE_MQ.addEventListener?.('change', () => render());
+const ui = { sheet: null, phase: null };
 
-  home: () => `
-    <main class="screen">
-      <div class="home-top">${themeToggle()}</div>
-      <div class="brand">
-        <div class="logo">Quiz<b>Party</b></div>
-        <p>Le quiz jeu vidéo entre potes</p>
-      </div>
-      <div class="card">
-        <label class="field"><span>Ton pseudo</span>
-          <input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}">
-        </label>
-        ${urlCode() ? '' : `<button class="btn primary big" data-action="create">Créer un salon</button>
-        <div class="or">ou rejoindre un salon</div>`}
-        <form class="row" data-form="join">
-          <input id="code" class="code-input" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" value="${esc(urlCode())}">
-          <button class="btn ${urlCode() ? 'primary' : ''}" type="submit">Rejoindre</button>
-        </form>
-        ${urlCode() ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
-      </div>
-      ${installCard()}
-      <a class="link propose-link" href="/proposer">💡 Proposer une question, un pitch, une capture…</a>
-      <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
-    </main>`,
+function modeGroups() {
+  const { modes } = state.options;
+  const listed = new Set(MODE_GROUPS.flatMap((g) => g.ids));
+  return [...MODE_GROUPS, { name: 'Autres', ids: modes.map((m) => m.id).filter((id) => !listed.has(id)) }]
+    .map((g) => ({ name: g.name, modes: g.ids.map((id) => modes.find((m) => m.id === id)).filter(Boolean) }))
+    .filter((g) => g.modes.length);
+}
 
-  lobby() {
-    const host = isHost();
-    const { settings, options } = state;
-    const seg = (key, values, suffix = '', labels = {}) => `<div class="seg">${values.map((v) =>
-      `<button class="${settings[key] === v ? 'sel' : ''}" data-action="set" data-key="${key}" data-value="${v}" ${host ? '' : 'disabled'}>${labels[v] ?? v}${suffix}</button>`).join('')}</div>`;
-    const current = options.modes.find((m) => m.id === settings.mode);
-    const copied = Date.now() < copiedUntil;
-    const listed = new Set(MODE_GROUPS.flatMap((g) => g.ids));
-    const groups = [...MODE_GROUPS, { name: 'Autres', ids: options.modes.map((m) => m.id).filter((id) => !listed.has(id)) }]
-      .map((g) => ({ name: g.name, modes: g.ids.map((id) => options.modes.find((m) => m.id === id)).filter(Boolean) }))
-      .filter((g) => g.modes.length);
-    // Ordinateur : joueurs à gauche, jeux au centre, réglages à droite, « Lancer » en bas.
-    // Téléphone : une seule colonne, dans le même ordre.
-    return `
-    <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${state.players.length} joueur${state.players.length > 1 ? 's' : ''}</span>${themeToggle()}</span></div>
-      <section class="code-card">
-        <div class="label">Code du salon</div>
-        <div class="code">${esc(state.code)}</div>
-        <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
-      </section>
-      ${tvCard()}
-      <p class="share-note">🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.</p>
-      <div class="lobby-cols">
-      <div class="lb-players">
-      <section class="card">
-        <h2>Joueurs <span class="muted">${state.players.length}</span></h2>
-        <ul class="players">
-          ${state.players.map((p) => `
-            <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
-              ${avatar(p.name)}
-              <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
-              ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
-              ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
-              ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
-            </li>`).join('')}
-        </ul>
-      </section>
-      ${steamCard()}
-      ${globalBoard()}
-      ${proposeButton()}
-      </div>
-      <section class="card lb-modes">
-        <h2>Jeu</h2>
-        ${groups.map((g) => `
-        <div class="mode-group">
-          <h3>${esc(g.name)}</h3>
-          <div class="modes">
-          ${g.modes.map((m) => `
-            <button class="mode ${settings.mode === m.id ? 'sel' : ''} ${m.unavailable ? 'off' : ''}" style="--mc:${modeArt(m.id)[1]}" data-action="set" data-key="mode" data-value="${m.id}" ${host && !m.unavailable ? '' : 'disabled'}>
-              <span class="mode-ico" aria-hidden="true">${modeArt(m.id)[0]}</span>
-              <span class="mode-txt"><b>${esc(m.name)}</b><small>${esc(m.unavailable || m.description)}</small></span>
-            </button>`).join('')}
-          </div>
-        </div>`).join('')}
-      </section>
-      <section class="card lb-settings" style="--mc:${modeArt(settings.mode)[1]}">
-        <h2>Réglages</h2>
+/** Résumé des réglages en étiquettes : « 4 choix · 10 questions · 15 s ». */
+function settingsTags() {
+  const { settings: st } = state;
+  const cur = state.options.modes.find((m) => m.id === st.mode);
+  const tags = [];
+  if (cur?.mix) tags.push(MIX_INPUT_LABEL[st.mixInput], `${st.mixParts.length} jeux`);
+  else if (cur?.inputs) tags.push(INPUT_LABEL[st.input]);
+  if (cur?.levels) tags.push(LEVEL_LABEL[st.level]);
+  if (cur?.grids) tags.push(`${st.rounds} min`);
+  else tags.push(`${st.rounds} questions`, `${st.duration} s`);
+  return tags.filter(Boolean);
+}
+
+/** Grande carte « Ce soir on joue à » : le jeu choisi, ses règles, ses réglages. */
+function heroCard(host) {
+  const id = state.settings.mode;
+  const cur = state.options.modes.find((m) => m.id === id);
+  const [ico, color] = modeArt(id);
+  return `<section class="hero" style="--mc:${color}">
+    ${host ? '<button class="hero-chg" data-action="sheet" data-value="games">Changer ›</button>' : ''}
+    <span class="hero-ico" aria-hidden="true">${ico}</span>
+    <h2>${esc(cur?.name || '')}</h2>
+    <p>${esc(cur?.description || '')}</p>
+    <button class="hero-tags" data-action="sheet" data-value="settings" aria-label="${host ? 'Changer les réglages' : 'Voir les réglages'}">${settingsTags().map((t) => `<span>${esc(t)}</span>`).join('')}<span class="edit">${host ? '✎ Réglages' : 'Réglages ›'}</span></button>
+  </section>`;
+}
+
+function settingsBody(host) {
+  const { settings, options } = state;
+  const seg = (key, values, suffix = '', labels = {}) => `<div class="seg">${values.map((v) =>
+    `<button class="${settings[key] === v ? 'sel' : ''}" data-action="set" data-key="${key}" data-value="${v}" ${host ? '' : 'disabled'}>${labels[v] ?? v}${suffix}</button>`).join('')}</div>`;
+  const current = options.modes.find((m) => m.id === settings.mode);
+  return `
         <div class="cur-mode"><span class="mode-ico" aria-hidden="true">${modeArt(settings.mode)[0]}</span><b>${esc(current?.name || '')}</b></div>
         ${current?.mix ? `<div class="opt"><span>Réponse</span>${seg('mixInput', options.mixInput, '', MIX_INPUT_LABEL)}</div>
           <p class="opt-hint">${settings.mixInput === 'mixed' ? 'Chaque manche tire au hasard : 4 choix (un seul essai) ou réponse tapée (3 essais, accents et majuscules ignorés).'
@@ -1621,12 +1590,204 @@ const views = {
         ${current?.grids ? `<div class="opt"><span>Durée</span>${seg('rounds', options.rounds, ' min')}</div>
         <p class="opt-hint">Grilles de 10 mots, validées dès 8 mots trouvés. Les mêmes grilles pour tout le monde : celui qui en valide le plus en ${settings.rounds} min gagne. À égalité : le plus de mots dans la grille en cours, puis le premier à avoir trouvé son dernier mot.</p>`
         : `<div class="opt"><span>Questions</span>${seg('rounds', options.rounds)}</div>
-        <div class="opt"><span>Temps</span>${seg('duration', options.duration, 's')}</div>`}
+        <div class="opt"><span>Temps</span>${seg('duration', options.duration, 's')}</div>`}`;
+}
+
+function playersList(host) {
+  return `<ul class="players">
+          ${state.players.map((p) => `
+            <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
+              ${avatar(p.name)}
+              <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
+              ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
+              ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
+              ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
+            </li>`).join('')}
+        </ul>`;
+}
+
+/** Pages (« page: true », plein écran sur téléphone) et panneaux du bas, par écran. */
+const SHEETS = {
+  name: { phase: 'home', render: () => ({ title: 'Ton pseudo', body: `
+    <form class="sh-form" data-form="name">
+      <input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="done">
+      <button class="btn primary" type="submit">C’est bon</button>
+    </form>
+    <p class="sh-note">C’est le nom que verront tes potes. Pas de compte : il reste juste sur cet appareil.</p>` }) },
+  create: { phase: 'home', render: () => ({ title: 'Créer un salon', body: `
+    <form class="sh-form" data-form="create">
+      <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
+      <button class="btn primary big" type="submit">Créer le salon</button>
+    </form>` }) },
+  join: { phase: 'home', render: () => ({ title: 'Rejoindre un salon', body: `
+    <form class="sh-form" data-form="join">
+      <label class="field"><span>Code du salon</span><input id="code" class="code-input" maxlength="4" placeholder="CODE" autocomplete="off" autocapitalize="characters" value="${esc(urlCode())}"></label>
+      <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
+      <button class="btn primary big" type="submit">Rejoindre</button>
+    </form>` }) },
+  tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
+    <ol class="sh-steps">
+      <li><b>Crée un salon</b> sur ton téléphone.</li>
+      <li>Sur la télé (son navigateur, un PC branché en HDMI, une console…), ouvre <span class="tv-url">${esc(location.host)}/tv</span> : un code à 4 chiffres s’affiche.</li>
+      <li>Dans le salon, touche <b>📺 Sur la télé</b> et tape ce code.</li>
+    </ol>
+    <p class="sh-note">La télé affiche les questions, les images et les scores ; chacun répond sur son téléphone, l’hôte aussi. Sans télé, tout se joue sur les téléphones.</p>
+    <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
+  games: { phase: 'lobby', page: true, render: () => ({ title: 'Choisis le jeu', body: modeGroups().map((g) => `
+    <div class="pick-group"><h3>${esc(g.name)}</h3><div class="pick-grid">
+    ${g.modes.map((m) => `<button class="pick ${state.settings.mode === m.id ? 'sel' : ''} ${m.unavailable ? 'off' : ''}" style="--mc:${modeArt(m.id)[1]}" data-action="pick" data-value="${m.id}" ${isHost() && !m.unavailable ? '' : 'disabled'}>
+      <span class="pick-ico" aria-hidden="true">${modeArt(m.id)[0]}</span><b>${esc(m.name)}</b><small>${esc(m.unavailable || m.description)}</small></button>`).join('')}
+    </div></div>`).join('') }) },
+  settings: { phase: 'lobby', render: () => ({ title: 'Réglages', body: `<div class="lb-settings sh-settings">${settingsBody(isHost())}</div>
+    <button class="btn primary" data-action="sheetclose">C’est bon</button>` }) },
+  players: { phase: 'lobby', render: () => ({ title: `Joueurs · ${state.players.length}`, body: playersList(isHost()) }) },
+  steam: { phase: 'lobby', render: () => ({ title: 'Ton Steam', body: steamCard() }) },
+  scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
+  note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
+    <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
+  more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
+    <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
+    <button class="btn" data-action="sheet" data-value="players">👥 Joueurs (${state.players.length})</button>
+    ${state.gamesPlayed ? '<button class="btn" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
+    <button class="btn" data-action="sheet" data-value="steam">🎮 Lier mon Steam</button>
+    <button class="btn" data-action="propose">💡 Proposer une question</button>` }) },
+};
+
+function sheetView() {
+  if (!ui.sheet || SCREEN) return '';
+  const def = SHEETS[ui.sheet];
+  const phase = displayPhase();
+  if (!def || def.phase !== phase || (phase === 'lobby' && !state)) { ui.sheet = null; return ''; }
+  const { title, body } = def.render();
+  const page = def.page;
+  return `
+  <div class="sh-bg" data-action="sheetclose"></div>
+  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${ui.sheet}">
+    <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
+    <div class="sh-body">${body}</div>
+  </section>`;
+}
+function openSheet(name) {
+  ui.sheet = name;
+  render();
+  if (['name', 'create'].includes(name)) setTimeout(() => $('#name')?.focus(), 60);
+  if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
+}
+const closeSheet = () => { ui.sheet = null; render(); };
+actions.sheet = (btn) => openSheet(btn.dataset.value);
+actions.sheetclose = closeSheet;
+actions.soon = (btn) => toast(btn.dataset.value);
+actions.propose = () => { if (ui.sheet) closeSheet(); openPropose(); };
+// « Créer un salon » : directement si le pseudo est connu, sinon on le demande d'abord
+actions.go = () => (store.get(NAME_KEY) ? actions.create() : openSheet('create'));
+actions.pick = async (btn) => {
+  ui.sheet = null;
+  render();
+  const r = await send('room:settings', { mode: btn.dataset.value });
+  if (r.error) toast(r.error);
+};
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
+
+const views = {
+  tvpair: tvPairView,
+  tvlobby: tvLobbyView,
+  loading: () => `<main class="screen center"><p class="muted">Reconnexion…</p></main>`,
+
+  home: () => {
+    const name = store.get(NAME_KEY) || '';
+    const invited = urlCode();
+    return `
+    <main class="screen home2">
+      <div class="h-top">
+        <div class="logo">Quiz<b>Party</b></div>
+        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Changer de pseudo">${name ? `${avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>
+      </div>
+      <section class="h-play">
+        <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
+        <p>${invited ? 'Tes potes t’attendent : choisis ton pseudo et rejoins-les.' : 'Un salon, un code, et c’est parti. Sur la télé ou juste sur vos téléphones.'}</p>
+        <div class="h-btns">${invited
+          ? '<button class="btn primary big" data-action="sheet" data-value="join">Rejoindre le salon</button>'
+          : '<button class="btn primary" data-action="go" data-value="create">Créer un salon</button><button class="btn h-ghost" data-action="sheet" data-value="join">Rejoindre</button>'}</div>
+        ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
+      </section>
+      <div class="h-tiles">
+        <button class="h-tile daily" data-action="soon" data-value="Le défi du jour arrive bientôt : le même quiz pour tout le monde, chaque jour, avec un résultat à partager."><i class="soon">Bientôt</i><span class="t-ico">📅</span><b>Défi du jour</b><small>Le même quiz pour tout le monde, résultat à partager</small><span class="streak" aria-hidden="true"><i class="ok"></i><i class="ok"></i><i class="mid"></i><i class="ok"></i><i></i></span></button>
+        <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
+        <button class="h-tile" data-action="sheet" data-value="tvinfo"><span class="t-ico">📺</span><b>Sur la télé</b><small>La partie en grand, les téléphones en manette</small></button>
+        <button class="h-tile" data-action="propose"><span class="t-ico">💡</span><b>Proposer</b><small>Tes questions, pitchs, sons, captures</small></button>
+      </div>
+      ${installCard()}
+      <div class="h-foot">${themeToggle()}</div>
+      <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
+    </main>`;
+  },
+
+  lobby() {
+    const host = isHost();
+    const copied = Date.now() < copiedUntil;
+    const count = `${state.players.length} joueur${state.players.length > 1 ? 's' : ''}`;
+    const start = host
+      ? '<button class="btn primary big sticky-bottom" data-action="start">Lancer la partie</button>'
+      : `<p class="waiting">En attente de ${esc(state.players.find((p) => p.id === state.hostId)?.name || "l'hôte")}</p>`;
+    if (!wide()) {
+      // Téléphone : l'essentiel sur un écran (code, joueurs, jeu choisi) ; le reste s'ouvre en page ou en panneau
+      const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
+      return `
+    <main class="screen lobby lobby-m">
+      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></div>
+      <section class="lm-code"><small>Code du salon</small><b class="code">${esc(state.code)}</b></section>
+      <div class="lm-chips">
+        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : '🔗 Inviter'}</button>
+        ${host && !state.tv ? '<button class="chip-btn tv-chip" data-action="tvsheet">📺 Sur la télé</button>' : ''}
+        <button class="chip-btn" data-action="sheet" data-value="note">🔒 Entre potes <span aria-hidden="true">ⓘ</span></button>
+      </div>
+      ${state.tv ? tvCard() : ''}
+      <button class="lm-players" data-action="sheet" data-value="players" aria-label="Voir les joueurs (${count})">
+        ${state.players.map((p) => `<span class="lm-pl ${p.connected ? '' : 'off'}" data-key="${p.id}">${avatar(p.name)}${p.id === state.hostId ? '<i>hôte</i>' : ''}<small>${esc(p.name)}</small></span>`).join('')}
+      </button>
+      <div class="lm-main">
+        <div class="lm-label">Ce soir on joue à</div>
+        ${heroCard(host)}
+      </div>
+      ${start}
+      <nav class="lm-foot">
+        ${state.gamesPlayed ? '<button class="link" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
+        <button class="link" data-action="sheet" data-value="steam">🎮 ${linked ? 'Steam ✓' : 'Mon Steam'}</button>
+        <button class="link" data-action="propose">💡 Proposer</button>
+      </nav>
+    </main>`;
+    }
+    // Ordinateur : joueurs à gauche, jeu choisi au centre, réglages à droite, « Lancer » en bas.
+    return `
+    <main class="screen lobby">
+      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
+      <section class="code-card">
+        <div class="label">Code du salon</div>
+        <div class="code">${esc(state.code)}</div>
+        <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
+      </section>
+      ${tvCard()}
+      <p class="share-note">${SHARE_NOTE}</p>
+      <div class="lobby-cols">
+      <div class="lb-players">
+      <section class="card">
+        <h2>Joueurs <span class="muted">${state.players.length}</span></h2>
+        ${playersList(host)}
+      </section>
+      ${steamCard()}
+      ${globalBoard()}
+      ${proposeButton()}
+      </div>
+      <section class="lb-center">
+        <div class="lm-label">Ce soir on joue à</div>
+        ${heroCard(host)}
+      </section>
+      <section class="card lb-settings" style="--mc:${modeArt(state.settings.mode)[1]}">
+        <h2>Réglages</h2>
+        ${settingsBody(host)}
       </section>
       </div>
-      ${host
-        ? '<button class="btn primary big sticky-bottom" data-action="start">Lancer la partie</button>'
-        : `<p class="waiting">En attente de ${esc(state.players.find((p) => p.id === state.hostId)?.name || "l'hôte")}</p>`}
+      ${start}
     </main>`;
   },
 
@@ -1937,7 +2098,7 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay() + tvSheet();
+  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
