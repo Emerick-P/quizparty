@@ -124,7 +124,7 @@ addEventListener('appinstalled', () => {
 });
 /** Bouton « Installer l'app » de l'accueil (Android/PC : vraie installation ; iPhone : aide en 2 gestes). */
 function installCard() {
-  if (STANDALONE || SCREEN) return '';
+  if (STANDALONE || SCREEN || !TOUCH) return ''; // sur ordinateur, le site suffit : pas de bouton d'installation
   let installed = false;
   try { installed = localStorage.getItem(INSTALLED_KEY) === '1'; } catch {}
   if (installed && !pwa.prompt) return '<p class="install-help">✓ App installée : ouvre QuizParty depuis l’icône QP de ton écran d’accueil, en plein écran.</p>';
