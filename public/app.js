@@ -1843,6 +1843,7 @@ const SHEETS = {
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: 'lobby', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
+  menu: { phase: ['home', 'lobby'], render: () => ({ title: 'Menu', body: menuBody() }) },
   stats: { phase: ['home', 'lobby'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
@@ -1859,7 +1860,7 @@ const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">$
 const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
 /** Salon : en haut à droite, « Se connecter » pour un invité, sinon l'avatar qui ouvre le profil. */
 const profileTop = () => (account.user
-  ? `<button class="me-chip mini" data-action="sheet" data-value="account" aria-label="Ton profil">${account.user.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(store.get(NAME_KEY) || account.user.name)}</button>`
+  ? `<button class="me-chip mini" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${account.user.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(store.get(NAME_KEY) || account.user.name)}</button>`
   : loginTop('account'));
 
 /** Page Profil (accueil et salon) : pseudo, compte (connexion, déconnexion, suppression), thème. */
@@ -1875,10 +1876,8 @@ function profileBody() {
     <button class="btn primary" type="submit">Enregistrer</button>
   </form>
   <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
-  ${u ? `<button class="btn pf-stats" data-action="mystats">📊 Mes stats</button>` : ''}
   ${u ? `<div class="acc">
     <h3>Compte</h3>
-    <button class="btn" data-action="logout">Se déconnecter</button>
     <button class="btn danger-btn" data-action="deleteAccount">Supprimer mon compte</button>
     <p class="sh-note small">La suppression efface ton compte et ton profil, définitivement. Tu pourras toujours jouer en invité.</p>
   </div>` : `${accountBlock()}${state ? '<p class="sh-note small">Tu reviens dans ce salon juste après la connexion.</p>' : ''}`}
@@ -1981,6 +1980,28 @@ function statsBody() {
     <div class="st-track"><section class="st-page">${summary}</section><section class="st-page">${modes}</section><section class="st-page">${games}</section></div>`;
 }
 
+/**
+ * Menu du profil (touche l'avatar ou le pseudo, en haut à droite) : pages personnelles (profil, stats,
+ * bientôt amis et personnalisation), déconnexion en dernier. Feuille par le bas sur téléphone,
+ * menu déroulant sous l'avatar sur ordinateur. Le bandeau du haut garde ce qui touche au jeu.
+ */
+function menuBody() {
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const profile = state ? 'account' : 'name';
+  const item = (ico, label, attrs, note = '') => `<button class="mn-item" ${attrs}><span class="mn-ico" aria-hidden="true">${ico}</span><span class="mn-l">${label}</span>${note ? `<small>${note}</small>` : ''}</button>`;
+  return `
+  <div class="mn-head">${u?.avatar ? `<img class="acc-avatar" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : avatar(name || '?')}
+    <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')}` : 'Invité'}</small></div></div>
+  <nav class="mn" role="menu">
+    ${item('👤', 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
+    ${u ? item('📊', 'Mes stats', 'data-action="mystats" role="menuitem"') : item('📊', 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
+    ${item('👥', 'Amis', 'disabled role="menuitem"', 'Bientôt')}
+    ${item('🎨', 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
+  </nav>
+  ${u ? `<div class="mn-sep"></div>${item('⎋', 'Se déconnecter', 'data-action="logout" role="menuitem"').replace('mn-item', 'mn-item mn-out')}` : ''}`;
+}
+
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
   const def = SHEETS[ui.sheet];
@@ -1990,7 +2011,7 @@ function sheetView() {
   const page = def.page;
   return `
   <div class="sh-bg" data-action="sheetclose"></div>
-  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${ui.sheet}">
+  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${ui.sheet}"${ui.sheet === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
     <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
     <div class="sh-body">${body}</div>
   </section>`;
@@ -2003,7 +2024,14 @@ function openSheet(name) {
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
 const closeSheet = () => { ui.sheet = null; render(); };
-actions.sheet = (btn) => openSheet(btn.dataset.value);
+actions.sheet = (btn) => {
+  // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
+  if (btn.dataset.value === 'menu') {
+    const r = btn.getBoundingClientRect();
+    ui.anchor = { right: Math.round(innerWidth - r.right), bottom: Math.round(r.bottom + 8) };
+  }
+  openSheet(btn.dataset.value);
+};
 actions.sheetclose = closeSheet;
 actions.soon = (btn) => toast(btn.dataset.value);
 actions.propose = () => { if (ui.sheet) closeSheet(); openPropose(); };
@@ -2196,7 +2224,7 @@ const views = {
     <main class="screen home2">
       <div class="h-top">
         <div class="logo">Quiz<b>Party</b></div>
-        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Ton profil">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>${loginTop('name')}
+        <button class="me-chip" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>${loginTop('name')}
       </div>
       <section class="h-play">
         <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>

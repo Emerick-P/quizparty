@@ -507,3 +507,33 @@
   .st-page { overflow-y: auto; }
   .st-tiles { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- menu du profil (avatar en haut à droite) : feuille par le bas sur téléphone, déroulant sur ordinateur */
+.sh[data-key="sh:menu"] { gap: 10px; }
+.sh[data-key="sh:menu"] .sh-head { display: none; }
+.mn-head { display: flex; align-items: center; gap: 12px; padding: 4px 4px 8px; border-bottom: 1px solid var(--line); }
+.mn-head .acc-avatar, .mn-head .avatar { width: 44px; height: 44px; font-size: 1.2rem; flex: none; }
+.mn-head div { display: flex; flex-direction: column; min-width: 0; }
+.mn-head b { font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mn-head small { color: var(--muted); font-size: .85rem; }
+.mn { display: flex; flex-direction: column; gap: 2px; }
+.mn-item { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: 0; border-radius: 8px; padding: 12px 10px; color: var(--text); font: inherit; font-weight: 600; font-size: 1.02rem; text-align: left; cursor: pointer; }
+.mn-item:hover:not(:disabled), .mn-item:focus-visible { background: var(--surf); }
+.mn-item:disabled { opacity: .5; cursor: default; }
+.mn-ico { width: 1.6rem; text-align: center; font-size: 1.2rem; flex: none; }
+.mn-l { flex: 1; }
+.mn-item small { color: var(--muted); font-size: .78rem; font-weight: 700; background: var(--deep); border-radius: 4px; padding: 2px 7px; }
+.mn-sep { height: 1px; background: var(--line); margin: 2px 0; }
+.mn-out { color: var(--bad); }
+@media (orientation: landscape) and (max-height: 520px) {
+  .sh[data-key="sh:menu"] { max-width: 420px; }
+  .mn-item { padding: 8px 10px; }
+}
+@media (min-width: 1000px) and (min-height: 521px) {
+  .sh[data-key="sh:menu"] { top: var(--ay, 70px); right: var(--ax, 24px); left: auto; bottom: auto; transform: none; width: 290px; max-height: none; padding: 10px; border-radius: 10px; box-shadow: 0 14px 40px rgba(0, 0, 0, .45); animation: fade .12s ease-out; }
+  .sh-bg:has(+ .sh[data-key="sh:menu"]) { background: transparent; backdrop-filter: none; }
+  .mn-item { padding: 10px; font-size: .98rem; }
+  /* Stats : une vraie page plein écran, pas une fenêtre par-dessus l'accueil */
+  .sh[data-key="sh:stats"] { inset: 0; width: auto; height: auto; max-height: none; transform: none; border-radius: 0; padding: 26px max(24px, calc(50% - 560px)) 30px; animation: fade .15s ease-out; }
+  .sh[data-key="sh:stats"] .st-track { gap: 28px; }
+}
