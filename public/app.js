@@ -90,10 +90,22 @@ const controller = () => !SCREEN && !!state?.tv;
 if (SCREEN) {
   document.documentElement.classList.add('tv');
   // Interface dessinée pour 1280 px de large, agrandie à la taille de l'écran (télé 1080p ou 4K)
-  const fit = () => { document.body.style.zoom = String(Math.max(1, innerWidth / 1280)); };
+  // Toujours entier à l'écran, même avec la barre du navigateur de la télé (on garde le 16:9)
+  const fit = () => { document.body.style.zoom = String(Math.min(innerWidth / 1280, innerHeight / 720)); };
   fit();
   addEventListener('resize', fit);
+  // Plein écran : interdit sans geste, donc au premier appui sur OK de la télécommande (ou clic)
+  const full = () => {
+    if (document.fullscreenElement || !document.documentElement.requestFullscreen) return;
+    document.documentElement.requestFullscreen().catch(() => {});
+  };
+  addEventListener('keydown', (e) => { if (['Enter', ' ', 'Select'].includes(e.key) || e.keyCode === 13) full(); });
+  addEventListener('click', full);
+  document.addEventListener('fullscreenchange', () => render());
 }
+/** Rappel discret sur la télé tant qu'elle n'est pas en plein écran. */
+const fullHint = () => (SCREEN && document.documentElement.requestFullscreen && !document.fullscreenElement
+  ? '<p class="tv-full">Appuie sur <b>OK</b> de la télécommande pour passer en plein écran</p>' : '');
 
 // =====================================================================  app installée (PWA)
 // Installable sans store : écran d'accueil, plein écran, écran qui reste allumé pendant la partie.
@@ -1374,6 +1386,7 @@ function tvPairView() {
     <div class="tv-label">Code de cet écran</div>
     <div class="tv-digits">${digits.map((d) => `<span>${esc(d)}</span>`).join('')}</div>
     <p class="tv-steps">Sur ton téléphone, dans le salon : <b>📺 Afficher sur la télé</b>, puis tape ce code.<br>Rien à saisir avec la télécommande.</p>
+    ${fullHint()}
   </main>`;
 }
 
@@ -1400,6 +1413,7 @@ function tvLobbyView() {
     <div class="tv-foot"><span class="mode-ico">${modeArt(settings.mode)[0]}</span><b>${esc(current?.name || '')}</b>
       <span class="muted">${current?.grids ? `${settings.rounds} min` : `${settings.rounds} questions · ${settings.duration} s`}</span>
       <span class="tv-wait">${esc(host?.name || 'L’hôte')} lance la partie depuis son téléphone</span></div>
+    ${fullHint()}
   </main>`;
 }
 

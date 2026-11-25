@@ -3,7 +3,7 @@
  * La page est dessinée pour 1280 px de large puis agrandie (zoom) à la taille de l'écran.
  * Chargé seulement sur /tv, après plateau.css : toutes les couleurs viennent de ses variables.
  */
-html.tv, html.tv body { overflow: hidden; cursor: none; }
+html.tv, html.tv body { overflow: hidden; cursor: none; height: 100%; }
 html.tv #app, html.tv #app.wide, html.tv #app.wider { max-width: none; width: 1280px; height: 720px; min-height: 0; margin: 0; }
 html.tv .screen { padding: 28px 40px; gap: 18px; height: 720px; overflow: hidden; }
 html.tv .conn-banner { font-size: 1.2rem; }
@@ -109,3 +109,7 @@ html.tv .roster-head { flex-direction: row; gap: 10px; }
 html.tv .roster ul { flex-direction: row; }
 html.tv .roster .chip { border-radius: 6px; flex: none; }
 html.tv .roster .chip .cname { flex: none; }
+/* Écran centré quand la télé n'est pas exactement en 16:9 (barre du navigateur) */
+html.tv body { display: flex; justify-content: center; }
+.tv-full { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); margin: 0; background: var(--surf); color: var(--muted); padding: 8px 18px; border-radius: 6px; font-size: 1.05rem; white-space: nowrap; }
+.tv-full b { color: var(--accent-text); }
