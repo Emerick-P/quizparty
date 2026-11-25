@@ -1842,9 +1842,9 @@ const SHEETS = {
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
-  account: { phase: 'lobby', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
-  menu: { phase: ['home', 'lobby'], render: () => ({ title: 'Menu', body: menuBody() }) },
-  stats: { phase: ['home', 'lobby'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
+  account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
+  menu: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Menu', body: menuBody() }) },
+  stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
     <button class="btn" data-action="sheet" data-value="account">👤 Profil</button>
@@ -1987,18 +1987,19 @@ function appBar(phase) {
   if (!hasBar(phase)) return '';
   const u = account.user;
   const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
-  const inRoom = !!state;
+  const solo = !!state?.daily; // défi du jour : pas un vrai salon (ni code, ni Quitter), le logo ramène à l'accueil
+  const inRoom = !!state && !solo;
   const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
   const face = u?.avatar ? `<img class="acc-avatar sm" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : name ? avatar(name) : '';
   const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
-    <button class="ab-logo" data-action="navhome" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    <button class="ab-logo" data-action="${solo ? 'dailyhome' : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
     ${inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
     <span class="ab-end">
       ${inRoom ? '<button class="ab-btn" data-action="leave">Quitter</button>' : ''}
       ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
-      ${loginTop(inRoom ? 'account' : 'name')}${chip}
+      ${solo ? '' : loginTop(inRoom ? 'account' : 'name')}${chip}
     </span>
   </div></header>`;
 }
@@ -2030,7 +2031,7 @@ function menuBody() {
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
   const phase = displayPhase();
-  const ok = (name) => { const d = SHEETS[name]; return d && [].concat(d.phase).includes(phase) && !(phase === 'lobby' && !state); };
+  const ok = (name) => { const d = SHEETS[name]; return d && [].concat(d.phase).includes(phase) && !(phase !== 'home' && !state); };
   if (!ok(ui.sheet)) { ui.sheet = null; ui.base = null; return ''; }
   // Menu ouvert depuis une page (stats, profil…) : la page reste dessous
   const base = ui.sheet === 'menu' && ui.base && ok(ui.base) ? sheetHtml(ui.base, false) : '';
