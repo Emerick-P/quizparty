@@ -217,3 +217,8 @@
   .reveal-screen .result { padding: 10px 14px; font-size: 1.8rem; }
   .reveal-screen .prompt.small { margin: 0; }
 }
+
+/* ---------- « L'app sur ton téléphone » */
+.getapp-qr { align-self: center; background: #fff; padding: 14px; border-radius: 10px; box-shadow: 6px 6px 0 var(--shadow); }
+.getapp-qr img { display: block; width: 200px; height: 200px; }
+.home2 .install-btn { align-self: center; width: auto; padding: 12px 20px; }

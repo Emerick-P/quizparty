@@ -111,7 +111,7 @@ const fullHint = () => (SCREEN && document.documentElement.requestFullscreen && 
 // Installable sans store : écran d'accueil, plein écran, écran qui reste allumé pendant la partie.
 const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const pwa = { prompt: null, help: false, wake: null };
+const pwa = { prompt: null, installed: false, wake: null };
 if ('serviceWorker' in navigator && !SCREEN) navigator.serviceWorker.register('/sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; render(); });
 const INSTALLED_KEY = 'quizparty:installed';
@@ -122,16 +122,39 @@ addEventListener('appinstalled', () => {
   toast(INSTALLED_MSG);
   render();
 });
-/** Bouton « Installer l'app » de l'accueil (Android/PC : vraie installation ; iPhone : aide en 2 gestes). */
+/** L'app est-elle déjà installée ? Installée depuis ce navigateur (mémorisé), ou détectée par Chrome Android. */
+function appInstalled() {
+  if (pwa.installed) return true;
+  try { return localStorage.getItem(INSTALLED_KEY) === '1'; } catch { return false; }
+}
+navigator.getInstalledRelatedApps?.().then((apps) => { if (apps?.length) { pwa.installed = true; render(); } }).catch(() => {});
+
+/**
+ * Accueil : faire savoir qu'il existe une app pour le téléphone.
+ * Ordinateur : un bouton ouvre un QR code (le téléphone arrive sur la fenêtre d'installation).
+ * Téléphone : Android installe en un geste ; iPhone, aide en 2 gestes ; déjà installée, on le dit.
+ */
 function installCard() {
-  if (STANDALONE || SCREEN || !TOUCH) return ''; // sur ordinateur, le site suffit : pas de bouton d'installation
-  let installed = false;
-  try { installed = localStorage.getItem(INSTALLED_KEY) === '1'; } catch {}
-  if (installed && !pwa.prompt) return '<p class="install-help">✓ App installée : ouvre QuizParty depuis l’icône QP de ton écran d’accueil, en plein écran.</p>';
+  if (STANDALONE || SCREEN) return '';
+  if (!TOUCH) return '<button class="btn install-btn ghost" data-action="sheet" data-value="getapp">📱 L’app QuizParty sur ton téléphone</button>';
+  if (appInstalled() && !pwa.prompt) return '<p class="install-help">✓ App installée : ouvre QuizParty depuis l’icône QP de ton écran d’accueil, en plein écran.</p>';
   if (pwa.prompt) return '<button class="btn install-btn" data-action="install">📲 Installer l’app</button>';
-  if (!IOS) return '';
-  return `<button class="link install-link" data-action="installhelp">📲 Installer l’app sur ton iPhone</button>
-    ${pwa.help ? '<p class="install-help">Dans Safari, touche <b>Partager</b> <span aria-hidden="true">⬆︎</span> puis <b>« Sur l’écran d’accueil »</b>. QuizParty s’ouvrira ensuite en plein écran, comme une app.</p>' : ''}`;
+  return '<button class="btn install-btn ghost" data-action="sheet" data-value="getapp">📲 Installer l’app</button>';
+}
+/** Fenêtre « L'app sur ton téléphone » (ordinateur : QR code ; téléphone : la marche à suivre). */
+function getAppBody() {
+  const host = esc(location.host);
+  if (!TOUCH) return `
+    <div class="getapp-qr"><img src="/qr/app.svg" alt="QR code vers QuizParty" width="200" height="200"></div>
+    <p class="sh-note big">Scanne ce code avec l’appareil photo de ton téléphone : QuizParty s’ouvre, il ne reste qu’à toucher <b>Installer l’app</b>.</p>
+    <p class="sh-note">Sinon, ouvre <span class="tv-url">${host}</span> dans le navigateur de ton téléphone. L’app est gratuite, sans store, et se met à jour toute seule.</p>`;
+  if (appInstalled() && !pwa.prompt) return '<p class="sh-note big">✓ L’app est déjà installée sur ce téléphone : ouvre-la depuis l’icône <b>QP</b> de ton écran d’accueil.</p>';
+  if (pwa.prompt) return `<p class="sh-note big">QuizParty en plein écran, avec son icône sur ton écran d’accueil. Gratuit, sans store.</p>
+    <button class="btn primary big" data-action="install">📲 Installer l’app</button>`;
+  if (IOS) return `<ol class="sh-steps"><li>Dans <b>Safari</b>, touche <b>Partager</b> <span aria-hidden="true">⬆︎</span> (en bas de l’écran).</li><li>Choisis <b>« Sur l’écran d’accueil »</b>.</li></ol>
+    <p class="sh-note">QuizParty s’ouvrira ensuite en plein écran, comme une app. Depuis Chrome ou un autre navigateur sur iPhone, ouvre d’abord la page dans Safari.</p>`;
+  return `<ol class="sh-steps"><li>Ouvre le menu <b>⋮</b> de ton navigateur (en haut à droite).</li><li>Touche <b>« Installer l’application »</b> ou <b>« Ajouter à l’écran d’accueil »</b>.</li></ol>
+    <p class="sh-note">Avec Chrome, Edge ou Samsung Internet, un bouton « Installer » peut aussi apparaître ici après quelques secondes.</p>`;
 }
 /** Écran allumé tant qu'on est dans un salon (le téléphone ne se met pas en veille entre deux questions). */
 async function keepAwake() {
@@ -416,12 +439,12 @@ const actions = {
     const choice = await pwa.prompt.userChoice.catch(() => null);
     pwa.prompt = null;
     if (choice?.outcome === 'accepted') {
+      if (ui.sheet === 'getapp') ui.sheet = null;
       try { localStorage.setItem(INSTALLED_KEY, '1'); } catch {}
       toast(INSTALLED_MSG);
     }
     render();
   },
-  installhelp() { pwa.help = !pwa.help; render(); },
   tvsheet() { tv.sheet = true; render(); setTimeout(() => $('#tv-pin')?.focus(), 50); },
   tvclose() { tv.sheet = false; render(); },
   async tvoff() { const r = await send('room:screen-off'); if (r.error) toast(r.error); },
@@ -1627,6 +1650,7 @@ const SHEETS = {
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
+  getapp: { phase: 'home', render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
   tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
     <ol class="sh-steps">
       <li><b>Crée un salon</b> sur ton téléphone.</li>
@@ -2170,3 +2194,8 @@ function frame() {
 
 render();
 requestAnimationFrame(frame);
+// Arrivée par le QR code « L'app sur ton téléphone » : on ouvre directement la fenêtre d'installation
+if (new URLSearchParams(location.search).has('install')) {
+  history.replaceState(null, '', location.pathname);
+  if (!STANDALONE && !SCREEN && displayPhase() === 'home') openSheet('getapp');
+}

@@ -63,12 +63,31 @@ app.get(['/', '/index.html'], (req, res) => sendIndex(req, res));
 // Écran télé (mode télé) : la même application, avec son habillage plein écran 16:9
 app.get(['/tv', '/tv.html'], (req, res) => sendIndex(req, res, true));
 // QR code du salon affiché sur la télé (lien direct vers le salon)
-app.get('/qr/:code.svg', async (req, res) => {
+app.get('/qr/:code.svg', async (req, res, next) => {
   const code = String(req.params.code).toUpperCase();
-  if (!/^[A-Z]{4}$/.test(code)) return res.sendStatus(404);
+  if (!/^[A-Z]{4}$/.test(code)) return next();
   const svg = await QRCode.toString(`${req.protocol}://${req.get('host')}/?code=${code}`, { type: 'svg', margin: 0, color: { dark: '#121418', light: '#ffffff' } });
   res.set('Cache-Control', 'public, max-age=3600');
   res.type('image/svg+xml').send(svg);
+});
+// Adresse publique du site (https sauf en local), pour le QR « L'app sur ton téléphone » et le manifeste
+const siteOrigin = (req) => {
+  const host = req.get('host');
+  const local = /^(localhost|127\.|192\.168\.|10\.|\[::1\])/.test(host);
+  return `${local ? req.protocol : 'https'}://${host}`;
+};
+// QR code vers le site, ouvert directement sur la fenêtre d'installation de l'app
+app.get('/qr/app.svg', async (req, res) => {
+  const svg = await QRCode.toString(`${siteOrigin(req)}/?install=1`, { type: 'svg', margin: 0, color: { dark: '#121418', light: '#ffffff' } });
+  res.set('Cache-Control', 'no-cache');
+  res.type('image/svg+xml').send(svg);
+});
+// Manifeste de l'app : il se déclare lui-même comme « application liée », ce qui permet à Chrome Android
+// de dire au site si l'app est déjà installée (navigator.getInstalledRelatedApps)
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
+app.get('/manifest.webmanifest', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.type('application/manifest+json').send(JSON.stringify({ ...MANIFEST, related_applications: [{ platform: 'webapp', url: `${siteOrigin(req)}/manifest.webmanifest` }] }));
 });
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
