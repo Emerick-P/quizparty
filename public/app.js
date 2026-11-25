@@ -1954,12 +1954,12 @@ function statsBody() {
       ${tile(s.podiums ?? 0, s.podiums > 1 ? 'podiums' : 'podium', 'top 3, à 2 joueurs ou plus')}
       ${tile(`${pct(s.correct, s.answers)} %`, 'bonnes réponses', `${s.correct ?? 0} sur ${s.answers ?? 0}`)}
     </div>
-    <h3 class="st-h">Records</h3>
+    <div class="st-col"><h3 class="st-h">Records</h3>
     <ul class="st-recs">
       <li><span aria-hidden="true">🏆</span><div><b>${s.bestScore ?? '–'}</b><small>meilleur score en une partie</small></div></li>
       <li><span aria-hidden="true">🔥</span><div><b>${s.streak ?? 0}</b><small>bonnes réponses d’affilée</small></div></li>
       <li><span aria-hidden="true">⚡</span><div><b>${s.fastest ? secs(s.fastest.ms) : '–'}</b><small>${s.fastest ? `réponse juste la plus rapide${s.fastest.game ? ` · ${esc(s.fastest.game)}` : ''}` : 'réponse juste la plus rapide'}</small></div></li>
-    </ul>`;
+    </ul></div>`;
   const modes = (s.modes || []).length ? `<ul class="st-modes">${s.modes.map((m) => `
       <li style="--mc:${modeArt(m.mode)[1]}"><span class="st-mi" aria-hidden="true">${modeArt(m.mode)[0]}</span>
         <div class="st-mb"><div class="st-ml"><b>${esc(m.name || m.mode)}</b><span>${pct(m.good, m.n)} %</span></div>
@@ -1967,10 +1967,10 @@ function statsBody() {
     : '<p class="sh-note">Aucun mode joué pour l’instant.</p>';
   const gameRow = (g) => `<li><b>${esc(g.game)}</b><span>${g.good} / ${g.n}</span></li>`;
   const games = `
-    <h3 class="st-h">${me ? 'Les jeux que tu reconnais le mieux' : 'Ses jeux les mieux reconnus'}</h3>
-    ${(s.best || []).length ? `<ol class="st-games">${s.best.map(gameRow).join('')}</ol>` : '<p class="sh-note">Pas encore de jeu trouvé.</p>'}
-    <h3 class="st-h">${me ? 'Ceux qui te résistent' : 'Ceux qui lui résistent'}</h3>
-    ${(s.worst || []).length ? `<ol class="st-games st-worst">${s.worst.map(gameRow).join('')}</ol>` : '<p class="sh-note">Aucun pour l’instant. Bravo !</p>'}
+    <div class="st-col"><h3 class="st-h">${me ? 'Les jeux que tu reconnais le mieux' : 'Ses jeux les mieux reconnus'}</h3>
+    ${(s.best || []).length ? `<ol class="st-games">${s.best.map(gameRow).join('')}</ol>` : '<p class="sh-note">Pas encore de jeu trouvé.</p>'}</div>
+    <div class="st-col"><h3 class="st-h">${me ? 'Ceux qui te résistent' : 'Ceux qui lui résistent'}</h3>
+    ${(s.worst || []).length ? `<ol class="st-games st-worst">${s.worst.map(gameRow).join('')}</ol>` : '<p class="sh-note">Aucun pour l’instant. Bravo !</p>'}</div>
     <p class="sh-note small">Jaquettes, pitchs, emojis, sons, HUD et écrans de chargement : trouvé / posé.</p>`;
   setTimeout(() => showStatsTab(false), 0);
   return `
@@ -2461,8 +2461,8 @@ function render() {
     if (steamKeep.focus && document.activeElement !== steamNew) steamNew.focus();
   }
   if (phase === 'home') {
-    if (nameVal) $('#name').value = nameVal;
-    if (codeVal) $('#code').value = codeVal;
+    if (nameVal && $('#name')) $('#name').value = nameVal;
+    if (codeVal && $('#code')) $('#code').value = codeVal;
   }
   if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;
