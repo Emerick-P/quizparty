@@ -87,7 +87,7 @@
 .home2 .install-btn, .home2 .install-link, .home2 .install-help { align-self: center; }
 
 /* ---------- salon sur téléphone */
-.lobby-m { gap: 12px; min-height: 100dvh; }
+.lobby-m { gap: 12px; min-height: 100dvh; min-width: 0; }
 .lm-top { display: flex; align-items: center; justify-content: space-between; }
 .ib { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--surf); color: var(--text); font-size: 1.2rem; font-weight: 800; }
 .lm-code { display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -96,10 +96,9 @@
 :root[data-theme="light"] .lm-code .code { background: var(--ink); color: #fff; box-shadow: 7px 7px 0 var(--accent); }
 .lm-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .chip-btn { background: var(--surf); color: var(--text); border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: .82rem; font-weight: 600; white-space: nowrap; }
-.lm-chips { flex-wrap: nowrap; }
 .chip-btn.copied { background: var(--good); color: var(--ink); }
 .tv-chip { background: var(--accent); color: var(--accent-ink); }
-.lm-players { display: flex; justify-content: safe center; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 10px; margin: 0 -16px; padding: 0 16px; background: none; border: 0; padding: 0; color: inherit; font: inherit; }
+.lm-players { display: flex; justify-content: safe center; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 10px; margin: 0 -16px; padding: 0 16px; min-width: 0; width: calc(100% + 32px); background: none; border: 0; padding: 0; color: inherit; font: inherit; }
 .lm-pl { flex: none; position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 60px; }
 .lm-pl .avatar { width: 42px; height: 42px; font-size: 1.25rem; }
 .lm-pl small { color: var(--muted); font-size: .78rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
