@@ -1437,6 +1437,48 @@ function tvLobbyView() {
   </main>`;
 }
 
+/**
+ * Question sur la télé : les propositions sont sur les téléphones, la télé garde la place pour
+ * la question (ou l'image, les emojis, le son) en grand et les joueurs, bien visibles, à côté.
+ */
+function tvQuestion(r, media) {
+  const guess = GUESS_KINDS.includes(r.kind);
+  const multi = r.tries > 1;
+  const done = state.players.filter((p) => p.status).length;
+  const found = state.players.filter((p) => p.status === 'found').length;
+  const count = multi ? `${found} / ${r.expected} ${found > 1 ? 'ont' : 'a'} trouvé` : `${r.answeredCount} / ${r.expected} ${r.answeredCount > 1 ? 'ont' : 'a'} répondu`;
+  const players = sortedByScore().filter((p) => p.connected || p.status).map((p) => {
+    const status = p.status || '';
+    const label = !p.connected ? 'hors ligne'
+      : status === 'found' ? 'a trouvé ★' : status === 'missed' ? 'plus d’essais' : status === 'answered' ? 'a répondu ✓'
+      : p.misses && multi ? `${p.misses} essai${p.misses > 1 ? 's' : ''} raté${p.misses > 1 ? 's' : ''}` : 'réfléchit…';
+    return `<li data-key="${p.id}" class="tvp ${status || 'wait'} ${p.connected ? '' : 'off'}">${avatar(p.name)}<span class="tvp-name">${esc(p.name)}</span><span class="tvp-st">${label}</span><b class="tvp-pts">${p.score}</b></li>`;
+  }).join('');
+  const how = r.kind === 'estimation' ? 'Donne ton estimation sur ton téléphone'
+    : r.input === 'text' || r.kind === 'typed' ? `Tape ta réponse sur ton téléphone${multi ? ` · ${r.tries} essais` : ''}`
+    : 'Choisis ta réponse sur ton téléphone';
+  return `
+  <main class="screen tv-q ${guess ? 'tv-q-media' : 'tv-q-text'}">
+    <div class="qhead">
+      <span class="pill">${r.index + 1} / ${r.total}</span><span class="tv-kind">${esc(kindLabel(r))}</span>
+      <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
+    </div>
+    <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
+    <div class="tv-q-body">
+      <section class="tv-q-main">
+        ${aboutLine(r)}
+        ${guess ? `<h1 class="prompt small">${esc(r.prompt)}</h1>${r.picture ? gamePicture(r.picture) : ''}<div class="tv-media">${media}</div>`
+          : `${r.picture ? gamePicture(r.picture) : ''}<h1 class="prompt">${esc(r.prompt)}</h1>${r.kind === 'estimation' && r.unit ? `<p class="tv-unit">Réponse en ${esc(r.unit)}</p>` : ''}`}
+        <p class="tv-answer">📱 ${how}</p>
+      </section>
+      <aside class="tv-q-players">
+        <div class="tv-q-count">${count}${done >= r.expected ? '' : '<span class="dots"></span>'}</div>
+        <ul>${players}</ul>
+      </aside>
+    </div>
+  </main>`;
+}
+
 /** Mots croisés sur la télé : chacun a sa grille sur son téléphone, la télé montre la course. */
 function tvCrossword(r) {
   return `
@@ -1642,6 +1684,7 @@ const views = {
     }
     // Écran télé : on n'y répond pas, les champs de saisie deviennent une consigne
     if (SCREEN && !/class="choices/.test(body)) body = `<p class="tv-answer">📱 Réponds sur ton téléphone${r.tries > 1 ? ` · ${r.tries} essais` : ''}</p>`;
+    if (SCREEN) return tvQuestion(r, media);
     if (controller()) return padQuestion(r, body, answered);
     return `
     <main class="screen has-side">

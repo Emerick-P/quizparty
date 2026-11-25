@@ -113,3 +113,33 @@ html.tv .roster .chip .cname { flex: none; }
 html.tv body { display: flex; justify-content: center; }
 .tv-full { position: fixed; left: 50%; top: 10px; transform: translateX(-50%); margin: 0; background: var(--surf); color: var(--muted); padding: 8px 18px; border-radius: 6px; font-size: 1.05rem; white-space: nowrap; }
 .tv-full b { color: var(--accent-text); }
+
+/* ---- question sur la télé : question / image en grand à gauche, joueurs à droite (les réponses sont sur les téléphones) */
+.tv-q .tv-kind { margin-right: auto; margin-left: 16px; color: var(--muted); font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
+.tv-q-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 330px; gap: 34px; }
+.tv-q-main { display: flex; flex-direction: column; justify-content: center; gap: 18px; min-height: 0; min-width: 0; }
+.tv-q-text .tv-q-main .prompt { font-size: 3.6rem; padding: 34px 40px; }
+.tv-q-media .tv-q-main { justify-content: flex-start; }
+.tv-media { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+html.tv .tv-media .cover-wrap { height: 100%; max-height: 460px; }
+html.tv .tv-media .emojis:not(.small) { font-size: 7rem; }
+html.tv .tv-media .pitch { font-size: 2.6rem; }
+html.tv .tv-media .shot, html.tv .tv-media figure { max-height: 460px; }
+.tv-unit { text-align: center; font-size: 1.6rem; color: var(--muted); margin: 0; }
+html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
+.tv-q-players { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.tv-q-count { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 1.9rem; }
+.tv-q-count .dots::after { content: ''; animation: dots 1.4s steps(4) infinite; }
+.tv-q-players ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.tvp { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center; background: var(--surf); border-radius: 6px; padding: 8px 12px; border-left: 6px solid transparent; transition: background .2s, border-color .2s; }
+.tvp .avatar { grid-row: 1 / span 2; width: 44px; height: 44px; font-size: 1.5rem; }
+.tvp-name { font-size: 1.45rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tvp-st { grid-column: 2; font-size: 1rem; color: var(--muted); }
+.tvp-pts { grid-row: 1 / span 2; grid-column: 3; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.6rem; }
+.tvp.answered { border-left-color: var(--good); }
+.tvp.answered .tvp-st { color: var(--good); }
+.tvp.found { border-left-color: var(--accent); background: var(--surf-hi); }
+.tvp.found .tvp-st { color: var(--accent-text); }
+.tvp.missed { border-left-color: var(--bad); }
+.tvp.missed .tvp-st { color: var(--bad); }
+.tvp.off { opacity: .45; }
