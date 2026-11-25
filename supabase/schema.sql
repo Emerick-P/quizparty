@@ -89,3 +89,8 @@ alter table public.profiles enable row level security;
 grant select, insert, update, delete on public.profiles to service_role;
 -- Pseudo choisi dans la page Profil (le même sur tous les appareils)
 alter table public.profiles add column if not exists nickname text;
+-- Rôle du joueur (player par défaut, admin) : modifiable seulement ici, dans Supabase (Table Editor → profiles).
+alter table public.profiles add column if not exists role text not null default 'player';
+do $$ begin
+  alter table public.profiles add constraint profiles_role_check check (role in ('player', 'admin'));
+exception when duplicate_object then null; end $$;

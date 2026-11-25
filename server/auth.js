@@ -8,8 +8,9 @@ import { store } from './store.js';
  *   d'accès (1 h) et un jeton de renouvellement. Le navigateur ne parle à Supabase que pour cette redirection.
  * - Le serveur vérifie le jeton en demandant à Supabase à qui il appartient (/auth/v1/user), avec sa clé
  *   secrète : aucune clé n'est donnée au navigateur, et ça marche quelle que soit la méthode de signature.
- * - Les comptes listés dans ADMIN_USER_IDS (identifiants Supabase séparés par des virgules) sont admin :
- *   eux seuls peuvent accepter une réponse, supprimer une question ou retirer un jeu/une image/un son.
+ * - Rôles : colonne « role » de la table profiles (player par défaut, admin), modifiable seulement dans
+ *   Supabase. Un admin seul peut accepter une réponse, supprimer une question ou retirer un jeu/une image/un son.
+ *   ADMIN_USER_IDS (identifiants séparés par des virgules) reste possible en secours.
  * - Sans SUPABASE_URL / SUPABASE_SECRET_KEY (PC, tests) : pas de comptes, l'hôte garde ces droits.
  */
 const PROVIDERS = ['discord', 'google'];
@@ -80,9 +81,15 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       if (hit && hit.until > Date.now()) return hit.user;
       const r = await call('GET', '/auth/v1/user', { bearer: token });
       if (!r.ok || !r.data?.id) { cache.delete(h); return null; }
-      const user = { id: r.data.id, ...profileOf(r.data), admin: admins.has(r.data.id), nickname: null };
-      // Pseudo choisi dans la page Profil, gardé en base (le même sur tous les appareils)
-      if (store.name === 'supabase' && store.get) user.nickname = (await store.get('profiles', user.id).catch(() => null))?.nickname ?? null;
+      const user = { id: r.data.id, ...profileOf(r.data), role: 'player', admin: false, nickname: null };
+      // Profil en base : pseudo choisi dans la page Profil, et rôle (colonne profiles.role, modifiable
+      // seulement dans Supabase : les joueurs n'y ont aucun accès). Pris en compte en 5 min au plus.
+      if (store.name === 'supabase' && store.get) {
+        const row = await store.get('profiles', user.id).catch(() => null);
+        user.nickname = row?.nickname ?? null;
+        if (row?.role) user.role = row.role;
+      }
+      user.admin = user.role === 'admin' || admins.has(user.id); // ADMIN_USER_IDS : secours facultatif
       if (cache.size > 2000) cache.clear();
       cache.set(h, { user, until: Date.now() + CACHE_MS });
       saveProfile(user);

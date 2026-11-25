@@ -1,6 +1,7 @@
 // Test des comptes joueurs (Discord / Google via Supabase Auth), avec un faux Supabase :
 // - le serveur vérifie les jetons auprès de Supabase (/auth/v1/user) et décide seul qui est admin ;
 // - ⚑ Signaler ouvert à tous, sans pause ; accepter une réponse / supprimer une question : admin seulement ;
+// - rôle admin lu dans la table profiles (colonne role) ;
 // - retirer un jeu : admin seulement, même s'il n'est pas l'hôte ; l'hôte non admin ne peut plus ;
 // - profil copié dans la table profiles ; renouvellement et suppression du compte ; pages légales.
 // Usage : node test/accounts-test.js (inclus dans npm test)
@@ -44,7 +45,7 @@ const fake = http.createServer((req, res) => {
       return res.end(JSON.stringify({ access_token: 'tok-player-bbbbbbbbbbbbbbbbbbbbbbb', refresh_token: 'refresh-2', expires_in: 3600 }));
     }
     if (req.url.startsWith('/auth/v1/admin/users/') && req.method === 'DELETE') return res.end('{}');
-    if (req.method === 'GET' && req.url.startsWith(`/rest/v1/profiles?id=eq.${ADMIN_ID}`)) return res.end(JSON.stringify([{ id: ADMIN_ID, nickname: 'Liar' }]));
+    if (req.method === 'GET' && req.url.startsWith(`/rest/v1/profiles?id=eq.${ADMIN_ID}`)) return res.end(JSON.stringify([{ id: ADMIN_ID, nickname: 'Liar', role: 'admin' }]));
     res.end('[]');
   });
 });
@@ -57,7 +58,7 @@ const server = spawn(process.execPath, ['server/index.js'], {
     PORT: String(PORT),
     SUPABASE_URL: base,
     SUPABASE_SECRET_KEY: 'sb_secret_test',
-    ADMIN_USER_IDS: ADMIN_ID,
+    ADMIN_USER_IDS: '',
     ACCESS_CODE: '',
     CONTACT_EMAIL: 'contact@example.com',
     COUNTDOWN_MS: '200',
