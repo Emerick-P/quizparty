@@ -1378,8 +1378,10 @@ function cwRoster(r) {
 
 // =====================================================================  mode télé : vues
 /** Salon, côté téléphone : l'hôte branche (ou éteint) la télé ; les autres savent qu'elle est là. */
+const TOUCH = matchMedia('(pointer: coarse)').matches; // téléphone ou tablette : seuls appareils qui servent de manette
 function tvCard() {
   if (!isHost()) return state.tv ? '<p class="tv-state">📺 La partie s’affiche sur la télé</p>' : '';
+  if (!state.tv && !TOUCH) return ''; // sur ordinateur, pas de bouton « Afficher sur la télé »
   if (state.tv) return `<section class="tv-card on"><span>📺 <b>Télé connectée</b> · chacun joue sur son téléphone</span><button class="btn small ghost" data-action="tvoff">Éteindre</button></section>`;
   return '<button class="btn tv-open" data-action="tvsheet">📺 Afficher sur la télé</button>';
 }
@@ -1738,7 +1740,7 @@ const views = {
       <section class="lm-code"><small>Code du salon</small><b class="code">${esc(state.code)}</b></section>
       <div class="lm-chips">
         <button class="chip-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : '🔗 Inviter'}</button>
-        ${host && !state.tv ? '<button class="chip-btn tv-chip" data-action="tvsheet">📺 Sur la télé</button>' : ''}
+        ${host && !state.tv && TOUCH ? '<button class="chip-btn tv-chip" data-action="tvsheet">📺 Sur la télé</button>' : ''}
         <button class="chip-btn" data-action="sheet" data-value="note">🔒 Entre potes <span aria-hidden="true">ⓘ</span></button>
       </div>
       ${state.tv ? tvCard() : ''}
@@ -1859,7 +1861,7 @@ const views = {
       ${aboutLine(r)}
       ${r.picture ? gamePicture(r.picture) : ''}
       ${GUESS_KINDS.includes(r.kind) ? media : `<h1 class="prompt">${esc(r.prompt)}</h1>`}
-      ${body}
+      <div class="q-answer">${body}</div>
       </div>
       ${roster(r)}
       ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
@@ -1989,14 +1991,17 @@ const views = {
 
     const board = sortedByScore().slice(0, 8);
     return `
-    <main class="screen">
+    <main class="screen reveal-screen">
       <div class="qhead"><span class="pill">${r.kind === 'crossword' ? 'Fin du chrono' : `${r.index + 1} / ${r.total}`}</span><span class="muted">${last ? 'Résultats' : r.kind === 'crossword' ? 'Grille suivante' : 'Question suivante'} dans <span data-until="${state.phaseEndsAt}" data-mode="count"></span> s</span></div>
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
+      <div class="rv-main">
       ${SCREEN ? '' : banner}
       ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}`}
+      </div>
+      <div class="rv-side">
       <section class="card">
         <h2>Classement</h2>
         <ul class="list">
@@ -2011,6 +2016,7 @@ const views = {
       </section>
       ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
       ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
+      </div>
     </main>`;
   },
 

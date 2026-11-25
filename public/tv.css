@@ -143,3 +143,7 @@ html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
 .tvp.missed { border-left-color: var(--bad); }
 .tvp.missed .tvp-st { color: var(--bad); }
 .tvp.off { opacity: .45; }
+/* Correction : détail à gauche, classement à droite (blocs .rv-main / .rv-side) */
+html.tv .reveal-screen { display: grid; grid-template-columns: minmax(0, 1fr) 440px; column-gap: 40px; align-content: start; }
+html.tv .reveal-screen > .qhead, html.tv .reveal-screen > .bar { grid-column: 1 / -1; }
+html.tv .reveal-screen .rv-main, html.tv .reveal-screen .rv-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
