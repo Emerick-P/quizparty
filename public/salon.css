@@ -537,3 +537,37 @@
   .sh[data-key="sh:stats"] { inset: 0; width: auto; height: auto; max-height: none; transform: none; border-radius: 0; padding: 26px max(24px, calc(50% - 560px)) 30px; animation: fade .15s ease-out; }
   .sh[data-key="sh:stats"] .st-track { gap: 28px; }
 }
+
+/* ---------- bandeau du haut commun (accueil, salon, podium, pages perso) ; absent pendant les questions */
+:root { --bar-h: 58px; }
+#app.has-bar { flex-direction: column; }
+.appbar { order: -1; position: sticky; top: 0; z-index: 42; flex: none; background: var(--bg); border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); padding-top: env(safe-area-inset-top); }
+.ab-in { height: var(--bar-h); display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box; }
+.ab-logo { background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 1.7rem; line-height: 1; white-space: nowrap; }
+.ab-logo b { color: var(--accent-text, var(--accent)); font-weight: 800; }
+.ab-room { color: var(--muted); font-weight: 600; font-size: .9rem; white-space: nowrap; }
+.ab-room b { color: var(--text); letter-spacing: .08em; }
+.ab-end { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ab-end .me-chip { margin-left: 0; }
+.ab-end .me-chip span:not(.avatar) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-chip.on { box-shadow: 0 0 0 2px var(--accent); }
+.ab-btn { background: none; border: 2px solid var(--line); color: var(--text); border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .88rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.ab-btn:hover { border-color: var(--bad); color: var(--bad); }
+.ab-more { width: 36px; height: 36px; }
+#app.has-bar > .screen { padding-top: 14px; }
+/* Pages perso (profil, stats, défi du jour…) : sous le bandeau, qui reste visible ; plus de bouton retour */
+#app.has-bar .sh-page { top: calc(var(--bar-h) + env(safe-area-inset-top)); padding-top: 14px; animation: fade .12s ease-out; }
+#app.has-bar .sh-page .sh-back { display: none; }
+#app.has-bar .sh-page .sh-head h2 { font-size: 1.7rem; }
+.mn-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 10px; color: var(--muted); font-weight: 600; }
+@media (max-width: 380px) { .ab-logo { font-size: 1.45rem; } .ab-room { display: none; } .ab-end .me-chip span:not(.avatar) { max-width: 70px; } }
+@media (max-width: 640px) { .ab-room { display: none; } }
+@media (orientation: landscape) and (max-height: 520px) {
+  :root { --bar-h: 46px; }
+  .ab-logo { font-size: 1.35rem; }
+  .ab-room { display: inline; }
+}
+@media (min-width: 1000px) and (min-height: 521px) {
+  #app.has-bar .sh-page, #app.has-bar .sh[data-key="sh:stats"] { inset: calc(var(--bar-h) + env(safe-area-inset-top)) 0 0 0; width: auto; height: auto; max-height: none; transform: none; border-radius: 0; padding: 26px max(24px, calc(50% - 560px)) 30px; }
+}
+#app.has-bar .lobby-m { min-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 1px); }

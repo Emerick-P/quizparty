@@ -1858,10 +1858,6 @@ const SHEETS = {
 const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
 const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
-/** Salon : en haut à droite, « Se connecter » pour un invité, sinon l'avatar qui ouvre le profil. */
-const profileTop = () => (account.user
-  ? `<button class="me-chip mini" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${account.user.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(store.get(NAME_KEY) || account.user.name)}</button>`
-  : loginTop('account'));
 
 /** Page Profil (accueil et salon) : pseudo, compte (connexion, déconnexion, suppression), thème. */
 function profileBody() {
@@ -1981,6 +1977,34 @@ function statsBody() {
 }
 
 /**
+ * Bandeau du haut, commun à toute l'app (accueil, salon, podium et pages perso) : logo = écran principal
+ * (l'accueil, ou le salon quand on y est), avatar = menu du profil. Pendant le décompte, les questions et
+ * la correction, il laisse la place au jeu (son propre haut d'écran : question 3/10, chrono).
+ */
+const BAR_PHASES = ['home', 'lobby', 'end'];
+const hasBar = (phase) => !SCREEN && BAR_PHASES.includes(phase);
+function appBar(phase) {
+  if (!hasBar(phase)) return '';
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const inRoom = !!state;
+  const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
+  const face = u?.avatar ? `<img class="acc-avatar sm" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : name ? avatar(name) : '';
+  const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
+  return `
+  <header class="appbar" data-key="appbar"><div class="ab-in">
+    <button class="ab-logo" data-action="navhome" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    ${inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
+    <span class="ab-end">
+      ${inRoom ? '<button class="ab-btn" data-action="leave">Quitter</button>' : ''}
+      ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
+      ${loginTop(inRoom ? 'account' : 'name')}${chip}
+    </span>
+  </div></header>`;
+}
+actions.navhome = () => { if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
+
+/**
  * Menu du profil (touche l'avatar ou le pseudo, en haut à droite) : pages personnelles (profil, stats,
  * bientôt amis et personnalisation), déconnexion en dernier. Feuille par le bas sur téléphone,
  * menu déroulant sous l'avatar sur ordinateur. Le bandeau du haut garde ce qui touche au jeu.
@@ -1999,6 +2023,7 @@ function menuBody() {
     ${item('👥', 'Amis', 'disabled role="menuitem"', 'Bientôt')}
     ${item('🎨', 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
   </nav>
+  <div class="mn-row"><span>Thème</span>${themeToggle()}</div>
   ${u ? `<div class="mn-sep"></div>${item('⎋', 'Se déconnecter', 'data-action="logout" role="menuitem"').replace('mn-item', 'mn-item mn-out')}` : ''}`;
 }
 
@@ -2027,6 +2052,7 @@ const closeSheet = () => { ui.sheet = null; render(); };
 actions.sheet = (btn) => {
   // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
   if (btn.dataset.value === 'menu') {
+    if (ui.sheet === 'menu') return closeSheet();
     const r = btn.getBoundingClientRect();
     ui.anchor = { right: Math.round(innerWidth - r.right), bottom: Math.round(r.bottom + 8) };
   }
@@ -2222,10 +2248,6 @@ const views = {
     const invited = urlCode();
     return `
     <main class="screen home2">
-      <div class="h-top">
-        <div class="logo">Quiz<b>Party</b></div>
-        <button class="me-chip" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>${loginTop('name')}
-      </div>
       <section class="h-play">
         <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
         <p>${invited ? 'Tes potes t’attendent : choisis ton pseudo et rejoins-les.' : 'Un salon, un code, et c’est parti. Sur la télé ou juste sur vos téléphones.'}</p>
@@ -2260,7 +2282,6 @@ const views = {
       const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
       return `
     <main class="screen lobby lobby-m">
-      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><span class="lm-right">${profileTop()}<button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></span></div>
       <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
         <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
@@ -2286,7 +2307,6 @@ const views = {
     // Ordinateur : joueurs à gauche, jeu choisi au centre, réglages à droite, « Lancer » en bas.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end">${profileTop()}<span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
@@ -2640,13 +2660,14 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
+  next.innerHTML = (views[phase] || views.home)() + appBar(phase) + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
   // Écran de question : plus large sur ordinateur, pour la colonne des joueurs à droite
   app.classList.toggle('wide', phase === 'question');
   app.classList.toggle('wider', phase === 'lobby'); // salon sur trois colonnes
+  app.classList.toggle('has-bar', hasBar(phase)); // bandeau du haut commun
   app.classList.toggle('pad-mode', controller() && ['countdown', 'question', 'reveal'].includes(phase)); // téléphone en manette
 
   const newInput = $('#est-input') || $('#guess-input') || $('#cw-word');
