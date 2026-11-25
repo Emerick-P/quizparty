@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { stats } from './stats.js';
 import { Room, cleanName } from './room.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
@@ -191,6 +192,13 @@ export class RoomManager {
       const renamed = room ? room.renamePlayer(socket.data.playerId, n) : null;
       return { ok: true, name: n, renamed };
     });
+    // Stats : les miennes (page Profil), ou celles d'un joueur connecté du même salon (en le touchant)
+    on('stats:me', async () => {
+      const user = socket.data.user;
+      if (!user) throw new Error('Connecte-toi pour avoir tes stats');
+      return { ok: true, stats: await stats.statsOf(user.id) };
+    });
+    on('stats:player', inRoom((room, { playerId }) => room.playerStats(String(playerId || ''))));
     on('auth:clear', () => {
       socket.data.user = null;
       this.roomOf(socket)?.setUser(socket.data.playerId, null);

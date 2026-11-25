@@ -6,6 +6,7 @@ import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
 import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
+import { stats, answerRow } from './stats.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
@@ -99,6 +100,8 @@ export class Room {
       timers: {},
       steam: null, // profil Steam lié (voir linkSteam) : { status, input, name, avatar, id, games, message }
       user: null, // compte connecté (auth.js) : { id, name, avatar, provider, admin }, null pour un invité
+      // Stats : première manche jouée de la partie en cours (un joueur arrivé en route ne compte que la suite)
+      fromRound: this.phase === 'lobby' || this.phase === 'end' ? 0 : Math.max(0, this.roundIndex) + (this.phase === 'reveal' ? 1 : 0),
     };
     // Un joueur parti puis revenu avec le même pseudo retrouve son score global
     const key = player.name.toLowerCase();
@@ -361,6 +364,8 @@ export class Room {
       clearTimeout(p.timers.remove);
     }
     this.roundIndex = -1;
+    this.sessionId = `${this.code}-${Date.now().toString(36)}`; // identifiant de la partie dans les stats
+    for (const p of this.players.values()) p.fromRound = 0;
     this.nextRound();
   }
 
@@ -624,6 +629,8 @@ export class Room {
       if (scored.get(p.id)?.tiebreak != null) p.tiebreak = scored.get(p.id).tiebreak;
     }
 
+    r.scored = scored; // pour les stats, envoyées à la fin de la partie (rien n'est écrit pendant)
+
     const results = [...r.answers].map(([pid, a]) => ({
       playerId: pid,
       name: this.players.get(pid).name,
@@ -705,6 +712,43 @@ export class Room {
     this.reveal = null;
     this.setPhase('end');
     this.broadcast();
+    this.recordStats(players, best, tb, bestTb);
+  }
+
+  /** Stats des joueurs connectés à un compte : envoyées en tâche de fond, la partie n'attend pas. */
+  recordStats(players, best, tb, bestTb) {
+    const accounts = players.filter((p) => p.user?.id);
+    if (!accounts.length || !stats.enabled) return;
+    const better = (a, b) => a.score > b.score || (a.score === b.score && tb(a) < tb(b));
+    for (const p of accounts) {
+      const answers = [];
+      this.rounds.forEach((r, i) => {
+        if (i < (p.fromRound ?? 0) || !r.scored) return;
+        const a = r.answers?.get(p.id);
+        const result = r.scored.get(p.id);
+        answers.push(answerRow({ round: r, roundIndex: i, mode: this.settings.mode, answered: !!a, result: { ...result, timeMs: a?.timeMs } }));
+      });
+      if (!answers.length) continue;
+      stats.recordGame({
+        userId: p.user.id,
+        source: 'party',
+        sessionId: this.sessionId ?? `${this.code}-${Date.now().toString(36)}`,
+        mode: this.settings.mode,
+        score: p.score,
+        rank: 1 + players.filter((o) => o !== p && better(o, p)).length,
+        players: players.length,
+        won: best > 0 && p.score === best && tb(p) === bestTb,
+        answers,
+      });
+    }
+  }
+
+  /** Stats d'un joueur du salon (carte ouverte en le touchant) : seulement s'il est connecté à un compte. */
+  async playerStats(playerId) {
+    const p = this.players.get(playerId);
+    if (!p) throw new Error('Joueur introuvable');
+    if (!p.user?.id) throw new Error(`${p.name} joue en invité : pas de stats`);
+    return { ok: true, name: p.name, avatar: p.user.avatar ?? null, stats: await stats.statsOf(p.user.id) };
   }
 
   /** Hôte : retour au salon (arrêt en cours de partie, ou "nouvelle partie" depuis la fin). */

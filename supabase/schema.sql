@@ -94,3 +94,46 @@ alter table public.profiles add column if not exists role text not null default 
 do $$ begin
   alter table public.profiles add constraint profiles_role_check check (role in ('player', 'admin'));
 exception when duplicate_object then null; end $$;
+
+-- Stats des joueurs connectés (et défi du jour) : une ligne par partie finie et par joueur…
+create table if not exists public.game_results (
+  id          uuid primary key default gen_random_uuid(),
+  created_at  timestamptz not null default now(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  source      text not null check (source in ('party', 'daily')),
+  session_id  text not null,           -- code du salon + n° de partie, ou date du défi AAAA-MM-JJ
+  mode        text,
+  score       int not null default 0,
+  rank        int,                     -- place à la fin (1 = vainqueur), null pour le défi
+  players     int not null default 1,
+  won         boolean not null default false,
+  rounds      int not null default 0,
+  correct     int not null default 0
+);
+create index if not exists game_results_user_idx on public.game_results (user_id, created_at desc);
+alter table public.game_results enable row level security;
+
+-- … et une ligne par réponse (parties entre amis + défi du jour)
+create table if not exists public.answers (
+  id          bigint generated always as identity primary key,
+  created_at  timestamptz not null default now(),
+  game_id     uuid references public.game_results (id) on delete cascade,
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  source      text not null check (source in ('party', 'daily')),
+  session_id  text not null,
+  round_index int,
+  mode        text,                    -- mode de la manche (quiz, covers, emoji…, celui de la manche dans un Mix)
+  kind        text,                    -- type de manche (qcm, cover, emoji…)
+  content_id  text,                    -- id de la table content quand il existe (ex. quiz:12)
+  game        text,                    -- jeu vidéo concerné, quand il y en a un
+  input       text,                    -- choice / text
+  answered    boolean not null default false,
+  correct     boolean,
+  points      int not null default 0,
+  time_ms     int
+);
+create index if not exists answers_user_idx on public.answers (user_id, created_at desc);
+create index if not exists answers_game_idx on public.answers (game_id);
+alter table public.answers enable row level security;
+grant select, insert, update, delete on public.game_results, public.answers to service_role;
+grant usage, select on all sequences in schema public to service_role;

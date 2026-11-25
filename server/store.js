@@ -42,6 +42,14 @@ function supabaseBackend(url, key) {
       if (status) q.set('status', `eq.${status}`);
       return call('GET', `/rest/v1/${table}?${q}`);
     },
+    /** Insère plusieurs lignes d'un coup (sans les relire). */
+    async insertMany(table, rows) {
+      if (rows.length) await call('POST', `/rest/v1/${table}`, { body: rows });
+    },
+    /** Appelle une fonction SQL (ex. player_stats). */
+    async rpc(fn, args) {
+      return call('POST', `/rest/v1/rpc/${fn}`, { body: args });
+    },
     /** Insère ou met à jour (clé primaire id). */
     async upsert(table, row) {
       await call('POST', `/rest/v1/${table}`, { body: row, headers: { Prefer: 'resolution=merge-duplicates' } });
@@ -101,6 +109,13 @@ function localBackend(dir) {
       const full = { id: row.id ?? crypto.randomUUID(), created_at: new Date().toISOString(), ...row };
       fs.appendFileSync(file(table), JSON.stringify(full) + '\n');
       return full;
+    },
+    async insertMany(table, rows) {
+      for (const row of rows) await this.insert(table, row);
+    },
+    /** Lignes d'une table qui vérifient un filtre (équivalent local des fonctions SQL). */
+    async where(table, fn) {
+      return read(table).filter(fn);
     },
     async list(table, { status, limit = 200 } = {}) {
       return read(table).filter((r) => !status || r.status === status).reverse().slice(0, limit);
