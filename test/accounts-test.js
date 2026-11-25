@@ -44,6 +44,7 @@ const fake = http.createServer((req, res) => {
       return res.end(JSON.stringify({ access_token: 'tok-player-bbbbbbbbbbbbbbbbbbbbbbb', refresh_token: 'refresh-2', expires_in: 3600 }));
     }
     if (req.url.startsWith('/auth/v1/admin/users/') && req.method === 'DELETE') return res.end('{}');
+    if (req.method === 'GET' && req.url.startsWith(`/rest/v1/profiles?id=eq.${ADMIN_ID}`)) return res.end(JSON.stringify([{ id: ADMIN_ID, nickname: 'Liar' }]));
     res.end('[]');
   });
 });
@@ -112,7 +113,7 @@ try {
   // Jeton invalide : refusé, pas de compte
   assert.ok((await B.emit('auth:set', { token: 'tok-faux-ccccccccccccccccccccccccc' })).error);
   const login = await B.emit('auth:set', { token: 'tok-admin-aaaaaaaaaaaaaaaaaaaaaaaa' });
-  assert.deepEqual(login.user, { name: 'Liargo', avatar: 'https://cdn.discordapp.com/avatars/1/a.png', provider: 'discord', admin: true });
+  assert.deepEqual(login.user, { name: 'Liargo', avatar: 'https://cdn.discordapp.com/avatars/1/a.png', provider: 'discord', admin: true, nickname: 'Liar' });
   const bob = await C.emit('auth:set', { token: 'tok-player-bbbbbbbbbbbbbbbbbbbbbbb' });
   assert.equal(bob.user.name, 'Bob Martin');
   assert.equal(bob.user.admin, false);
@@ -135,11 +136,25 @@ try {
   assert.deepEqual(sa.players.map((p) => p.account), [false, true, true], 'on voit qui a un compte, sans plus');
   assert.ok(!JSON.stringify(sa).includes('example.com'), 'aucun e-mail dans l’état diffusé');
 
+  // ---- Page Profil : pseudo enregistré sur le compte, appliqué dans le salon avant la partie
+  let pn = await C.emit('profile:name', { name: 'Bobby' });
+  assert.equal(pn.renamed, 'Bobby');
+  await A.waitFor((s) => s.players.some((p) => p.name === 'Bobby'));
+  const nick = seen.filter((x) => x.url === '/rest/v1/profiles' && x.method === 'POST').map((x) => JSON.parse(x.body)).find((p) => p.nickname);
+  assert.deepEqual(nick, { id: '22222222-2222-4222-8222-222222222222', nickname: 'Bobby' }, 'seul le pseudo est mis à jour');
+  pn = await A.emit('profile:name', { name: 'bobby' });
+  assert.equal(pn.renamed, 'bobby 2', 'pseudo déjà pris dans le salon');
+  assert.ok(!seen.some((x) => x.body.includes('bobby 2')), 'un invité : rien en base');
+  assert.ok((await A.emit('profile:name', { name: '   ' })).error);
+  await A.emit('profile:name', { name: 'Alice' });
+
   await A.emit('room:settings', { mode: 'quiz' });
   await A.emit('room:settings', { input: 'text' });
   await A.emit('game:start');
   sc = await C.waitFor((s) => s.phase === 'question');
   const rid = sc.round.id;
+  pn = await C.emit('profile:name', { name: 'Bob' });
+  assert.equal(pn.renamed, null, 'pas de changement de nom en pleine partie');
 
   // ---- ⚑ pour tous, sans pause
   assert.ok(!(await C.emit('game:report', { type: 'wrong', comment: 'La date est fausse', roundId: rid, resume: true })).error, 'un invité peut signaler une erreur');

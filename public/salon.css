@@ -365,3 +365,15 @@
 .lm-right { display: flex; align-items: center; gap: 8px; }
 .lobby-end .login-top { margin-right: 4px; }
 @media (max-width: 380px) { .h-top .logo { font-size: 1.6rem; } .h-top .me-chip span:not(.avatar) { max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } }
+/* Page Profil */
+.pf-head { display: flex; align-items: center; gap: 14px; }
+.pf-head b { display: block; font-size: 1.25rem; }
+.pf-head small { color: var(--muted); }
+.acc-avatar.lg { width: 56px; height: 56px; }
+.pf-av .avatar { width: 56px; height: 56px; font-size: 1.6rem; }
+.acc .btn { text-align: center; }
+.sh-body .acc > .btn { text-align: center; }
+.danger-btn { color: var(--bad); border-color: var(--bad); background: transparent; }
+.pf-links a { color: var(--muted); }
+.me-chip.mini { margin-left: 0; padding: 3px; }
+[data-key="sh:name"] .sh-body, [data-key="sh:account"] .sh-body { max-width: 560px; width: 100%; margin: 0 auto; }

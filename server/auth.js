@@ -80,11 +80,20 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       if (hit && hit.until > Date.now()) return hit.user;
       const r = await call('GET', '/auth/v1/user', { bearer: token });
       if (!r.ok || !r.data?.id) { cache.delete(h); return null; }
-      const user = { id: r.data.id, ...profileOf(r.data), admin: admins.has(r.data.id) };
+      const user = { id: r.data.id, ...profileOf(r.data), admin: admins.has(r.data.id), nickname: null };
+      // Pseudo choisi dans la page Profil, gardé en base (le même sur tous les appareils)
+      if (store.name === 'supabase' && store.get) user.nickname = (await store.get('profiles', user.id).catch(() => null))?.nickname ?? null;
       if (cache.size > 2000) cache.clear();
       cache.set(h, { user, until: Date.now() + CACHE_MS });
       saveProfile(user);
       return user;
+    },
+
+    /** Pseudo du compte (page Profil), gardé dans profiles.nickname. */
+    async setNickname(user, nickname) {
+      for (const v of cache.values()) if (v.user.id === user.id) v.user.nickname = nickname;
+      user.nickname = nickname;
+      if (store.name === 'supabase' && store.upsert) await store.upsert('profiles', { id: user.id, nickname });
     },
 
     /** Renouvelle la session (le jeton d'accès dure 1 h). */

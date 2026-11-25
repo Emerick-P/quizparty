@@ -46,6 +46,10 @@ function supabaseBackend(url, key) {
     async upsert(table, row) {
       await call('POST', `/rest/v1/${table}`, { body: row, headers: { Prefer: 'resolution=merge-duplicates' } });
     },
+    async get(table, id) {
+      const out = await call('GET', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*`);
+      return out?.[0] ?? null;
+    },
     async remove(table, id) {
       await call('DELETE', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`);
     },
@@ -113,6 +117,9 @@ function localBackend(dir) {
       const rows = read(table).filter((r) => r.id !== row.id);
       fs.mkdirSync(dir, { recursive: true });
       write(table, [...rows, row]);
+    },
+    async get(table, id) {
+      return read(table).find((r) => r.id === id) ?? null;
     },
     async remove(table, id) {
       write(table, read(table).filter((r) => r.id !== id));

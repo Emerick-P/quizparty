@@ -434,6 +434,16 @@ export class Room {
     this.checkAllAnswered(); // un joueur a pu partir pendant la pause
   }
 
+  /** Changement de pseudo depuis la page Profil : seulement dans le salon, entre deux parties. */
+  renamePlayer(playerId, name) {
+    const p = this.players.get(playerId);
+    if (!p || !['lobby', 'end'].includes(this.phase)) return null;
+    if (p.name.toLowerCase() === name.toLowerCase()) return p.name;
+    p.name = this.uniqueName(name);
+    this.broadcast();
+    return p.name;
+  }
+
   /** Compte connecté d'un joueur (ou null : invité). Vient du serveur après vérification du jeton. */
   setUser(playerId, user) {
     const p = this.players.get(playerId);

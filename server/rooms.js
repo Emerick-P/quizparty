@@ -179,7 +179,17 @@ export class RoomManager {
       socket.data.user = user ?? null;
       this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user);
       if (!user) return { error: 'Session expirée, reconnecte-toi' };
-      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin } };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null } };
+    });
+    // Page Profil : nouveau pseudo. Gardé sur le compte (si connecté) ; appliqué tout de suite dans le salon
+    // tant que la partie n'a pas commencé (pendant une partie, il servira au prochain salon).
+    on('profile:name', async ({ name }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      if (socket.data.user) await this.auth.setNickname(socket.data.user, n);
+      const room = this.roomOf(socket);
+      const renamed = room ? room.renamePlayer(socket.data.playerId, n) : null;
+      return { ok: true, name: n, renamed };
     });
     on('auth:clear', () => {
       socket.data.user = null;

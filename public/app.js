@@ -309,7 +309,12 @@ async function accountSync() {
   if (r.user) {
     account.user = r.user;
     store.set(AUTH_KEY, { ...s, user: r.user });
-    if (!store.get(NAME_KEY)) store.set(NAME_KEY, [...r.user.name].slice(0, 16).join('').trim());
+    // Pseudo : celui du compte s'il en a un ; sinon celui de l'appareil, enregistré sur le compte
+    if (r.user.nickname) store.set(NAME_KEY, r.user.nickname);
+    else {
+      if (!store.get(NAME_KEY)) store.set(NAME_KEY, [...r.user.name].slice(0, 16).join('').trim());
+      send('profile:name', { name: store.get(NAME_KEY) });
+    }
     if (account.justIn) { account.justIn = false; toast(`Connecté avec ${PROVIDER_LABEL[r.user.provider] || 'ton compte'} : ${r.user.name}`); }
   } else if (r.error && !/serveur/.test(r.error)) {
     // Jeton refusé : une tentative de renouvellement, sinon on repasse en invité
@@ -613,7 +618,42 @@ const actions = {
     store.del(AUTH_KEY);
     account.user = null;
     await send('auth:clear');
+    ui.sheet = null;
     toast('Déconnecté : tu joues en invité');
+    render();
+  },
+  async saveName() {
+    const name = getName(); if (!name) return;
+    if (account.user || state) {
+      const r = await send('profile:name', { name });
+      if (r.error) return toast(r.error);
+      if (r.renamed && r.renamed !== name) toast(`Pseudo déjà pris dans le salon : tu es « ${r.renamed} »`);
+      else toast('Pseudo enregistré');
+    }
+    closeSheet();
+  },
+  async deleteAccount(btn) {
+    if (btn.dataset.confirm !== 'yes') {
+      btn.dataset.confirm = 'yes';
+      btn.textContent = 'Confirmer la suppression définitive';
+      return;
+    }
+    btn.disabled = true;
+    const del = (s) => fetch('/api/auth/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ access_token: s.access_token }) }).catch(() => null);
+    let s = store.get(AUTH_KEY);
+    let r = s ? await del(s) : null;
+    if (r?.status === 401 && s?.refresh_token) {
+      const again = await accountRefresh({ ...s, expires_at: 0 });
+      if (again && again.access_token !== s.access_token) { store.set(AUTH_KEY, again); s = again; r = await del(s); }
+    }
+    btn.disabled = false;
+    if (!r?.ok) return toast((await r?.json().catch(() => null))?.error || 'Suppression impossible pour le moment, réessaie plus tard');
+    clearTimeout(account.timer);
+    store.del(AUTH_KEY);
+    account.user = null;
+    await send('auth:clear');
+    ui.sheet = null;
+    toast('Ton compte a été supprimé. Tu joues en invité.');
     render();
   },
   flag() { report.open = true; report.type = null; report.roundId = state.round?.id ?? null; render(); },
@@ -704,7 +744,7 @@ document.addEventListener('submit', (e) => {
     rememberGuess(guess);
     answer(guess);
   } else if (e.target.matches('[data-form="name"]')) {
-    if (getName()) closeSheet();
+    actions.saveName();
   } else if (e.target.matches('[data-form="create"]')) {
     actions.create();
   } else if (e.target.matches('[data-form="join"]')) {
@@ -1765,13 +1805,7 @@ function playersList(host) {
 
 /** Pages (« page: true », plein écran sur téléphone) et panneaux du bas, par écran. */
 const SHEETS = {
-  name: { phase: 'home', render: () => ({ title: 'Ton profil', body: `
-    <form class="sh-form" data-form="name">
-      <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="done"></label>
-      <button class="btn primary" type="submit">C’est bon</button>
-    </form>
-    <p class="sh-note">C’est le nom que verront tes potes, retenu sur cet appareil.</p>
-    ${accountBlock()}` }) },
+  name: { phase: 'home', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
   create: { phase: 'home', render: () => ({ title: 'Créer un salon', body: `
     <form class="sh-form" data-form="create">
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
@@ -1804,10 +1838,10 @@ const SHEETS = {
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
-  account: { phase: 'lobby', render: () => ({ title: account.user ? 'Ton compte' : 'Se connecter', body: `${accountBlock()}
-    <p class="sh-note">Tu reviens dans ce salon juste après la connexion.</p>` }) },
+  account: { phase: 'lobby', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
+    <button class="btn" data-action="sheet" data-value="account">👤 Profil</button>
     <button class="btn" data-action="sheet" data-value="players">👥 Joueurs (${state.players.length})</button>
     ${state.gamesPlayed ? '<button class="btn" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
     <button class="btn" data-action="sheet" data-value="steam">🎮 Lier mon Steam</button>
@@ -1818,6 +1852,33 @@ const SHEETS = {
 const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
 const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
+/** Salon : en haut à droite, « Se connecter » pour un invité, sinon l'avatar qui ouvre le profil. */
+const profileTop = () => (account.user
+  ? `<button class="me-chip mini" data-action="sheet" data-value="account" aria-label="Ton profil">${account.user.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(store.get(NAME_KEY) || account.user.name)}</button>`
+  : loginTop('account'));
+
+/** Page Profil (accueil et salon) : pseudo, compte (connexion, déconnexion, suppression), thème. */
+function profileBody() {
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const playing = state && !['lobby', 'end'].includes(state.phase);
+  return `
+  <div class="pf-head">${u?.avatar ? `<img class="acc-avatar lg" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : `<span class="pf-av">${avatar(name || '?')}</span>`}
+    <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')} · ${esc(u.name)}${u.admin ? ' · admin' : ''}` : 'Invité'}</small></div></div>
+  <form class="sh-form" data-form="name">
+    <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(name)}" enterkeyhint="done"></label>
+    <button class="btn primary" type="submit">Enregistrer</button>
+  </form>
+  <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
+  ${u ? `<div class="acc">
+    <h3>Compte</h3>
+    <button class="btn" data-action="logout">Se déconnecter</button>
+    <button class="btn danger-btn" data-action="deleteAccount">Supprimer mon compte</button>
+    <p class="sh-note small">La suppression efface ton compte et ton profil, définitivement. Tu pourras toujours jouer en invité.</p>
+  </div>` : `${accountBlock()}${state ? '<p class="sh-note small">Tu reviens dans ce salon juste après la connexion.</p>' : ''}`}
+  <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
+  <p class="sh-note small pf-links"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a></p>`;
+}
 function accountBlock() {
   const cfg = account.cfg;
   const u = account.user;
@@ -1833,7 +1894,6 @@ function accountBlock() {
     <h3>Compte <small>facultatif</small></h3>
     <p class="sh-note">Pour retrouver ton profil sur tous tes appareils (bientôt : stats et défis entre potes). Sans compte, tu joues en invité, comme avant.</p>
     <div class="acc-btns">${cfg.providers.map((p) => `<button class="btn acc-btn acc-${p}" data-action="login" data-value="${p}">${providerIcon(p)}Continuer avec ${PROVIDER_LABEL[p] || p}</button>`).join('')}</div>
-    <p class="sh-note small"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a></p>
   </div>`;
 }
 
@@ -1854,7 +1914,7 @@ function sheetView() {
 function openSheet(name) {
   ui.sheet = name;
   render();
-  if (['name', 'create'].includes(name)) setTimeout(() => $('#name')?.focus(), 60);
+  if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
 const closeSheet = () => { ui.sheet = null; render(); };
@@ -1920,7 +1980,7 @@ const views = {
       const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
       return `
     <main class="screen lobby lobby-m">
-      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><span class="lm-right">${loginTop('account')}<button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></span></div>
+      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><span class="lm-right">${profileTop()}<button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></span></div>
       <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
         <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
@@ -1946,7 +2006,7 @@ const views = {
     // Ordinateur : joueurs à gauche, jeu choisi au centre, réglages à droite, « Lancer » en bas.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end">${loginTop('account')}<span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
+      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end">${profileTop()}<span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>

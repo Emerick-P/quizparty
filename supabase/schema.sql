@@ -87,3 +87,5 @@ create table if not exists public.profiles (
 );
 alter table public.profiles enable row level security;
 grant select, insert, update, delete on public.profiles to service_role;
+-- Pseudo choisi dans la page Profil (le même sur tous les appareils)
+alter table public.profiles add column if not exists nickname text;
