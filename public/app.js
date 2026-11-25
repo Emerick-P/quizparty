@@ -114,10 +114,20 @@ const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform 
 const pwa = { prompt: null, help: false, wake: null };
 if ('serviceWorker' in navigator && !SCREEN) navigator.serviceWorker.register('/sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; render(); });
-addEventListener('appinstalled', () => { pwa.prompt = null; render(); });
+const INSTALLED_KEY = 'quizparty:installed';
+const INSTALLED_MSG = '✓ QuizParty est installée : ouvre-la depuis l’icône QP de ton écran d’accueil';
+addEventListener('appinstalled', () => {
+  pwa.prompt = null;
+  try { localStorage.setItem(INSTALLED_KEY, '1'); } catch {}
+  toast(INSTALLED_MSG);
+  render();
+});
 /** Bouton « Installer l'app » de l'accueil (Android/PC : vraie installation ; iPhone : aide en 2 gestes). */
 function installCard() {
   if (STANDALONE || SCREEN) return '';
+  let installed = false;
+  try { installed = localStorage.getItem(INSTALLED_KEY) === '1'; } catch {}
+  if (installed && !pwa.prompt) return '<p class="install-help">✓ App installée : ouvre QuizParty depuis l’icône QP de ton écran d’accueil, en plein écran.</p>';
   if (pwa.prompt) return '<button class="btn install-btn" data-action="install">📲 Installer l’app</button>';
   if (!IOS) return '';
   return `<button class="link install-link" data-action="installhelp">📲 Installer l’app sur ton iPhone</button>
@@ -398,7 +408,17 @@ const actions = {
     enterRoom(res);
   },
   async leave() { await send('room:leave'); leaveLocal(); },
-  async install() { if (!pwa.prompt) return; pwa.prompt.prompt(); await pwa.prompt.userChoice.catch(() => {}); pwa.prompt = null; render(); },
+  async install() {
+    if (!pwa.prompt) return;
+    pwa.prompt.prompt();
+    const choice = await pwa.prompt.userChoice.catch(() => null);
+    pwa.prompt = null;
+    if (choice?.outcome === 'accepted') {
+      try { localStorage.setItem(INSTALLED_KEY, '1'); } catch {}
+      toast(INSTALLED_MSG);
+    }
+    render();
+  },
   installhelp() { pwa.help = !pwa.help; render(); },
   tvsheet() { tv.sheet = true; render(); setTimeout(() => $('#tv-pin')?.focus(), 50); },
   tvclose() { tv.sheet = false; render(); },
