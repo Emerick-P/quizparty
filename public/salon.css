@@ -541,7 +541,10 @@
 /* ---------- bandeau du haut commun (accueil, salon, podium, pages perso) ; absent pendant les questions */
 :root { --bar-h: 58px; }
 #app.has-bar { flex-direction: column; }
-.appbar { order: -1; position: sticky; top: 0; z-index: 42; flex: none; background: var(--bg); border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); padding-top: env(safe-area-inset-top); }
+.appbar { order: -1; position: sticky; top: 0; z-index: 42; flex: none; padding-top: env(safe-area-inset-top); isolation: isolate; }
+/* Fond et trait du bandeau sur toute la largeur de l'écran, même quand le contenu est centré (ordinateur) */
+.appbar::before { content: ''; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: var(--bg); border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+html { overflow-x: clip; }
 .ab-in { height: var(--bar-h); display: flex; align-items: center; gap: 10px; padding: 0 16px; box-sizing: border-box; }
 .ab-logo { background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 1.7rem; line-height: 1; white-space: nowrap; }
 .ab-logo b { color: var(--accent-text, var(--accent)); font-weight: 800; }

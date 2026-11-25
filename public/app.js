@@ -2002,7 +2002,7 @@ function appBar(phase) {
     </span>
   </div></header>`;
 }
-actions.navhome = () => { if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
+actions.navhome = () => { if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; ui.base = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
 
 /**
  * Menu du profil (touche l'avatar ou le pseudo, en haut à droite) : pages personnelles (profil, stats,
@@ -2029,30 +2029,37 @@ function menuBody() {
 
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
-  const def = SHEETS[ui.sheet];
   const phase = displayPhase();
-  if (!def || ![].concat(def.phase).includes(phase) || (phase === 'lobby' && !state)) { ui.sheet = null; return ''; }
+  const ok = (name) => { const d = SHEETS[name]; return d && [].concat(d.phase).includes(phase) && !(phase === 'lobby' && !state); };
+  if (!ok(ui.sheet)) { ui.sheet = null; ui.base = null; return ''; }
+  // Menu ouvert depuis une page (stats, profil…) : la page reste dessous
+  const base = ui.sheet === 'menu' && ui.base && ok(ui.base) ? sheetHtml(ui.base, false) : '';
+  return base + sheetHtml(ui.sheet, true);
+}
+function sheetHtml(name, top) {
+  const def = SHEETS[name];
   const { title, body } = def.render();
   const page = def.page;
   return `
-  <div class="sh-bg" data-action="sheetclose"></div>
-  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${ui.sheet}"${ui.sheet === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
+  ${top ? `<div class="sh-bg" data-action="sheetclose"></div>` : ''}
+  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${name}"${name === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
     <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
     <div class="sh-body">${body}</div>
   </section>`;
 }
 function openSheet(name) {
+  ui.base = name === 'menu' && ui.sheet && SHEETS[ui.sheet]?.page ? ui.sheet : null;
   ui.sheet = name;
   if (name === 'daily') loadDaily(); // résultat et classement à jour
   render();
   if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
-const closeSheet = () => { ui.sheet = null; render(); };
+const closeSheet = () => { ui.sheet = ui.sheet === 'menu' ? ui.base ?? null : null; ui.base = null; render(); };
 actions.sheet = (btn) => {
   // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
   if (btn.dataset.value === 'menu') {
-    if (ui.sheet === 'menu') return closeSheet();
+    if (ui.sheet === 'menu') return closeSheet(); // retour à la page d'où on l'a ouvert
     const r = btn.getBoundingClientRect();
     ui.anchor = { right: Math.round(innerWidth - r.right), bottom: Math.round(r.bottom + 8) };
   }
