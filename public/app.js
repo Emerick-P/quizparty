@@ -2034,16 +2034,17 @@ function sheetView() {
   const ok = (name) => { const d = SHEETS[name]; return d && [].concat(d.phase).includes(phase) && !(phase !== 'home' && !state); };
   if (!ok(ui.sheet)) { ui.sheet = null; ui.base = null; return ''; }
   // Menu ouvert depuis une page (stats, profil…) : la page reste dessous
-  const base = ui.sheet === 'menu' && ui.base && ok(ui.base) ? sheetHtml(ui.base, false) : '';
-  return base + sheetHtml(ui.sheet, true);
+  // Toujours dans le même ordre (fond, page, menu) : à la fermeture du menu, la page reste la même
+  // dans le DOM (rien n'est recréé, donc pas de clignotement de l'accueil ou du salon)
+  const base = ui.sheet === 'menu' && ui.base && ok(ui.base) ? sheetHtml(ui.base, true) : '';
+  return `<div class="sh-bg" data-action="sheetclose"></div>` + base + sheetHtml(ui.sheet, false);
 }
-function sheetHtml(name, top) {
+function sheetHtml(name, under) {
   const def = SHEETS[name];
   const { title, body } = def.render();
   const page = def.page;
   return `
-  ${top ? `<div class="sh-bg" data-action="sheetclose"></div>` : ''}
-  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${name}"${name === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
+  <section class="sh ${page ? 'sh-page' : ''} ${under ? 'sh-under' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${name}"${name === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
     <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
     <div class="sh-body">${body}</div>
   </section>`;

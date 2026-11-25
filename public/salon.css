@@ -574,3 +574,5 @@ html { overflow-x: clip; }
   #app.has-bar .sh-page, #app.has-bar .sh[data-key="sh:stats"] { inset: calc(var(--bar-h) + env(safe-area-inset-top)) 0 0 0; width: auto; height: auto; max-height: none; transform: none; border-radius: 0; padding: 26px max(24px, calc(50% - 560px)) 30px; }
 }
 #app.has-bar .lobby-m { min-height: calc(100dvh - var(--bar-h) - env(safe-area-inset-top) - 1px); }
+/* Page sous le menu du profil : passe sous le fond, un toucher n'importe où ferme le menu */
+.sh.sh-under { z-index: 39; pointer-events: none; }
