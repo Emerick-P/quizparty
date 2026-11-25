@@ -87,6 +87,7 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       if (store.name === 'supabase' && store.get) {
         const row = await store.get('profiles', user.id).catch(() => null);
         user.nickname = row?.nickname ?? null;
+        user.look = row?.avatar_look ?? null;
         if (row?.role) user.role = row.role;
       }
       user.admin = user.role === 'admin' || admins.has(user.id); // ADMIN_USER_IDS : secours facultatif
@@ -94,6 +95,13 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       cache.set(h, { user, until: Date.now() + CACHE_MS });
       saveProfile(user);
       return user;
+    },
+
+    /** Image de profil du compte (page Profil), gardée dans profiles.avatar_look. */
+    async setLook(user, look) {
+      for (const v of cache.values()) if (v.user.id === user.id) v.user.look = look;
+      user.look = look;
+      if (store.name === 'supabase' && store.upsert) await store.upsert('profiles', { id: user.id, avatar_look: look });
     },
 
     /** Pseudo du compte (page Profil), gardé dans profiles.nickname. */

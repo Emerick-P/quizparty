@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { stats } from './stats.js';
+import { cleanLook } from './avatars.js';
 import { Room, cleanName } from './room.js';
 import { Daily, startDaily } from './daily.js';
 
@@ -140,7 +141,8 @@ export class RoomManager {
       return; // écran télé pas encore entré : rien d'autre
     }
 
-    on('room:create', ({ name }) => {
+    on('room:create', ({ name, look }) => {
+      if (socket.data.look == null) socket.data.look = cleanLook(look) ?? '';
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       this.leave(socket);
@@ -150,7 +152,8 @@ export class RoomManager {
       return { ok: true, code: room.code, token: p.token, playerId: p.id };
     });
 
-    on('room:join', ({ code, name }) => {
+    on('room:join', ({ code, name, look }) => {
+      if (socket.data.look == null) socket.data.look = cleanLook(look) ?? '';
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       const room = this.rooms.get(String(code || '').trim().toUpperCase());
@@ -189,9 +192,13 @@ export class RoomManager {
       const user = await this.auth?.verify(token).catch(() => null);
       if (!socket.connected) return { ok: false };
       socket.data.user = user ?? null;
-      this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user);
+      // Image de profil enregistrée sur le compte : elle suit le joueur sur tous ses appareils
+      // (sans choix enregistré : la photo Discord/Google, sauf si l'invité avait déjà choisi une image)
+      if (user?.look != null) socket.data.look = user.look;
+      else if (user?.avatar && !socket.data.look) socket.data.look = 'photo';
+      this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user, user ? socket.data.look ?? null : null);
       if (!user) return { error: 'Session expirée, reconnecte-toi' };
-      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null } };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null } };
     });
     // Page Profil : nouveau pseudo. Gardé sur le compte (si connecté) ; appliqué tout de suite dans le salon
     // tant que la partie n'a pas commencé (pendant une partie, il servira au prochain salon).
@@ -210,6 +217,16 @@ export class RoomManager {
       return { ok: true, stats: await stats.statsOf(user.id) };
     });
     on('stats:player', inRoom((room, { playerId }) => room.playerStats(String(playerId || ''))));
+    // Page Profil : image de profil (galerie, photo du compte, initiale). Invité : retenue sur l'appareil.
+    on('profile:avatar', async ({ look }) => {
+      const l = cleanLook(look);
+      if (l == null) throw new Error('Image inconnue');
+      if (l === 'photo' && !socket.data.user?.avatar) throw new Error('Connecte-toi avec Discord ou Google pour utiliser ta photo');
+      socket.data.look = l;
+      if (socket.data.user) await this.auth.setLook(socket.data.user, l);
+      this.roomOf(socket)?.setLook(socket.data.playerId, l);
+      return { ok: true, look: l };
+    });
     on('auth:clear', () => {
       socket.data.user = null;
       this.roomOf(socket)?.setUser(socket.data.playerId, null);

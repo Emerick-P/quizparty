@@ -15,6 +15,7 @@ import { installSubmissions } from './submissions.js';
 import { store } from './store.js';
 import { syncContent } from './content-sync.js';
 import { createAuth } from './auth.js';
+import { AVATAR_EMOJIS, AVATAR_HUES } from './avatars.js';
 import { installLegal } from './legal.js';
 import { Room } from './room.js';
 
@@ -100,6 +101,7 @@ app.get('/manifest.webmanifest', (req, res) => {
 });
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+app.get('/api/avatars', (_req, res) => res.json({ emojis: AVATAR_EMOJIS, hues: AVATAR_HUES }));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size, covers: covers.status() }));
 
 // Jaquettes en cache, sous un identifiant opaque (l'URL ne trahit pas le jeu)

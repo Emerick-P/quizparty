@@ -309,6 +309,7 @@ async function accountSync() {
   const r = await send('auth:set', { token: s.access_token });
   if (r.user) {
     account.user = r.user;
+    if (r.user.look != null) store.set(LOOK_KEY, r.user.look); // l'image du compte suit le joueur partout
     store.set(AUTH_KEY, { ...s, user: r.user });
     // Pseudo : celui du compte s'il en a un ; sinon celui de l'appareil, enregistré sur le compte
     if (r.user.nickname) store.set(NAME_KEY, r.user.nickname);
@@ -516,7 +517,7 @@ const actions = {
   theme(btn) { setTheme(btn.dataset.value === 'light' ? 'light' : 'dark'); render(); },
   async create() {
     const name = getName(); if (!name) return;
-    const res = await send('room:create', { name });
+    const res = await send('room:create', { name, look: store.get(LOOK_KEY) ?? undefined });
     if (res.error) return toast(res.error);
     enterRoom(res);
   },
@@ -524,7 +525,7 @@ const actions = {
     const name = getName(); if (!name) return;
     const code = ($('#code')?.value || '').trim().toUpperCase();
     if (code.length !== 4) return toast('Le code fait 4 lettres');
-    const res = await send('room:join', { code, name });
+    const res = await send('room:join', { code, name, look: store.get(LOOK_KEY) ?? undefined });
     if (res.error) return toast(res.error);
     enterRoom(res);
   },
@@ -1466,7 +1467,26 @@ function steamCard() {
   </section>`;
 }
 
-const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`;
+// ---- Images de profil (galerie maison, photo du compte, initiale) : voir server/avatars.js
+const LOOK_KEY = 'quizparty:look'; // choix de l'appareil (invité), repris du compte une fois connecté
+const looks = { emojis: [], hues: [] };
+fetch('/api/avatars').then((r) => r.json()).then((x) => { Object.assign(looks, x); render(); }).catch(() => {});
+/** Chaîne enregistrée ('', 'photo', 'e:i:j') → { emoji, hue } | { photo } | null. */
+function lookView(look) {
+  if (look === 'photo') return account.user?.avatar ? { photo: account.user.avatar } : null;
+  const m = /^e:(\d+):(\d+)$/.exec(look || '');
+  return m && looks.emojis[m[1]] ? { emoji: looks.emojis[m[1]], hue: looks.hues[m[2]] } : null;
+}
+/** Mon image : choix enregistré, sinon la photo du compte s'il y en a une. */
+const myLookRaw = () => store.get(LOOK_KEY) ?? (account.user?.avatar ? 'photo' : '');
+const myLook = () => lookView(myLookRaw());
+const lookOfName = (name) => state?.players?.find((p) => p.name === name)?.look ?? null;
+const avatar = (name, look = lookOfName(name)) => (look?.photo
+  ? `<span class="avatar ph"><img src="${esc(look.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"></span>`
+  : look?.emoji
+    ? `<span class="avatar emo" style="--h:${look.hue}">${look.emoji}</span>`
+    : `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`);
+const myAvatar = (name) => avatar(name || '?', myLook());
 // À score égal, le départage éventuel (mots croisés : premier à avoir trouvé son dernier mot)
 const sortedByScore = () => [...state.players].sort((a, b) => b.score - a.score || (a.tiebreak ?? Infinity) - (b.tiebreak ?? Infinity));
 const sortedByTotal = () => [...state.players].sort((a, b) => b.total - a.total || b.wins - a.wins);
@@ -1843,6 +1863,7 @@ const SHEETS = {
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
+  look: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: 'Image de profil', body: lookBody() }) },
   menu: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Menu', body: menuBody() }) },
   stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
@@ -1859,13 +1880,49 @@ const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">$
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
 const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
 
+/** Page « Image de profil » : galerie maison (emoji + couleur), photo du compte, initiale. */
+const lookUi = { hue: null };
+function lookBody() {
+  const raw = myLookRaw();
+  const cur = /^e:(\d+):(\d+)$/.exec(raw);
+  const h = lookUi.hue ?? (cur ? Number(cur[2]) : 0);
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const u = account.user;
+  const opt = (look, inner, label) => `<button class="lk ${raw === look ? 'on' : ''}" data-action="pickLook" data-value="${look}" aria-label="${label}" aria-pressed="${raw === look}">${inner}</button>`;
+  return `
+  <div class="lk-now">${myAvatar(name)}<div><b>${esc(name || 'Sans pseudo')}</b><small>C’est ce que voient les autres joueurs.</small></div></div>
+  <h3 class="lk-h">Couleur</h3>
+  <div class="lk-hues" role="radiogroup">${looks.hues.map((x, j) => `<button class="lk-hue ${j === h ? 'on' : ''}" style="--h:${x}" data-action="pickHue" data-value="${j}" aria-label="Couleur ${j + 1}" aria-checked="${j === h}" role="radio"></button>`).join('')}</div>
+  <h3 class="lk-h">Avatar</h3>
+  <div class="lk-grid">
+    ${opt('', avatar(name || '?', null), 'Initiale de mon pseudo')}
+    ${u?.avatar ? opt('photo', avatar(name, { photo: u.avatar }), 'Ma photo ' + (PROVIDER_LABEL[u.provider] || '')) : ''}
+    ${looks.emojis.map((e, i) => opt(`e:${i}:${h}`, `<span class="avatar emo" style="--h:${looks.hues[h]}">${e}</span>`, `Avatar ${e}`)).join('')}
+  </div>
+  ${u ? '' : '<p class="sh-note small">Retenue sur cet appareil. Connecte-toi pour la garder partout (et utiliser ta photo Discord ou Google).</p>'}`;
+}
+actions.pickHue = (btn) => {
+  lookUi.hue = Number(btn.dataset.value);
+  const cur = /^e:(\d+):\d+$/.exec(myLookRaw());
+  if (cur) return actions.pickLook({ dataset: { value: `e:${cur[1]}:${lookUi.hue}` } });
+  render();
+};
+actions.pickLook = async (btn) => {
+  const look = btn.dataset.value;
+  const before = store.get(LOOK_KEY);
+  store.set(LOOK_KEY, look);
+  render();
+  const r = await send('profile:avatar', { look });
+  if (r.error) { store.set(LOOK_KEY, before); render(); toast(r.error); }
+};
+
 /** Page Profil (accueil et salon) : pseudo, compte (connexion, déconnexion, suppression), thème. */
 function profileBody() {
   const u = account.user;
   const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
   const playing = state && !['lobby', 'end'].includes(state.phase);
   return `
-  <div class="pf-head">${u?.avatar ? `<img class="acc-avatar lg" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : `<span class="pf-av">${avatar(name || '?')}</span>`}
+  <div class="pf-head"><button class="pf-av pf-look" data-action="sheet" data-value="look" aria-label="Changer mon image de profil">${myAvatar(name)}<i>Changer</i></button>
     <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')} · ${esc(u.name)}${u.admin ? ' · admin' : ''}` : 'Invité'}</small></div></div>
   <form class="sh-form" data-form="name">
     <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(name)}" enterkeyhint="done"></label>
@@ -1951,7 +2008,7 @@ function statsBody() {
     return `<div class="st-empty"><span aria-hidden="true">📊</span><p>${me ? 'Pas encore de stats : elles commencent à ta première partie finie, connecté à ton compte.' : 'Pas encore de partie finie avec son compte.'}</p></div>`;
   }
   const who = statsUi.person || {};
-  const face = who.avatar ? `<img class="acc-avatar" src="${esc(who.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : avatar(who.name || '?');
+  const face = statsUi.who === 'me' ? myAvatar(who.name) : avatar(who.name || '?');
   const tile = (v, label, sub = '') => `<div class="st-tile"><b>${v}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`;
   // Grille façon défi du jour : un carré par question posée sur ce jeu (vert trouvé, rouge raté)
   const pips = (g) => {
@@ -2003,7 +2060,7 @@ function appBar(phase) {
   const solo = !!state?.daily; // défi du jour : pas un vrai salon (ni code, ni Quitter), le logo ramène à l'accueil
   const inRoom = !!state && !solo;
   const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
-  const face = u?.avatar ? `<img class="acc-avatar sm" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer">` : name ? avatar(name) : '';
+  const face = name || u ? myAvatar(name || u?.name) : '';
   const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
@@ -2029,7 +2086,7 @@ function menuBody() {
   const profile = state ? 'account' : 'name';
   const item = (ico, label, attrs, note = '') => `<button class="mn-item" ${attrs}><span class="mn-ico" aria-hidden="true">${ico}</span><span class="mn-l">${label}</span>${note ? `<small>${note}</small>` : ''}</button>`;
   return `
-  <div class="mn-head">${u?.avatar ? `<img class="acc-avatar" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : avatar(name || '?')}
+  <div class="mn-head">${myAvatar(name)}
     <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')}` : 'Invité'}</small></div></div>
   <nav class="mn" role="menu">
     ${item('👤', 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}

@@ -198,3 +198,6 @@ create index if not exists daily_results_day_idx on public.daily_results (day, s
 create index if not exists daily_results_user_idx on public.daily_results (user_id, day desc);
 alter table public.daily_results enable row level security;
 grant select, insert, update, delete on public.daily_challenges, public.daily_results to service_role;
+
+-- Image de profil choisie dans la page Profil : '' (initiale), 'photo' (photo Discord/Google), 'e:<emoji>:<couleur>' (galerie)
+alter table public.profiles add column if not exists avatar_look text;

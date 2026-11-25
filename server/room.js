@@ -7,6 +7,7 @@ import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
 import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
 import { stats, answerRow } from './stats.js';
+import { lookView } from './avatars.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
@@ -131,6 +132,7 @@ export class Room {
     player.socketId = socket.id;
     player.connected = true;
     player.user = socket.data.user ?? null; // compte de l'appareil qui (re)prend la place
+    player.look = socket.data.look ?? player.look ?? (player.user?.avatar ? 'photo' : ''); // image de profil (voir avatars.js)
     clearTimeout(player.timers.remove);
     clearTimeout(player.timers.handoff);
     socket.data.code = this.code;
@@ -450,10 +452,19 @@ export class Room {
   }
 
   /** Compte connecté d'un joueur (ou null : invité). Vient du serveur après vérification du jeton. */
-  setUser(playerId, user) {
+  setUser(playerId, user, look) {
     const p = this.players.get(playerId);
     if (!p) return;
     p.user = user ?? null;
+    if (look != null) p.look = look;
+    this.broadcast();
+  }
+
+  /** Page Profil : nouvelle image de profil, visible tout de suite par les autres joueurs. */
+  setLook(playerId, look) {
+    const p = this.players.get(playerId);
+    if (!p) return;
+    p.look = look;
     this.broadcast();
   }
 
@@ -857,6 +868,7 @@ export class Room {
         wins: p.wins,
         connected: p.connected,
         account: !!p.user, // connecté à un compte (Discord, Google), sans rien dévoiler d'autre
+        look: lookView(p.look, p.user), // image de profil choisie (emoji sur couleur, photo du compte) ; null = initiale
         answered: !!(inRound && r.answers.has(p.id)),
         status: statusOf(p.id),
         misses: multiTry ? r.misses?.get(p.id)?.length ?? 0 : 0, // essais ratés (nom tapé seulement)
