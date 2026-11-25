@@ -7,7 +7,7 @@
  * La même liste est envoyée au navigateur (GET /api/avatars) : un seul endroit à modifier pour en ajouter.
  * Plus tard, les avatars à débloquer avec les pièces viendront s'ajouter ici.
  */
-export const AVATAR_EMOJIS = ['🎮', '👾', '🕹️', '🍄', '⭐', '🐉', '🗡️', '🛡️', '🏆', '👻', '🤖', '🦊', '🐸', '🐱', '🐼', '🦖', '🚀', '💎', '🔥', '⚡', '🎯', '🧙', '🥷', '👑'];
+export const AVATAR_EMOJIS = ['🎮', '👾', '🕹️', '🧛', '⭐', '🐉', '🗡️', '🛡️', '🏆', '👻', '🤖', '🦊', '🐸', '🐱', '🐼', '🦖', '🚀', '💎', '🔥', '⚡', '🎯', '🧙', '🥷', '👑'];
 export const AVATAR_HUES = [262, 200, 165, 120, 45, 20, 345, 300];
 
 /** Choix reçu du navigateur → chaîne propre, ou null si invalide. */

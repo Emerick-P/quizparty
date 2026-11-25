@@ -684,7 +684,7 @@ html { overflow-x: clip; }
 .lk:hover { border-color: var(--line); }
 .lk:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (orientation: landscape) and (max-height: 520px) {
-  .lk-grid { grid-template-columns: repeat(13, 1fr); gap: 6px; }
+  .lk-grid { grid-template-columns: repeat(13, 1fr); gap: 6px; max-width: 640px; }
   .lk { padding: 3px; }
   .lk .avatar { font-size: 1.2rem; }
   .lk-now .avatar { width: 44px; height: 44px; font-size: 1.4rem; }
