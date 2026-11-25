@@ -8,7 +8,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function startServer(port, env = {}) {
   const server = spawn(process.execPath, ['server/index.js'], {
-    env: { ...process.env, PORT: String(port), SUPABASE_URL: '', ACCESS_CODE: '', COUNTDOWN_MS: '300', REVEAL_MS: '300',
+    env: { ...process.env, PORT: String(port), SUPABASE_URL: '', ACCESS_CODE: '', COUNTDOWN_MS: '300', REVEAL_MS: '300', HOST_HANDOFF_MS: '300',
       TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', ...env },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -98,6 +98,23 @@ try {
   await P.waitFor((s) => s.tv === false);
   assert.ok((await TV2.emit('screen:resume', { code, token: info.token })).error, 'ancien jeton invalidé');
   for (const c of [H, P, TV2]) c.socket.close();
+
+  // Hôte seul, téléphone en veille pendant qu'il allume la télé : il reste l'hôte à son retour
+  {
+    const S = client(URL, 'solo');
+    await S.connected;
+    const made = await S.emit('room:create', { name: 'Solo' });
+    await S.emit('room:settings', { mode: 'quiz', rounds: 5 });
+    await S.emit('game:start');
+    S.socket.close();
+    await sleep(800); // plus long que HOST_HANDOFF_MS
+    const S2 = client(URL, 'solo revenu');
+    await S2.connected;
+    assert.equal((await S2.emit('room:resume', { code: made.code, token: made.token })).ok, true);
+    const back = await S2.waitFor((s) => s.code === made.code);
+    assert.equal(back.hostId, back.you, "l'hôte seul garde la main après une coupure");
+    S2.socket.close();
+  }
 
   // ---------------------------------------------------------------- avec code d'accès
   const URL2 = 'http://localhost:3993';

@@ -13,7 +13,7 @@ const REVEAL_MS = Number(process.env.REVEAL_MS ?? 8000);       // affichage de l
 const ANSWER_GRACE_MS = 400;       // on attend les réponses encore "en vol" après la fin du timer
 const MAX_LATENCY_COMP_MS = 250;   // compensation de latence maximale accordée à un joueur
 const LOBBY_REMOVE_AFTER_MS = 45_000;
-const HOST_HANDOFF_AFTER_MS = 20_000;
+const HOST_HANDOFF_AFTER_MS = Number(process.env.HOST_HANDOFF_MS ?? 20_000);
 const GUESSES_SHOWN = 3;             // saisies montrées à la correction pour ceux qui n'ont pas trouvé
 export const MAX_PLAYERS = 24;
 const SCREEN_GRACE_MS = 15_000;    // écran télé déconnecté : on garde le mode manette ce temps-là
@@ -128,6 +128,7 @@ export class Room {
     socket.data.code = this.code;
     socket.data.playerId = player.id;
     socket.join(this.channel);
+    if (!this.hostId || !this.players.has(this.hostId)) this.hostId = player.id; // salon sans hôte : le premier revenu le reprend
     this.emptySince = null;
     this.ping(player);
     this.broadcast();
@@ -182,10 +183,15 @@ export class Room {
     this.checkAllAnswered();
   }
 
+  /**
+   * L'hôte est parti ou déconnecté : la main passe à un joueur connecté. S'il n'y en a aucun
+   * (hôte seul, téléphone en veille le temps d'allumer la télé…), il garde la main à son retour.
+   */
   handoffHost() {
     const candidates = [...this.players.values()].filter((p) => p.id !== this.hostId);
-    const next = candidates.find((p) => p.connected) ?? candidates[0];
-    this.hostId = next ? next.id : null;
+    const next = candidates.find((p) => p.connected) ?? (this.players.has(this.hostId) ? null : candidates[0]);
+    if (next) this.hostId = next.id;
+    else if (!this.players.has(this.hostId)) this.hostId = null;
   }
 
   connectedPlayers() {
