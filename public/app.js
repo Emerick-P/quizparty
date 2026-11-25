@@ -425,6 +425,10 @@ async function share() {
 }
 
 const actions = {
+  rvpage(btn) {
+    const el = document.querySelector('.rv-swipe.on');
+    if (el) el.scrollTo({ left: btn.dataset.value === '1' ? el.scrollWidth : 0, behavior: 'smooth' });
+  },
   theme(btn) { setTheme(btn.dataset.value === 'light' ? 'light' : 'dark'); render(); },
   async create() {
     const name = getName(); if (!name) return;
@@ -2025,18 +2029,21 @@ const views = {
     }
 
     const board = sortedByScore().slice(0, 8);
+    // Téléphone : « Réponse » et « Classement » sont deux pages qu'on fait glisser du doigt (le haut et les boutons restent fixes)
+    const swipe = !SCREEN && !(controller() && r.kind !== 'crossword');
     return `
     <main class="screen reveal-screen">
       <div class="qhead"><span class="pill">${r.kind === 'crossword' ? 'Fin du chrono' : `${r.index + 1} / ${r.total}`}</span><span class="muted">${last ? 'Résultats' : r.kind === 'crossword' ? 'Grille suivante' : 'Question suivante'} dans <span data-until="${state.phaseEndsAt}" data-mode="count"></span> s</span></div>
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
-      <div class="rv-main">
-      ${SCREEN ? '' : banner}
+      ${SCREEN ? '' : `<div class="rv-top">${banner}</div>`}
+      <div class="rv-swipe ${swipe ? 'on' : ''}" data-swipe>
+      <div class="rv-main rv-page">
       ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}`}
       </div>
-      <div class="rv-side">
+      <div class="rv-side rv-page">
       <section class="card">
         <h2>Classement</h2>
         <ul class="list">
@@ -2049,9 +2056,14 @@ const views = {
             </li>`).join('')}
         </ul>
       </section>
-      ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
-      ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
+      ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
       </div>
+      </div>
+      ${swipe ? `<div class="rv-dots" role="tablist" aria-label="Pages de la correction">
+        <button class="rv-dot" data-action="rvpage" data-value="0" role="tab"><i></i>Réponse</button>
+        <button class="rv-dot" data-action="rvpage" data-value="1" role="tab"><i></i>Classement</button>
+      </div>` : ''}
+      ${isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
     </main>`;
   },
 
@@ -2172,8 +2184,57 @@ function render() {
   guardBack();
   keepAwake();
   updatePropose();
+  updateSwipe();
   updateTimers();
 }
+
+/* ---------- Correction au swipe (téléphone) : « Réponse » ⇄ « Classement »
+   --p (0 → 1) suit le doigt : les pages se réduisent/estompent et la pastille du repère glisse avec.
+   Les premières fois, la page fait un petit aller-retour pour montrer qu'on peut la faire glisser. */
+const SWIPE_HINT_KEY = 'quizparty.swipeHint';
+const swipeSeen = new WeakSet();
+function swipeHints(n) {
+  try {
+    if (n !== undefined) localStorage.setItem(SWIPE_HINT_KEY, String(n));
+    return Number(localStorage.getItem(SWIPE_HINT_KEY)) || 0;
+  } catch { return 99; }
+}
+function updateSwipe() {
+  const el = document.querySelector('.rv-swipe.on');
+  if (!el) return;
+  const screen = el.closest('.reveal-screen');
+  const max = el.scrollWidth - el.clientWidth;
+  const p = max > 4 ? Math.min(1, Math.max(0, el.scrollLeft / max)) : 0;
+  screen.style.setProperty('--p', p.toFixed(3));
+  const page = p > 0.5 ? 1 : 0;
+  screen.querySelector('.rv-dots')?.classList.toggle('moving', p > 0.02 && p < 0.98); // pendant le glissé : texte lisible sur la pastille comme à côté
+  screen.querySelectorAll('.rv-dot').forEach((d, i) => {
+    d.classList.toggle('on', i === page);
+    d.setAttribute('aria-selected', String(i === page));
+  });
+  if (max > 4 && !swipeSeen.has(el)) {
+    swipeSeen.add(el);
+    const shown = swipeHints();
+    if (shown < 3) {
+      setTimeout(() => {
+        if (!el.isConnected || el.scrollLeft > 4) return;
+        swipeHints(shown + 1);
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        // animation à part du DOM (un nouveau rendu ne la coupe pas)
+        for (const pg of el.querySelectorAll('.rv-page')) {
+          pg.animate([{ translate: '0' }, { translate: '-64px', offset: 0.35 }, { translate: '-64px', offset: 0.55 }, { translate: '0' }],
+            { duration: 1100, easing: 'cubic-bezier(.3, 0, .2, 1)' });
+        }
+      }, 900);
+    }
+  }
+}
+document.addEventListener('scroll', (e) => {
+  const el = e.target;
+  if (!el.classList?.contains('rv-swipe')) return;
+  updateSwipe();
+  if (el.scrollLeft > 40) swipeHints(99); // il a trouvé : plus besoin de montrer
+}, true);
 
 /** Met à jour chronos et barres à chaque frame, à partir de l'horloge serveur estimée. */
 function updateTimers() {

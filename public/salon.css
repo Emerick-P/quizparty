@@ -208,29 +208,100 @@
   .screen.has-side > .host-bar .btn { padding: 6px 10px; font-size: .8rem; white-space: nowrap; }
 }
 
-/* ---------- correction : deux blocs (détail / classement) qui se mettent côte à côte en paysage */
-.rv-main, .rv-side { display: contents; }
-@media (orientation: landscape) and (max-height: 520px) {
+/* ---------- correction : bandeau fixe en haut, puis deux pages « Réponse » / « Classement »
+   Ordinateur et télé : les pages s'affichent l'une sous l'autre (ou côte à côte sur la télé).
+   Téléphone (portrait et paysage) : on les fait glisser du doigt, le haut et les boutons restent fixes. */
+.rv-top, .rv-swipe, .rv-main, .rv-side { display: contents; }
+.rv-top:empty, .rv-dots { display: none; }
+
+@media (max-width: 640px) and (orientation: portrait), (orientation: landscape) and (max-height: 520px) {
   #app:has(.reveal-screen) { max-width: none; }
-  .reveal-screen { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 20px; row-gap: 8px; align-content: start; padding-top: 8px; }
-  .reveal-screen > .qhead, .reveal-screen > .bar { grid-column: 1 / -1; }
-  .reveal-screen .rv-main, .reveal-screen .rv-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-  .reveal-screen { height: 100dvh; grid-template-rows: auto auto minmax(0, 1fr); padding-bottom: 8px; }
-  .reveal-screen .rv-main, .reveal-screen .rv-side { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-  .reveal-screen .rv-main .prompt.small { font-size: .95rem; padding: 8px 12px; }
+  .reveal-screen { position: relative; height: 100dvh; overflow: hidden; gap: 8px; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .reveal-screen > * { flex: none; }
+  .reveal-screen .rv-top { display: block; }
+  .reveal-screen .rv-top .result { margin: 0; }
+  .reveal-screen .rv-swipe { display: flex; flex: 1 1 0; min-height: 0; gap: 10px; }
+  .reveal-screen .rv-swipe.on {
+    margin: 0 -16px; padding: 0 16px; scroll-padding: 0 16px;
+    overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .reveal-screen .rv-swipe.on::-webkit-scrollbar { display: none; }
+  .reveal-screen .rv-page {
+    display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0;
+    overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  }
+  .reveal-screen .rv-page > * { flex-shrink: 0; margin-top: 0; margin-bottom: 0; }
+  .reveal-screen .rv-swipe:not(.on) { flex-direction: column; overflow-y: auto; }
+  .reveal-screen .rv-swipe:not(.on) .rv-page { overflow: visible; }
+  /* chaque page laisse dépasser le bord de l'autre : on devine qu'il y a quelque chose à côté */
+  .reveal-screen .rv-swipe.on .rv-page {
+    flex: 0 0 calc(100% - 26px); scroll-snap-align: start; scroll-snap-stop: always;
+    transform-origin: center; will-change: transform, opacity;
+  }
+  .reveal-screen .rv-swipe.on .rv-main { transform: scale(calc(1 - .05 * var(--p, 0))); opacity: calc(1 - .45 * var(--p, 0)); }
+  .reveal-screen .rv-swipe.on .rv-side { transform: scale(calc(.95 + .05 * var(--p, 0))); opacity: calc(.55 + .45 * var(--p, 0)); }
+
+  /* repère : « Réponse | Classement » avec une pastille qui suit le doigt */
+  .reveal-screen .rv-dots {
+    display: grid; grid-template-columns: 1fr 1fr; position: relative; isolation: isolate; align-self: center;
+    width: min(320px, 100%); padding: 3px; border-radius: 999px; background: var(--deep); box-shadow: inset 0 0 0 1px var(--line, rgba(255,255,255,.08));
+  }
+  .reveal-screen .rv-dots::before {
+    content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px; z-index: 0; pointer-events: none;
+    background: var(--tile); box-shadow: 0 2px 0 var(--shadow);
+    transform: translateX(calc(var(--p, 0) * 100%));
+  }
+  .reveal-screen .rv-dot {
+    position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 6px 10px; border: 0; background: none; color: var(--muted); font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer;
+    transition: color .2s;
+  }
+  .reveal-screen .rv-dot.on { color: var(--ink); }
+  .reveal-screen .rv-dots.moving .rv-dot { color: #8b93a1; }
+  .reveal-screen .rv-dot i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .5; }
+  .reveal-screen .rv-dot.on i { background: var(--accent); opacity: 1; }
+  .reveal-screen .rv-dot + .rv-dot::after { content: '›'; font-size: 1.1rem; line-height: 1; opacity: calc(1 - var(--p, 0)); animation: rv-arrow 1.4s ease-in-out infinite; }
+  @keyframes rv-arrow { 50% { translate: 4px; } }
+
+  .reveal-screen .rv-host { margin: 0; justify-content: center; gap: 6px; flex-wrap: nowrap; }
+  .reveal-screen .rv-host .btn { padding: 7px 12px; font-size: .82rem; white-space: nowrap; }
+  .reveal-screen .rv-side .ban-bar { margin: 0; }
+  .reveal-screen .rv-side .card { padding: 12px; }
+  .reveal-screen .rv-side .card h2 { font-size: 1.1rem; margin-bottom: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-screen .rv-dot + .rv-dot::after { animation: none; }
+}
+
+/* paysage téléphone : la page « Réponse » met l'image à gauche et les réponses à droite */
+@media (orientation: landscape) and (max-height: 520px) {
+  .reveal-screen { padding-top: 6px; gap: 6px; }
+  .reveal-screen .rv-top .result { padding: 4px 12px; font-size: 1.2rem; }
+  .reveal-screen .rv-top .result small { font-size: .8rem; }
+  /* à gauche ce qu'il fallait trouver, à droite les réponses des joueurs */
+  .reveal-screen .rv-main:has(> :is(.choices, .list)) {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: repeat(5, min-content) 1fr;
+    column-gap: 16px; row-gap: 0; align-content: start;
+  }
+  .reveal-screen .rv-main:has(> :is(.choices, .list)) > * { grid-column: 1; margin-bottom: 8px; }
+  .reveal-screen .rv-main:has(> :is(.choices, .list)) > :is(.choices, .list) { grid-column: 2; grid-row: 1 / -1; align-self: start; }
+  .reveal-screen .rv-main .prompt.small { font-size: .95rem; padding: 6px 12px; }
   .reveal-screen .choices.reveal { gap: 6px; }
-  .reveal-screen .choices.reveal .choice { padding: 7px 12px; font-size: .9rem; }
-  .reveal-screen .shot-wrap img { max-height: 30vh; }
+  .reveal-screen .choices.reveal .choice { padding: 6px 12px; font-size: .88rem; }
+  .reveal-screen .shot-wrap img { max-height: 52vh; }
   .reveal-screen .shot-meta { margin: 0; }
   .reveal-screen .shot-meta .val { font-size: 1.15rem; }
   .reveal-screen .emoji-why .emojis.small { font-size: 1.2rem; }
   .reveal-screen .emoji-why p { font-size: .85rem; margin: 2px 0 0; }
-  .reveal-screen .rv-main > *, .reveal-screen .rv-side > * { flex-shrink: 0; }
-  .reveal-screen .result { padding: 6px 12px; font-size: 1.5rem; }
-  .reveal-screen .result small { font-size: .85rem; }
-  .reveal-screen .cover-reveal .cover-wrap { height: 120px; }
-  .reveal-screen .rv-side .list li { padding-top: 6px; padding-bottom: 6px; }
-  .reveal-screen .prompt.small { margin: 0; }
+  .reveal-screen .cover-reveal .cover-wrap { height: 130px; }
+  .reveal-screen .rv-side .list li { padding-top: 5px; padding-bottom: 5px; }
+  /* repère en bas à gauche, boutons de l'hôte en bas à droite, sur la même ligne */
+  .reveal-screen .rv-dots { align-self: flex-start; width: 250px; }
+  .reveal-screen .rv-dot { padding: 4px 8px; font-size: .8rem; }
+  .reveal-screen .rv-host { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 16px; }
+  .reveal-screen .rv-host .btn { padding: 5px 10px; }
+  .reveal-screen .shot-wrap img { max-height: 38vh; }
 }
 
 /* ---------- « L'app sur ton téléphone » */
