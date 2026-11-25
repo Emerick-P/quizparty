@@ -92,12 +92,11 @@
 .ib { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--surf); color: var(--text); font-size: 1.2rem; font-weight: 800; }
 .lm-code { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .lm-code small { color: var(--muted); font-size: .8rem; }
-.lm-code .code { background: var(--tile); color: var(--on-tile); font-size: 2.7rem; line-height: 1.1; padding: 0 18px; border-radius: 5px; transform: skewX(-6deg); box-shadow: 7px 7px 0 var(--shadow); }
+.lm-code .code { border: 0; font-family: var(--display); font-style: italic; font-weight: 800; letter-spacing: .12em; cursor: pointer; background: var(--tile); color: var(--on-tile); font-size: 2.7rem; line-height: 1.1; padding: 0 18px; border-radius: 5px; transform: skewX(-6deg); box-shadow: 7px 7px 0 var(--shadow); }
 :root[data-theme="light"] .lm-code .code { background: var(--ink); color: #fff; box-shadow: 7px 7px 0 var(--accent); }
 .lm-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .chip-btn { background: var(--surf); color: var(--text); border: 0; border-radius: 999px; padding: 7px 12px; font: inherit; font-size: .82rem; font-weight: 600; white-space: nowrap; }
 .chip-btn.copied { background: var(--good); color: var(--ink); }
-.tv-chip { background: var(--accent); color: var(--accent-ink); }
 .lm-players { display: flex; justify-content: safe center; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 10px; margin: 0 -16px; padding: 0 16px; min-width: 0; width: calc(100% + 32px); background: none; border: 0; padding: 0; color: inherit; font: inherit; }
 .lm-pl { flex: none; position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 60px; }
 .lm-pl .avatar { width: 42px; height: 42px; font-size: 1.25rem; }
@@ -149,14 +148,13 @@
   .home2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; align-content: start; }
   .home2 > * { grid-column: 1 / -1; }
   .home2 > .h-play { grid-column: 1; }
-  .home2 > .h-tiles { grid-column: 2; grid-row: 2 / span 3; grid-template-columns: 1fr 1fr; }
+  .home2 > .h-tiles { grid-column: 2; grid-row: 2; grid-template-columns: 1fr 1fr; }
   .h-tile { min-height: 0; }
   .h-play h1 { font-size: 2.1rem; }
 }
 
 /* ordinateur et grande tablette */
 @media (min-width: 640px) {
-  .h-tiles { grid-template-columns: repeat(4, 1fr); }
   .home2 { max-width: 900px; margin: 0 auto; }
   #app:has(.home2) { max-width: 900px; }
   .h-play { padding: 32px; } .h-play h1 { font-size: 3rem; } .h-btns { max-width: 460px; }
@@ -179,10 +177,12 @@
 @media (orientation: landscape) and (max-height: 520px) {
   #app.wide { max-width: none; }
   .screen.has-side { gap: 8px; padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
-  .screen.has-side > .play:not(.cw) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; row-gap: 8px; align-items: start; align-content: start; }
+  .screen.has-side > .play:not(.cw) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 20px; row-gap: 0; align-items: start; align-content: start; }
+  .play:not(.cw) > :not(.q-answer) { margin-bottom: 8px; }
+  .screen.has-side > .play:not(.cw) { grid-auto-rows: min-content; flex: none; }
   .play:not(.cw) > * { grid-column: 1; }
   .play:not(.cw) > .qhead, .play:not(.cw) > .bar { grid-column: 1 / -1; }
-  .play:not(.cw) > .q-answer { grid-column: 2; grid-row: 3 / span 8; align-self: stretch; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
+  .play:not(.cw) > .q-answer { grid-column: 2; grid-row: 3 / span 6; align-self: center; display: flex; flex-direction: column; justify-content: center; gap: 8px; }
   .play:not(.cw) .prompt { font-size: 1.35rem; margin: 0; text-align: left; }
   .play:not(.cw) .prompt.small { font-size: 1.05rem; }
   .play .cover-wrap { height: 62vh; margin: 0 auto; }
@@ -198,6 +198,7 @@
   .play .emojis { margin: 0; padding: 10px; font-size: 2.2rem; }
   .play .sound-wrap { margin: 0; flex-direction: row; justify-content: center; gap: 14px; }
   .play .sound-btn { width: 96px; height: 96px; }
+  .play .shot-wrap { max-height: 58vh; overflow: hidden; }
   .play .shot-wrap img { max-height: 58vh; }
   .play .about-line { margin: 0; font-size: .85rem; }
   .screen.has-side > .roster { margin-top: 0; }
@@ -214,11 +215,27 @@
   .reveal-screen { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); column-gap: 20px; row-gap: 8px; align-content: start; padding-top: 8px; }
   .reveal-screen > .qhead, .reveal-screen > .bar { grid-column: 1 / -1; }
   .reveal-screen .rv-main, .reveal-screen .rv-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
-  .reveal-screen .result { padding: 10px 14px; font-size: 1.8rem; }
+  .reveal-screen { height: 100dvh; grid-template-rows: auto auto minmax(0, 1fr); padding-bottom: 8px; }
+  .reveal-screen .rv-main, .reveal-screen .rv-side { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .reveal-screen .rv-main .prompt.small { font-size: .95rem; padding: 8px 12px; }
+  .reveal-screen .choices.reveal { gap: 6px; }
+  .reveal-screen .choices.reveal .choice { padding: 7px 12px; font-size: .9rem; }
+  .reveal-screen .shot-wrap img { max-height: 38vh; }
+  .reveal-screen .rv-main > *, .reveal-screen .rv-side > * { flex-shrink: 0; }
+  .reveal-screen .result { padding: 6px 12px; font-size: 1.5rem; }
+  .reveal-screen .result small { font-size: .85rem; }
+  .reveal-screen .cover-reveal .cover-wrap { height: 120px; }
+  .reveal-screen .rv-side .list li { padding-top: 6px; padding-bottom: 6px; }
   .reveal-screen .prompt.small { margin: 0; }
 }
 
 /* ---------- « L'app sur ton téléphone » */
 .getapp-qr { align-self: center; background: #fff; padding: 14px; border-radius: 10px; box-shadow: 6px 6px 0 var(--shadow); }
 .getapp-qr img { display: block; width: 200px; height: 200px; }
-.home2 .install-btn { align-self: center; width: auto; padding: 12px 20px; }
+.h-extras { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.h-extras .chip-btn { padding: 9px 14px; }
+
+/* paysage très bas (téléphone avec la barre du navigateur) : la liste des joueurs laisse la place aux réponses */
+@media (orientation: landscape) and (max-height: 400px) {
+  .screen.has-side > .roster { display: none; }
+}

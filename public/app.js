@@ -136,10 +136,10 @@ navigator.getInstalledRelatedApps?.().then((apps) => { if (apps?.length) { pwa.i
  */
 function installCard() {
   if (STANDALONE || SCREEN) return '';
-  if (!TOUCH) return '<button class="btn install-btn ghost" data-action="sheet" data-value="getapp">📱 L’app QuizParty sur ton téléphone</button>';
-  if (appInstalled() && !pwa.prompt) return '<p class="install-help">✓ App installée : ouvre QuizParty depuis l’icône QP de ton écran d’accueil, en plein écran.</p>';
-  if (pwa.prompt) return '<button class="btn install-btn" data-action="install">📲 Installer l’app</button>';
-  return '<button class="btn install-btn ghost" data-action="sheet" data-value="getapp">📲 Installer l’app</button>';
+  if (!TOUCH) return '<button class="chip-btn" data-action="sheet" data-value="getapp">📱 L’app sur ton téléphone</button>';
+  if (appInstalled() && !pwa.prompt) return '<button class="chip-btn" data-action="sheet" data-value="getapp">✓ App installée</button>';
+  if (pwa.prompt) return '<button class="chip-btn" data-action="install">📲 Installer l’app</button>';
+  return '<button class="chip-btn" data-action="sheet" data-value="getapp">📲 Installer l’app</button>';
 }
 /** Fenêtre « L'app sur ton téléphone » (ordinateur : QR code ; téléphone : la marche à suivre). */
 function getAppBody() {
@@ -408,6 +408,13 @@ function copyText(text) {
   ta.remove();
   return ok ? Promise.resolve() : Promise.reject(new Error('copie refusée'));
 }
+/** Téléphone : on se passe le code (4 lettres), pas le lien. */
+async function copyCode() {
+  try { await copyText(state.code); } catch { return toast(`Code du salon : ${state.code}`); }
+  copiedUntil = Date.now() + COPIED_MS;
+  render();
+  setTimeout(render, COPIED_MS + 20);
+}
 async function share() {
   const url = `${location.origin}/?code=${state.code}`;
   try { await copyText(url); } catch { return toast(url); } // à défaut, on affiche le lien pour le copier à la main
@@ -449,6 +456,7 @@ const actions = {
   tvclose() { tv.sheet = false; render(); },
   async tvoff() { const r = await send('room:screen-off'); if (r.error) toast(r.error); },
   share,
+  copycode: copyCode,
   async start() { const r = await send('game:start'); if (r.error) toast(r.error); },
   async skip() { const r = await send('game:skip'); if (r.error) toast(r.error); },
   async stop(btn) {
@@ -1739,10 +1747,12 @@ const views = {
       <div class="h-tiles">
         <button class="h-tile daily" data-action="soon" data-value="Le défi du jour arrive bientôt : le même quiz pour tout le monde, chaque jour, avec un résultat à partager."><i class="soon">Bientôt</i><span class="t-ico">📅</span><b>Défi du jour</b><small>Le même quiz pour tout le monde, résultat à partager</small><span class="streak" aria-hidden="true"><i class="ok"></i><i class="ok"></i><i class="mid"></i><i class="ok"></i><i></i></span></button>
         <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
-        <button class="h-tile" data-action="sheet" data-value="tvinfo"><span class="t-ico">📺</span><b>Sur la télé</b><small>La partie en grand, les téléphones en manette</small></button>
-        <button class="h-tile" data-action="propose"><span class="t-ico">💡</span><b>Proposer</b><small>Tes questions, pitchs, sons, captures</small></button>
       </div>
-      ${installCard()}
+      <div class="h-extras">
+        <button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>
+        <button class="chip-btn" data-action="propose">💡 Proposer une question</button>
+        ${installCard()}
+      </div>
       <div class="h-foot">${themeToggle()}</div>
       <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
     </main>`;
@@ -1761,9 +1771,9 @@ const views = {
       return `
     <main class="screen lobby lobby-m">
       <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></div>
-      <section class="lm-code"><small>Code du salon</small><b class="code">${esc(state.code)}</b></section>
+      <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
-        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : '🔗 Inviter'}</button>
+        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
         ${host && !state.tv && TOUCH ? '<button class="chip-btn tv-chip" data-action="tvsheet">📺 Sur la télé</button>' : ''}
         <button class="chip-btn" data-action="sheet" data-value="note">🔒 Entre potes <span aria-hidden="true">ⓘ</span></button>
       </div>
