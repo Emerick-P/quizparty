@@ -16,6 +16,7 @@ const LOBBY_REMOVE_AFTER_MS = 45_000;
 const HOST_HANDOFF_AFTER_MS = 20_000;
 const GUESSES_SHOWN = 3;             // saisies montrées à la correction pour ceux qui n'ont pas trouvé
 export const MAX_PLAYERS = 24;
+const SCREEN_GRACE_MS = 15_000;    // écran télé déconnecté : on garde le mode manette ce temps-là
 
 // level : niveau des modes qui en ont un (pitch) : easy = jeux très grand public, hard = le reste
 // input : format de réponse des modes qui le permettent (jaquette, pitch) : 4 choix ou nom tapé
@@ -57,6 +58,11 @@ export class Room {
     this.archive = new Map(); // pseudo (minuscules) → { total, wins } des joueurs partis, rendu s'ils reviennent
     this.emptySince = null;
     this.pingTimer = setInterval(() => this.pingAll(), 5000);
+    // Mode télé : écrans (télé, PC en HDMI, Chromecast) qui affichent la partie sans y jouer
+    this.screens = new Map(); // socketId → socket
+    this.screenToken = crypto.randomBytes(12).toString('hex'); // reprise de l'écran après rechargement
+    this.screenLostAt = 0;
+    this.screenTimer = null;
   }
 
   get channel() {
@@ -674,6 +680,42 @@ export class Room {
     this.broadcast();
   }
 
+  // ------------------------------------------------------------------ écran télé
+
+  /** Branche un écran télé sur ce salon (il reçoit la vue « tout le monde », sans réponses perso). */
+  attachScreen(socket) {
+    socket.data.screenOf = this.code;
+    this.screens.set(socket.id, socket);
+    clearTimeout(this.screenTimer);
+    this.broadcast();
+  }
+
+  detachScreen(socket) {
+    if (!this.screens.delete(socket.id)) return;
+    if (this.screens.size) return this.broadcast();
+    // Petite coupure (rechargement, Wi-Fi) : les téléphones restent en manette quelques secondes
+    this.screenLostAt = Date.now();
+    clearTimeout(this.screenTimer);
+    this.screenTimer = setTimeout(() => this.broadcast(), SCREEN_GRACE_MS + 50);
+    this.broadcast();
+  }
+
+  /** L'hôte éteint le mode télé : écrans débranchés, chacun revoit tout sur son téléphone. */
+  dropScreens() {
+    for (const s of this.screens.values()) {
+      s.data.screenOf = null;
+      s.emit('screen:closed');
+    }
+    this.screens.clear();
+    this.screenLostAt = 0;
+    this.screenToken = crypto.randomBytes(12).toString('hex');
+    this.broadcast();
+  }
+
+  get tvOn() {
+    return this.screens.size > 0 || Date.now() - this.screenLostAt < SCREEN_GRACE_MS;
+  }
+
   // ------------------------------------------------------------------ diffusion
 
   view(pid) {
@@ -702,6 +744,7 @@ export class Room {
       hostId: this.hostId,
       you: pid,
       serverNow: Date.now(),
+      tv: this.tvOn, // un écran télé affiche la partie : les téléphones passent en manette
       settings: this.settings,
       options: { modes: modeList(this.ctx()), ...OPTIONS },
       phaseStartedAt: this.phaseStartedAt,
@@ -765,10 +808,16 @@ export class Room {
     for (const p of this.players.values()) {
       if (p.connected && p.socketId) this.io.to(p.socketId).emit('state', this.view(p.id));
     }
+    if (this.screens.size) {
+      const v = { ...this.view(null), screen: true };
+      for (const s of this.screens.values()) s.emit('state', v);
+    }
   }
 
   destroy() {
     this.clearTimers();
+    clearTimeout(this.screenTimer);
+    for (const s of this.screens.values()) s.emit('screen:closed');
     clearInterval(this.pingTimer);
     for (const p of this.players.values()) {
       clearTimeout(p.timers.remove);

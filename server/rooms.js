@@ -6,9 +6,11 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 
 export class RoomManager {
-  constructor(io) {
+  constructor(io, { access } = {}) {
     this.io = io;
+    this.access = access;
     this.rooms = new Map();
+    this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
     setInterval(() => this.sweep(), 60_000).unref();
   }
 
@@ -48,6 +50,44 @@ export class RoomManager {
     }
   }
 
+  /** Code à 4 chiffres pour un écran télé en attente d'appairage. */
+  newPin(socket) {
+    if (socket.data.pin) this.pins.delete(socket.data.pin);
+    for (;;) {
+      const pin = String(crypto.randomInt(1000, 10000));
+      if (!this.pins.has(pin)) {
+        this.pins.set(pin, socket);
+        socket.data.pin = pin;
+        return pin;
+      }
+    }
+  }
+
+  screenRoom(socket) {
+    return socket.data.screenOf ? this.rooms.get(socket.data.screenOf) : undefined;
+  }
+
+  /** Événements d'un écran télé (les seuls permis à un écran pas encore entré avec le code d'accès). */
+  screenEvents(socket, on) {
+    on('screen:hello', () => {
+      this.screenRoom(socket)?.detachScreen(socket);
+      socket.data.screenOf = null;
+      return { ok: true, pin: this.newPin(socket) };
+    });
+    on('screen:resume', ({ code, token }) => {
+      const room = this.rooms.get(String(code || '').trim().toUpperCase());
+      if (!room || typeof token !== 'string' || token !== room.screenToken) throw new Error('Écran à rappairer');
+      if (socket.data.pin) this.pins.delete(socket.data.pin);
+      socket.data.pin = null;
+      room.attachScreen(socket);
+      return { ok: true, code: room.code };
+    });
+    on('screen:leave', () => {
+      this.screenRoom(socket)?.detachScreen(socket);
+      socket.data.screenOf = null;
+    });
+  }
+
   handleConnection(socket) {
     // Enregistre un handler avec accusé de réception systématique { ok } ou { error }
     const on = (event, handler) => {
@@ -79,6 +119,16 @@ export class RoomManager {
     socket.on('time:ping', (_payload, ack) => {
       if (typeof ack === 'function') ack(Date.now());
     });
+
+    this.screenEvents(socket, on);
+    const dropScreen = () => {
+      if (socket.data.pin) this.pins.delete(socket.data.pin);
+      this.screenRoom(socket)?.detachScreen(socket);
+    };
+    if (socket.data.limited) {
+      socket.on('disconnect', dropScreen);
+      return; // écran télé pas encore entré : rien d'autre
+    }
 
     on('room:create', ({ name }) => {
       const n = cleanName(name);
@@ -115,6 +165,19 @@ export class RoomManager {
     });
 
     on('room:settings', hostOnly((room, s) => room.updateSettings(s)));
+    // Mode télé : l'hôte tape le code affiché par l'écran (ou caste, qui passe par screen:grant)
+    on('room:screen', hostOnly((room, { pin }) => {
+      const tv = this.pins.get(String(pin || '').replace(/\D/g, ''));
+      if (!tv || !tv.connected) throw new Error("Code d'écran introuvable : vérifie les chiffres affichés sur la télé");
+      this.pins.delete(tv.data.pin);
+      tv.data.pin = null;
+      const grant = tv.data.limited ? this.access?.grant?.() ?? null : null;
+      tv.emit('screen:paired', { code: room.code, token: room.screenToken, grant });
+      if (!grant) room.attachScreen(tv);
+      return { ok: true };
+    }));
+    on('room:screen-grant', hostOnly((room) => ({ ok: true, code: room.code, token: room.screenToken, grant: this.access?.grant?.() ?? null })));
+    on('room:screen-off', hostOnly((room) => room.dropScreens()));
     on('room:kick', hostOnly((room, { playerId }) => {
       if (playerId === socket.data.playerId) throw new Error('Tu ne peux pas te retirer toi-même');
       room.removePlayer(playerId, 'kick');
@@ -152,6 +215,7 @@ export class RoomManager {
     });
 
     socket.on('disconnect', () => {
+      dropScreen();
       const room = this.roomOf(socket);
       if (room) room.detach(socket);
     });

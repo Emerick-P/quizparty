@@ -58,6 +58,15 @@ function sendIndex(_req, res) {
   res.type('html').send(html);
 }
 app.get(['/', '/index.html'], sendIndex);
+// Écran télé (mode télé) : même principe de version que l'accueil
+app.get(['/tv', '/tv.html'], (_req, res) => {
+  const html = fs
+    .readFileSync(path.join(PUBLIC, 'tv.html'), 'utf8')
+    .replace('"/tv.js"', `"/tv.js?v=${version('tv.js')}"`)
+    .replace('"/tv.css"', `"/tv.css?v=${version('tv.css')}"`);
+  res.set('Cache-Control', 'no-store');
+  res.type('html').send(html);
+});
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size, covers: covers.status() }));
@@ -89,7 +98,7 @@ app.get('/sfx/:file', (req, res) => {
   res.sendFile(f);
 });
 
-const rooms = new RoomManager(io);
+const rooms = new RoomManager(io, { access });
 io.on('connection', (socket) => rooms.handleConnection(socket));
 
 const PORT = Number(process.env.PORT) || 3000;

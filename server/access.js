@@ -9,13 +9,19 @@ import express from 'express';
 
 const COOKIE = 'qp_access';
 const MAX_AGE_S = 180 * 24 * 3600; // 6 mois
-const OPEN_PATHS = new Set(['/entree', '/health']);
+const OPEN_PATHS = new Set(['/entree', '/health', '/tv', '/tv.html', '/tv.js', '/tv.css', '/plateau.css', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/sw.js']);
+const GRANT_TTL_MS = 3 * 60 * 1000; // laissez-passer d'un écran télé appairé par l'hôte
 const MAX_TRIES = 10; // essais ratés par adresse IP…
 const TRIES_WINDOW_MS = 10 * 60 * 1000; // …par tranche de 10 minutes
 
 export function createAccess(code = process.env.ACCESS_CODE) {
   code = (code || '').trim();
-  if (!code) return { enabled: false, install() {}, socketGuard: (_s, next) => next() };
+  // Écran télé : la page /tv est ouverte, et sa connexion temps réel « limitée » ne sert qu'à
+  // s'appairer. Quand l'hôte (lui, entré avec le code) l'appaire, l'écran reçoit un laissez-passer
+  // à usage unique qui lui pose le cookie d'accès : personne n'a à taper le code avec la télécommande.
+  const limited = (socket) => socket.handshake.auth?.screen === true;
+  if (!code) return { enabled: false, install() {}, grant: () => null, socketGuard: (_s, next) => next() };
+  const grants = new Map(); // laissez-passer → expiration
 
   const token = crypto.createHmac('sha256', code).update('quizparty-access-v1').digest('hex');
   const tries = new Map(); // ip -> { n, since }
@@ -48,7 +54,25 @@ export function createAccess(code = process.env.ACCESS_CODE) {
     if (tries.size > 5000) tries.clear(); // garde-fou mémoire
   }
 
+  /** Laissez-passer à usage unique pour un écran télé appairé par l'hôte. */
+  function grant() {
+    const now = Date.now();
+    for (const [g, exp] of grants) if (exp < now) grants.delete(g);
+    const g = crypto.randomBytes(18).toString('hex');
+    grants.set(g, now + GRANT_TTL_MS);
+    return g;
+  }
+
   function install(app) {
+    app.get('/tv/entree', (req, res) => {
+      const g = String(req.query.g || '');
+      const exp = grants.get(g);
+      res.set('Cache-Control', 'no-store');
+      if (!exp || exp < Date.now()) return res.redirect(302, '/tv');
+      grants.delete(g);
+      res.cookie(COOKIE, token, { maxAge: MAX_AGE_S * 1000, httpOnly: true, sameSite: 'lax', secure: req.secure, path: '/' });
+      res.redirect(303, safeNext(req.query.next || '/tv'));
+    });
     app.get('/entree', (req, res) => {
       res.set('Cache-Control', 'no-store');
       res.type('html').send(page({ next: safeNext(req.query.next) }));
@@ -80,12 +104,16 @@ export function createAccess(code = process.env.ACCESS_CODE) {
   // Connexions temps réel : même cookie, envoyé par le navigateur avec la poignée de main
   function socketGuard(socket, next) {
     if (allowed(socket.request.headers.cookie)) return next();
+    if (limited(socket)) {
+      socket.data.limited = true; // écran télé pas encore entré : appairage seulement
+      return next();
+    }
     const err = new Error('access');
     err.data = { access: true };
     next(err);
   }
 
-  return { enabled: true, install, socketGuard };
+  return { enabled: true, install, grant, socketGuard };
 }
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
