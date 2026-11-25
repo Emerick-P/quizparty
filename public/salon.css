@@ -130,16 +130,20 @@
   .lobby-m { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto auto auto auto auto 1fr auto; column-gap: 22px; row-gap: 8px; padding-top: 8px; padding-bottom: 8px; }
   .lm-code small { display: none; }
   .lobby-m .tv-card { padding: 6px 10px; font-size: .85rem; }
-  .chip-btn { padding: 7px 12px; }
+  .chip-btn { padding: 6px 10px; font-size: .76rem; }
+  .lm-chips { flex-wrap: nowrap; }
+  .lobby-m { row-gap: 6px; }
+  .lm-pl { width: 52px; gap: 3px; }
+  .lm-pl i { bottom: 15px; }
   .lm-top .ib { width: 36px; height: 36px; }
   #app.wider:has(.lobby-m) { max-width: 980px; }
   .lobby-m > * { grid-column: 1; }
-  .lm-code .code { font-size: 2.4rem; }
+  .lm-code .code { font-size: 2rem; }
   .lm-main { grid-column: 2; grid-row: 1 / -2; align-self: start; }
   .lobby-m .sticky-bottom, .lobby-m .waiting { grid-column: 2; grid-row: -2 / -1; align-self: end; position: static; }
   .lm-foot { grid-row: -2 / -1; align-self: end; justify-content: flex-start; }
   .hero { padding: 16px; } .hero-ico { font-size: 2.2rem; } .hero h2 { font-size: 1.7rem; }
-  .lm-pl .avatar { width: 40px; height: 40px; }
+  .lm-pl .avatar { width: 36px; height: 36px; font-size: 1.1rem; }
   .sh:not(.sh-page) { max-height: 94dvh; }
   .pick-grid { grid-template-columns: repeat(4, 1fr); }
   .home2 { display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; align-content: start; }
