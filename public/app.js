@@ -76,7 +76,7 @@ function urlCode() {
   return c ? c.toUpperCase().slice(0, 4) : '';
 }
 function setUrlCode(code) {
-  const url = code ? `${location.pathname}?code=${code}` : location.pathname;
+  const url = code && code.length === 4 ? `${location.pathname}?code=${code}` : location.pathname; // pas d'adresse pour le défi du jour
   history.replaceState(null, '', url);
 }
 
@@ -256,6 +256,7 @@ socket.on('connect', async () => {
   else {
     await accountSync();
     await resume();
+    loadDaily();
   }
 });
 
@@ -374,6 +375,7 @@ socket.on('state', (s) => {
   if (s.round?.picture) loadImage(s.round.picture.url);
   if (pending && (!s.round || s.round.id !== pending.roundId || s.round.yourAnswer !== null)) pending = null;
   autoLinkSteam();
+  if (s.daily) rememberDaily(s);
   render();
 });
 
@@ -1818,6 +1820,7 @@ const SHEETS = {
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
+  daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   getapp: { phase: 'home', render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
   tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
     <ol class="sh-steps">
@@ -1994,6 +1997,7 @@ function sheetView() {
 }
 function openSheet(name) {
   ui.sheet = name;
+  if (name === 'daily') loadDaily(); // résultat et classement à jour
   render();
   if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
@@ -2012,6 +2016,173 @@ actions.pick = async (btn) => {
   if (r.error) toast(r.error);
 };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
+
+
+// =====================================================================  défi du jour
+// Le même quiz pour tout le monde, de minuit à minuit (heure de Paris), joué seul dans une partie à part.
+// Le serveur garde le résultat des comptes (une tentative, classement, série) ; un invité garde le sien ici.
+const DAILY_KEY = 'quizparty:daily'; // invité : { day, number, score, grid, correct, rounds, streak }
+const daily = { info: null, board: null, loading: false };
+// Lien partagé (…/?defi) : le défi s'ouvre directement
+if (!SCREEN && new URLSearchParams(location.search).has('defi')) {
+  history.replaceState(null, '', location.pathname);
+  setTimeout(() => { if (!state) openSheet('daily'); }, 0);
+}
+const CELL_CLASS = { fast: 'ok', slow: 'mid', miss: 'ko', none: '' };
+const GRID_CELL = { '🟩': 'ok', '🟨': 'mid', '🟥': 'ko' };
+const gridCells = (grid) => [...String(grid || '')].map((c) => GRID_CELL[c] ?? '');
+const prevDay = (day) => { const [y, m, d] = day.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10); };
+/** Mon résultat du jour : celui du serveur (compte) ou celui gardé dans le navigateur (invité). */
+function dailyMine() {
+  const i = daily.info;
+  if (!i) return null;
+  if (i.played) return i.played;
+  const local = store.get(DAILY_KEY);
+  return !i.account && local?.day === i.day ? local : null;
+}
+function dailyStreak() {
+  const i = daily.info;
+  if (!i) return 0;
+  if (i.account) return i.streak || 0;
+  const local = store.get(DAILY_KEY);
+  return local && (local.day === i.day || local.day === prevDay(i.day)) ? local.streak || 0 : 0;
+}
+async function loadDaily() {
+  if (SCREEN || daily.loading) return;
+  daily.loading = true;
+  const r = await send('daily:info');
+  daily.loading = false;
+  if (r.error) return;
+  daily.info = r;
+  daily.board = r.leaderboard ?? null;
+  // Invité qui a déjà joué : il peut voir le classement
+  if (!daily.board && dailyMine()) daily.board = (await send('daily:board')).leaderboard ?? [];
+  render();
+}
+const cellsHtml = (classes, cls = '') => `<span class="d-cells ${cls}" aria-hidden="true">${classes.map((c) => `<i class="${c}"></i>`).join('')}</span>`;
+const fmtPts = (n) => nf.format(n || 0);
+function untilNext(at) {
+  const s = Math.max(0, Math.round((at - now()) / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
+  return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`;
+}
+function shareTextOf({ number, grid, score, streak }) {
+  return `QuizParty · Défi n°${number}\n${grid}\n${fmtPts(score)} pts${streak > 1 ? ` · 🔥 ${streak} jours` : ''}\n${location.origin}/?defi`;
+}
+async function shareDaily(text) {
+  if (navigator.share && TOUCH) {
+    try { await navigator.share({ text }); return; } catch (err) { if (err?.name === 'AbortError') return; }
+  }
+  try { await copyText(text); toast('Résultat copié : colle-le à tes potes !'); } catch { toast(text); }
+}
+/** Classement du jour : les premiers, et ma ligne si je suis plus loin. */
+function dailyBoard(list, meId, max = 5) {
+  if (!list) return '';
+  if (!list.length) return '<p class="muted d-empty">Personne au classement pour l’instant.</p>';
+  const myIdx = list.findIndex((x) => meId && x.userId === meId);
+  const shown = list.slice(0, max).map((x, i) => [x, i]);
+  if (myIdx >= max) shown.push([list[myIdx], myIdx]);
+  return `<ol class="list d-board">${shown.map(([x, i]) => `
+    <li class="${i === myIdx ? 'me' : ''}"><span class="pos">${i + 1}</span>${avatar(x.name || '?')}<span class="grow">${esc(x.name)}${cellsHtml(gridCells(x.grid), 'xs')}</span><span class="pts">${fmtPts(x.score)}</span></li>`).join('')}
+  </ol>${list.length > shown.length ? `<p class="muted d-more">${list.length} joueurs aujourd’hui</p>` : ''}`;
+}
+function dailyTile() {
+  const i = daily.info, mine = dailyMine(), streak = dailyStreak();
+  const sub = !i ? 'Le même quiz pour tout le monde, résultat à partager'
+    : mine ? `Joué : ${fmtPts(mine.score)} pts · prochain dans ${untilNext(i.nextAt)}`
+    : `${i.rounds} questions mélangées, une seule tentative`;
+  return `<button class="h-tile daily ${mine ? 'done' : ''}" data-action="sheet" data-value="daily">${i ? `<i class="soon">n°${i.number}</i>` : ''}<span class="t-ico">📅</span><b>Défi du jour</b><small>${esc(sub)}</small>
+    ${mine ? cellsHtml(gridCells(mine.grid), 'tile') : `<span class="d-go">${streak ? `🔥 ${streak} jour${streak > 1 ? 's' : ''} · ` : ''}À jouer ▸</span>`}</button>`;
+}
+function dailyBody() {
+  const i = daily.info;
+  if (!i) { loadDaily(); return '<p class="muted">Chargement…</p>'; }
+  const mine = dailyMine(), streak = dailyStreak();
+  if (mine) {
+    return `<div class="d-sheet">
+      <div class="d-result">
+        <small>Défi n°${i.number} · ${mine.correct}/${mine.rounds} trouvées</small>
+        <b>${fmtPts(mine.score)} <span>pts</span></b>
+        ${cellsHtml(gridCells(mine.grid), 'big')}
+        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+      </div>
+      <button class="btn primary" data-action="dailyshare">📤 Partager mon résultat</button>
+      <div class="d-col"><h3>Classement du jour</h3>
+      ${dailyBoard(daily.board, i.me, 8)}</div>
+      ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? '<button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour apparaître au classement et garder ta série sur tous tes appareils.' : ''}</p>`}
+      <p class="muted d-next">Prochain défi dans ${untilNext(i.nextAt)}</p>
+    </div>`;
+  }
+  return `<div class="d-sheet">
+    <div class="d-intro">
+      <span class="d-num">Défi n°${i.number}</span>
+      <ul class="d-rules">
+        <li><b>${i.rounds}</b> questions mélangées : quiz, jaquettes, emojis, sons…</li>
+        <li><b>${i.duration} s</b> par question, plus tu réponds vite, plus tu marques</li>
+        <li><b>Une seule tentative</b> : le même défi pour tout le monde aujourd’hui</li>
+      </ul>
+      ${streak ? `<span class="d-streak">🔥 Série en cours : ${streak} jour${streak > 1 ? 's' : ''}</span>` : ''}
+    </div>
+    ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? 'En invité, ton score reste sur cet appareil. <button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour le classement du jour et ta série.' : 'Ton score reste sur cet appareil.'}</p>`}
+    <button class="btn primary big" data-action="dailystart">C’est parti !</button>
+  </div>`;
+}
+/** Fin du défi : invité → on garde le résultat dans le navigateur (avec sa série). */
+function rememberDaily(s) {
+  if (s.daily.account || s.phase !== 'end') return;
+  const old = store.get(DAILY_KEY);
+  if (old?.day === s.daily.day) return;
+  const streak = old && old.day === prevDay(s.daily.day) ? (old.streak || 0) + 1 : 1;
+  const me = s.players.find((p) => p.id === s.you);
+  store.set(DAILY_KEY, { day: s.daily.day, number: s.daily.number, score: me?.score ?? 0, grid: s.daily.grid, correct: s.daily.correct, rounds: s.daily.rounds, streak });
+}
+/** Correction et question du défi : la progression (une case par question). */
+const dailyProgress = () => (state.daily ? cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'prog') : '');
+const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>`;
+function dailyEnd() {
+  const d = state.daily;
+  const me = state.players.find((p) => p.id === state.you);
+  const local = d.account ? null : store.get(DAILY_KEY);
+  const streak = d.account ? d.streak : local?.day === d.day ? local.streak : 1;
+  const text = shareTextOf({ number: d.number, grid: d.grid, score: me?.score, streak });
+  return `
+    <main class="screen d-end">
+      <div class="d-result">
+        <small>Défi n°${d.number} · ${d.correct}/${d.rounds} trouvées</small>
+        <b>${fmtPts(me?.score)} <span>pts</span></b>
+        ${cellsHtml(d.cells.map((c) => CELL_CLASS[c] || 'ko'), 'big')}
+        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+      </div>
+      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">📤 Partager mon résultat</button>
+      <section class="card d-card">
+        <h2>Classement du jour</h2>
+        ${d.account ? (d.leaderboard ? dailyBoard(d.leaderboard, d.me) : '<p class="muted">Chargement…</p>') : `<p class="muted">En invité, tu n’es pas au classement.${account.cfg?.enabled ? ' Connecte-toi avant le défi de demain pour y être et garder ta série.' : ''}</p>${d.leaderboard ? dailyBoard(d.leaderboard, null, 3) : ''}`}
+      </section>
+      <p class="muted d-next">Prochain défi dans ${untilNext(d.nextAt)}</p>
+      <button class="btn" data-action="dailyhome">Retour à l’accueil</button>
+    </main>`;
+}
+actions.dailystart = async () => {
+  const name = store.get(NAME_KEY) || account.user?.nickname || account.user?.name;
+  if (!name) { toast('Choisis d’abord ton pseudo'); return openSheet('name'); }
+  unlockAudio();
+  const res = await send('daily:start', { name });
+  if (res.already) { daily.info = null; loadDaily(); return toast('Tu as déjà joué le défi du jour'); }
+  if (res.error) return toast(res.error);
+  ui.sheet = null;
+  enterRoom(res);
+};
+actions.dailyshare = (btn) => {
+  if (btn.dataset.value) return shareDaily(btn.dataset.value);
+  const i = daily.info, mine = dailyMine();
+  if (i && mine) shareDaily(shareTextOf({ number: i.number, grid: mine.grid, score: mine.score, streak: dailyStreak() }));
+};
+actions.dailyhome = async () => {
+  await send('room:leave');
+  leaveLocal();
+  daily.info = null;
+  loadDaily();
+};
 
 const views = {
   tvpair: tvPairView,
@@ -2036,7 +2207,7 @@ const views = {
         ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
       </section>
       <div class="h-tiles">
-        <button class="h-tile daily" data-action="soon" data-value="Le défi du jour arrive bientôt : le même quiz pour tout le monde, chaque jour, avec un résultat à partager."><i class="soon">Bientôt</i><span class="t-ico">📅</span><b>Défi du jour</b><small>Le même quiz pour tout le monde, résultat à partager</small><span class="streak" aria-hidden="true"><i class="ok"></i><i class="ok"></i><i class="mid"></i><i class="ok"></i><i></i></span></button>
+        ${dailyTile()}
         <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
       </div>
       <div class="h-extras">
@@ -2178,7 +2349,7 @@ const views = {
     <main class="screen has-side">
       <div class="play">
       <div class="qhead">
-        <span class="pill">${r.index + 1} / ${r.total}</span>
+        <span class="pill">${state.daily ? `📅 n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
         <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
@@ -2188,8 +2359,8 @@ const views = {
       ${GUESS_KINDS.includes(r.kind) ? media : `<h1 class="prompt">${esc(r.prompt)}</h1>`}
       <div class="q-answer">${body}</div>
       </div>
-      ${roster(r)}
-      ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+      ${state.daily ? '' : roster(r)}
+      ${state.daily ? dailyBar() : isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
     </main>`;
   },
 
@@ -2316,12 +2487,12 @@ const views = {
 
     const board = sortedByScore().slice(0, 8);
     // Téléphone : « Réponse » et « Classement » sont deux pages qu'on fait glisser du doigt (le haut et les boutons restent fixes)
-    const swipe = !SCREEN && !(controller() && r.kind !== 'crossword');
+    const swipe = !SCREEN && !state.daily && !(controller() && r.kind !== 'crossword');
     return `
     <main class="screen reveal-screen">
       <div class="qhead"><span class="pill">${r.kind === 'crossword' ? 'Fin du chrono' : `${r.index + 1} / ${r.total}`}</span><span class="muted">${last ? 'Résultats' : r.kind === 'crossword' ? 'Grille suivante' : 'Question suivante'} dans <span data-until="${state.phaseEndsAt}" data-mode="count"></span> s</span></div>
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
-      ${SCREEN ? '' : `<div class="rv-top">${banner}</div>`}
+      ${SCREEN ? '' : `<div class="rv-top">${banner}${state.daily ? dailyProgress() : ''}</div>`}
       <div class="rv-swipe ${swipe ? 'on' : ''}" data-swipe>
       <div class="rv-main rv-page">
       ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
@@ -2329,8 +2500,11 @@ const views = {
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}`}
       </div>
-      <div class="rv-side rv-page">
-      <section class="card">
+      <div class="rv-side rv-page" ${state.daily && !wide() ? 'hidden' : ''}>
+      ${state.daily ? `<section class="card d-side">
+        <h2>Défi n°${state.daily.number}</h2>
+        <div class="d-result"><b>${fmtPts(state.players.find((p) => p.id === state.you)?.score)} <span>pts</span></b>${cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'big')}<small>${state.daily.correct} trouvée${state.daily.correct > 1 ? 's' : ''} sur ${r.index + 1}</small></div>
+      </section>` : `<section class="card">
         <h2>Classement</h2>
         <ul class="list">
           ${board.map((p, i) => `
@@ -2341,7 +2515,7 @@ const views = {
               <span class="pts">${p.score}</span>
             </li>`).join('')}
         </ul>
-      </section>
+      </section>`}
       ${state.admin && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
       </div>
       </div>
@@ -2349,11 +2523,12 @@ const views = {
         <button class="rv-dot" data-action="rvpage" data-value="0" role="tab"><i></i>Réponse</button>
         <button class="rv-dot" data-action="rvpage" data-value="1" role="tab"><i></i>Classement</button>
       </div>` : ''}
-      ${isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
+      ${state.daily ? dailyBar(`<button class="btn small primary" data-action="skip">${last ? 'Voir mon résultat' : 'Suivant'}</button>`) : isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
     </main>`;
   },
 
   end() {
+    if (state.daily) return dailyEnd();
     const ranked = sortedByScore();
     const step = (p, place) => (p ? `
       <div class="step p${place}">

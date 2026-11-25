@@ -378,6 +378,67 @@
 .me-chip.mini { margin-left: 0; padding: 3px; }
 [data-key="sh:name"] .sh-body, [data-key="sh:account"] .sh-body { max-width: 560px; width: 100%; margin: 0 auto; }
 
+/* ---------- Défi du jour : cases du résultat (🟩 vite, 🟨 lent, 🟥 raté), feuille d'accueil, fin de partie */
+.d-cells { display: inline-flex; gap: 4px; flex-wrap: nowrap; }
+.d-cells i { width: 14px; height: 14px; border-radius: 3px; background: var(--line); flex: none; }
+.d-cells i.ok { background: #4cc38a; } .d-cells i.mid { background: #f2c94c; } .d-cells i.ko { background: #e5534b; }
+.d-cells.tile { margin-top: auto; padding-top: 6px; gap: 3px; }
+.d-cells.tile i { width: 11px; height: 11px; }
+.d-cells.xs { display: flex; gap: 2px; margin-top: 3px; }
+.d-cells.xs i { width: 8px; height: 8px; border-radius: 2px; }
+.d-cells.big { gap: 6px; justify-content: center; }
+.d-cells.big i { width: min(26px, 7.4vw); height: min(26px, 7.4vw); border-radius: 5px; }
+.d-cells.prog { gap: 3px; }
+.d-cells.prog i { width: 9px; height: 9px; border-radius: 2px; }
+.rv-top .d-cells.prog { display: flex; justify-content: center; margin: 6px 0 2px; }
+.h-tile.daily .d-go { margin-top: auto; padding-top: 6px; font-weight: 700; font-size: .85rem; color: var(--on-tile); }
+.h-tile.daily .soon { background: var(--ink); color: #fff; }
+.h-tile.daily.done .d-cells i:not(.ok):not(.mid):not(.ko) { background: #dfe3e8; }
+.d-sheet { display: flex; flex-direction: column; gap: 12px; }
+.d-sheet h3 { margin: 6px 0 0; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.2rem; }
+.d-intro { background: var(--tile); color: var(--on-tile); border-radius: 10px; padding: 16px; box-shadow: 5px 5px 0 var(--shadow); }
+.d-num { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.6rem; }
+.d-rules { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--ink-soft); line-height: 1.35; }
+.d-rules b { color: var(--on-tile); }
+.d-streak { display: inline-block; margin-top: 10px; font-weight: 700; }
+.d-result { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 14px 10px; background: var(--card); border-radius: 10px; }
+.d-result small { color: var(--muted); font-size: .9rem; }
+.d-result > b { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 3rem; line-height: 1; }
+.d-result > b span { font-size: 1.3rem; color: var(--muted); }
+.d-result .d-streak { margin: 0; }
+.d-board li { padding-top: 6px; padding-bottom: 6px; }
+.d-board .grow { display: flex; flex-direction: column; min-width: 0; }
+.d-more, .d-empty, .d-next { text-align: center; margin: 4px 0 0; font-size: .88rem; }
+.d-bar { justify-content: center; flex-wrap: wrap; }
+/* Fin du défi : tout tient sur l'écran du téléphone, sans défiler */
+.screen.d-end { display: flex; flex-direction: column; gap: 10px; max-width: 520px; margin: 0 auto; }
+.d-end .d-card { margin: 0; padding: 12px; }
+.d-end .d-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
+.d-end .d-card p { margin: 0 0 6px; font-size: .9rem; }
+.d-end > .btn { width: 100%; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .screen.d-end { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; max-width: 900px; column-gap: 16px; row-gap: 8px; }
+  .d-end .d-result { grid-column: 1; grid-row: 1 / span 2; padding: 10px; }
+  .d-end .d-result > b { font-size: 2.4rem; }
+  .d-end .d-card { grid-column: 2; grid-row: 1 / span 3; }
+  .d-end > .btn.primary { grid-column: 1; grid-row: 3; }
+  .d-end .d-next { grid-column: 1; grid-row: 4; }
+  .d-end > .btn:not(.primary) { grid-column: 2; grid-row: 4; }
+}
+.rv-side[hidden] { display: none !important; } /* défi du jour : pas de classement à la correction (on joue seul) */
+@media (orientation: landscape) and (max-height: 560px) {
+  /* Téléphone en paysage : la progression du défi laisse la place aux boutons et à la correction */
+  .qhead .d-cells.prog, .rv-top .d-cells.prog { display: none; }
+  .d-sheet:has(.d-col) { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; row-gap: 8px; align-content: start; }
+  .d-sheet:has(.d-col) > :not(.d-col) { grid-column: 1; }
+  .d-sheet .d-col { grid-column: 2; grid-row: 1 / span 5; }
+  .d-sheet .d-col h3 { margin-top: 0; }
+  .d-sheet .d-result { padding: 8px; }
+  .d-sheet .d-result > b { font-size: 2.3rem; }
+}
+.d-side .d-result { padding: 6px 0; background: none; }
+.d-side .d-cells.big i { width: 20px; height: 20px; }
+@media (min-width: 1000px) { .rv-top .d-cells.prog { display: none; } }
 /* ---------- stats de joueur : 3 pages qu'on fait glisser au doigt (téléphone), 3 colonnes (ordinateur) */
 .sh[data-key="sh:stats"] { overflow: hidden; }
 .sh[data-key="sh:stats"] .sh-body { flex: 1; min-height: 0; gap: 12px; }

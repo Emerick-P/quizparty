@@ -167,3 +167,34 @@ select jsonb_build_object(
 $$;
 revoke all on function public.player_stats(uuid) from public, anon, authenticated;
 grant execute on function public.player_stats(uuid) to service_role;
+
+-- Défi du jour (server/daily.js) : le même quiz pour tout le monde, de minuit à minuit (heure de Paris).
+-- daily_challenges : le défi tiré pour chaque jour (gardé pour qu'un redémarrage ne le change pas).
+create table if not exists public.daily_challenges (
+  id          text primary key,         -- jour 'AAAA-MM-JJ'
+  created_at  timestamptz not null default now(),
+  number      int not null,             -- n° du défi (1 = premier jour)
+  rounds      jsonb not null,           -- manches figées (énoncés, choix, réponses)
+  keys        jsonb not null default '[]'::jsonb  -- questions utilisées (pas reposées pendant 30 jours)
+);
+alter table public.daily_challenges enable row level security;
+-- daily_results : une ligne par compte et par jour (une seule tentative), créée dès le départ.
+create table if not exists public.daily_results (
+  id          text primary key,         -- 'AAAA-MM-JJ:<user_id>'
+  day         text not null,
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  name        text,                     -- pseudo affiché au classement
+  avatar_url  text,
+  score       int not null default 0,
+  grid        text,                     -- 🟩 trouvé vite, 🟨 trouvé lentement, 🟥 raté
+  correct     int not null default 0,
+  rounds      int not null default 0,
+  streak      int not null default 1,   -- jours joués d'affilée
+  finished    boolean not null default false,
+  started_at  timestamptz not null default now(),
+  finished_at timestamptz
+);
+create index if not exists daily_results_day_idx on public.daily_results (day, score desc);
+create index if not exists daily_results_user_idx on public.daily_results (user_id, day desc);
+alter table public.daily_results enable row level security;
+grant select, insert, update, delete on public.daily_challenges, public.daily_results to service_role;

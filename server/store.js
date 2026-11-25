@@ -58,6 +58,14 @@ function supabaseBackend(url, key) {
       const out = await call('GET', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}&select=*`);
       return out?.[0] ?? null;
     },
+    /** Lignes filtrées : eq { colonne: valeur }, gte { colonne: valeur }, order 'colonne.desc', limit. */
+    async query(table, { eq = {}, gte = {}, order, limit = 200, select = '*' } = {}) {
+      const q = new URLSearchParams({ select, limit: String(limit) });
+      for (const [k, v] of Object.entries(eq)) q.append(k, `eq.${v}`);
+      for (const [k, v] of Object.entries(gte)) q.append(k, `gte.${v}`);
+      if (order) q.set('order', order);
+      return call('GET', `/rest/v1/${table}?${q}`);
+    },
     async remove(table, id) {
       await call('DELETE', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`);
     },
@@ -135,6 +143,15 @@ function localBackend(dir) {
     },
     async get(table, id) {
       return read(table).find((r) => r.id === id) ?? null;
+    },
+    async query(table, { eq = {}, gte = {}, order, limit = 200 } = {}) {
+      let rows = read(table).filter((r) => Object.entries(eq).every(([k, v]) => String(r[k]) === String(v))
+        && Object.entries(gte).every(([k, v]) => r[k] >= v));
+      if (order) {
+        const [col, dir] = order.split(',')[0].split('.');
+        rows.sort((a, b) => (a[col] < b[col] ? -1 : a[col] > b[col] ? 1 : 0) * (dir === 'desc' ? -1 : 1));
+      }
+      return rows.slice(0, limit);
     },
     async remove(table, id) {
       write(table, read(table).filter((r) => r.id !== id));

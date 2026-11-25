@@ -182,7 +182,7 @@ export class Room {
     const socket = player.socketId && this.io.sockets.sockets.get(player.socketId);
     if (socket) {
       socket.leave(this.channel);
-      socket.data = {};
+      socket.data = { user: socket.data.user ?? null }; // le compte reste connecté hors du salon
       if (reason === 'kick') socket.emit('kicked');
     }
     if (this.hostId === id) this.handoffHost();

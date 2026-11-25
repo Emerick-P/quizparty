@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { stats } from './stats.js';
 import { Room, cleanName } from './room.js';
+import { Daily, startDaily } from './daily.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -13,6 +14,7 @@ export class RoomManager {
     this.auth = auth; // comptes joueurs (facultatifs) : voir auth.js
     this.rooms = new Map();
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
+    this.daily = new Daily(); // défi du jour (voir daily.js)
     setInterval(() => this.sweep(), 60_000).unref();
   }
 
@@ -45,7 +47,7 @@ export class RoomManager {
     if (!room) return;
     room.removePlayer(socket.data.playerId);
     socket.leave(room.channel);
-    socket.data = {};
+    socket.data = { user: socket.data.user ?? null }; // le compte reste connecté hors du salon
     if (room.players.size === 0) {
       room.destroy();
       this.rooms.delete(room.code);
@@ -152,7 +154,7 @@ export class RoomManager {
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       const room = this.rooms.get(String(code || '').trim().toUpperCase());
-      if (!room) throw new Error('Salon introuvable');
+      if (!room || room.isDaily) throw new Error('Salon introuvable');
       this.leave(socket);
       const p = room.addPlayer(n, socket);
       return { ok: true, code: room.code, token: p.token, playerId: p.id };
@@ -171,6 +173,15 @@ export class RoomManager {
     on('room:leave', () => {
       this.leave(socket);
     });
+
+    // Défi du jour : infos de l'accueil (numéro, série, mon résultat), départ d'une partie solo, classement
+    on('daily:info', async () => ({ ok: true, ...(await this.daily.info(socket.data.user ?? null)) }));
+    on('daily:start', ({ name }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      return startDaily(this, socket, n, this.daily);
+    });
+    on('daily:board', async () => ({ ok: true, leaderboard: await this.daily.board() }));
 
     // Compte joueur : le navigateur envoie son jeton (à la connexion et à chaque renouvellement).
     // Le serveur le fait vérifier par Supabase ; les droits d'admin ne viennent jamais du navigateur.
