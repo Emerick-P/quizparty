@@ -6,9 +6,10 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 
 export class RoomManager {
-  constructor(io, { access } = {}) {
+  constructor(io, { access, auth } = {}) {
     this.io = io;
     this.access = access;
+    this.auth = auth; // comptes joueurs (facultatifs) : voir auth.js
     this.rooms = new Map();
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
     setInterval(() => this.sweep(), 60_000).unref();
@@ -115,6 +116,12 @@ export class RoomManager {
       return fn(room, payload);
     };
 
+    const inRoom = (fn) => (payload) => {
+      const room = this.roomOf(socket);
+      if (!room) throw new Error("Tu n'es dans aucun salon");
+      return fn(room, payload);
+    };
+
     // Synchronisation d'horloge : le client mesure l'aller-retour et en déduit son décalage
     socket.on('time:ping', (_payload, ack) => {
       if (typeof ack === 'function') ack(Date.now());
@@ -164,6 +171,21 @@ export class RoomManager {
       this.leave(socket);
     });
 
+    // Compte joueur : le navigateur envoie son jeton (à la connexion et à chaque renouvellement).
+    // Le serveur le fait vérifier par Supabase ; les droits d'admin ne viennent jamais du navigateur.
+    on('auth:set', async ({ token }) => {
+      const user = await this.auth?.verify(token).catch(() => null);
+      if (!socket.connected) return { ok: false };
+      socket.data.user = user ?? null;
+      this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user);
+      if (!user) return { error: 'Session expirée, reconnecte-toi' };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin } };
+    });
+    on('auth:clear', () => {
+      socket.data.user = null;
+      this.roomOf(socket)?.setUser(socket.data.playerId, null);
+    });
+
     on('room:settings', hostOnly((room, s) => room.updateSettings(s)));
     // Mode télé : l'hôte tape le code affiché par l'écran (ou caste, qui passe par screen:grant)
     on('room:screen', hostOnly((room, { pin }) => {
@@ -186,10 +208,15 @@ export class RoomManager {
     on('game:skip', hostOnly((room) => room.skip()));
     on('game:stop', hostOnly((room) => room.stop()));
     on('room:reset-totals', hostOnly((room) => room.resetTotals()));
-    on('game:ban-cover', hostOnly((room) => room.banCover()));
+    // Retirer un jeu, une image, un son : réservé à l'admin (avec les comptes) ; sans comptes (PC), à l'hôte
+    on('game:ban-cover', inRoom((room) => {
+      if (!room.canModerate(socket.data.playerId)) throw new Error("Réservé à l'admin");
+      return room.banCover();
+    }));
     on('game:pause', hostOnly((room) => room.pause()));
     on('game:resume', hostOnly((room) => room.resume()));
-    on('game:report', hostOnly((room, payload) => room.report(socket.data.playerId, payload)));
+    // ⚑ Signaler : ouvert à tous les joueurs (seul l'hôte met la partie en pause)
+    on('game:report', inRoom((room, payload) => room.report(socket.data.playerId, payload)));
 
     on('steam:link', ({ profile }) => {
       const room = this.roomOf(socket);

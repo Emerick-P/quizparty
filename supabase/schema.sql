@@ -72,3 +72,18 @@ alter table public.meta enable row level security;
 -- automatiquement aux nouvelles tables : sans ces lignes, l'API répond « permission denied ».
 grant usage on schema public to service_role;
 grant select, insert, update, delete on public.submissions, public.reports, public.content, public.meta to service_role;
+
+-- Comptes joueurs (facultatifs, connexion Discord / Google via Supabase Auth).
+-- Copie du profil public (nom, avatar) faite par le serveur à la connexion, pour les futures fonctions
+-- (stats, défis entre potes, pièces…). L'e-mail reste dans auth.users, jamais copié ici.
+-- Supprimer un compte (auth.users) supprime son profil.
+create table if not exists public.profiles (
+  id          uuid primary key references auth.users (id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  name        text,
+  avatar_url  text,
+  provider    text,                    -- discord, google
+  last_seen   timestamptz
+);
+alter table public.profiles enable row level security;
+grant select, insert, update, delete on public.profiles to service_role;

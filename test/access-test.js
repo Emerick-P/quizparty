@@ -40,6 +40,13 @@ try {
   assert.equal((await get('/proposer.js')).status, 401);
   assert.equal((await get('/sfx/x.mp3')).status, 401);
   assert.equal((await get('/health')).status, 200, '/health reste ouvert (surveillance)');
+  // Pages légales ouvertes : Google les lit avant d'autoriser la connexion « avec Google »
+  for (const p of ['/confidentialite', '/conditions']) {
+    r = await get(p);
+    assert.equal(r.status, 200, `${p} ouverte sans code`);
+    assert.match(await r.text(), /QuizParty/);
+  }
+  assert.equal((await get('/api/auth/config')).status, 302, 'le reste reste protégé');
   r = await get('/entree');
   assert.equal(r.status, 200);
   assert.match(await r.text(), /Code d’accès/);

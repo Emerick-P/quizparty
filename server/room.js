@@ -4,7 +4,7 @@ import { emptyProgress, gridAt, VALIDATE_AT } from './games/crossword.js';
 import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
-import { feedback, makeFeedback } from './feedback.js';
+import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
 import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
@@ -37,6 +37,9 @@ const shortId = () => crypto.randomBytes(5).toString('hex');
  * sont décidés ici, les clients ne font qu'afficher l'état reçu et envoyer des actions.
  */
 export class Room {
+  /** Comptes joueurs actifs (Supabase configuré) : réglé au démarrage par index.js. */
+  static accounts = false;
+
   constructor(io, code) {
     this.io = io;
     this.code = code;
@@ -95,6 +98,7 @@ export class Room {
       rtt: 80,
       timers: {},
       steam: null, // profil Steam lié (voir linkSteam) : { status, input, name, avatar, id, games, message }
+      user: null, // compte connecté (auth.js) : { id, name, avatar, provider, admin }, null pour un invité
     };
     // Un joueur parti puis revenu avec le même pseudo retrouve son score global
     const key = player.name.toLowerCase();
@@ -123,6 +127,7 @@ export class Room {
     }
     player.socketId = socket.id;
     player.connected = true;
+    player.user = socket.data.user ?? null; // compte de l'appareil qui (re)prend la place
     clearTimeout(player.timers.remove);
     clearTimeout(player.timers.handoff);
     socket.data.code = this.code;
@@ -429,10 +434,36 @@ export class Room {
     this.checkAllAnswered(); // un joueur a pu partir pendant la pause
   }
 
-  /** Hôte : retour sur la question en cours, enregistré sur disque pour corriger les banques plus tard. */
+  /** Compte connecté d'un joueur (ou null : invité). Vient du serveur après vérification du jeton. */
+  setUser(playerId, user) {
+    const p = this.players.get(playerId);
+    if (!p) return;
+    p.user = user ?? null;
+    this.broadcast();
+  }
+
+  /**
+   * Actions d'admin (accepter une réponse, supprimer une question, retirer un jeu/une image/un son).
+   * Avec les comptes : seulement les comptes admin (ADMIN_USER_IDS), où qu'ils jouent, hôte ou non.
+   * Sans comptes (PC, tests) : l'hôte, comme avant.
+   */
+  canModerate(playerId) {
+    const p = this.players.get(playerId);
+    if (!p) return false;
+    return Room.accounts ? !!p.user?.admin : playerId === this.hostId;
+  }
+
+  /**
+   * Retour sur la question en cours (⚑ Signaler), ouvert à tous les joueurs. Les retours d'un admin sont
+   * des consignes à appliquer ; ceux des autres sont des suggestions, vérifiées avant d'être appliquées.
+   */
   report(byId, payload = {}) {
     const r = this.round;
     if (!r || !['countdown', 'question', 'reveal'].includes(this.phase)) throw new Error('Pas de question en cours');
+    if (payload.roundId && payload.roundId !== r.id) throw new Error('La question est déjà passée');
+    const moderator = this.canModerate(byId);
+    if (MODERATOR_TYPES.includes(payload.type) && !moderator) throw new Error("Réservé à l'admin");
+    const by = this.players.get(byId);
     const kind = KINDS[r.kind];
     const answers = [];
     for (const [pid, a] of r.answers) {
@@ -446,12 +477,15 @@ export class Room {
       mode: this.settings.mode,
       phase: this.phase,
       room: this.code,
-      by: this.players.get(byId)?.name ?? null,
+      by: by?.name ?? null,
+      userId: by?.user?.id ?? null,
+      admin: moderator && !!by?.user?.admin,
+      host: byId === this.hostId,
       answers: r.kind === 'crossword' ? [] : answers,
     });
     feedback.add(entry);
     r.reported = (r.reported ?? 0) + 1;
-    if (payload.resume) this.resume();
+    if (payload.resume && byId === this.hostId) this.resume();
     else this.broadcast();
     return { ok: true, id: entry.id };
   }
@@ -749,6 +783,8 @@ export class Room {
       phase: this.phase,
       hostId: this.hostId,
       you: pid,
+      // Mes droits : admin = actions réservées (accepter une réponse, supprimer, retirer un jeu)
+      admin: pid != null && this.canModerate(pid),
       serverNow: Date.now(),
       tv: this.tvOn, // un écran télé affiche la partie : les téléphones passent en manette
       settings: this.settings,
@@ -766,6 +802,7 @@ export class Room {
         total: p.total,
         wins: p.wins,
         connected: p.connected,
+        account: !!p.user, // connecté à un compte (Discord, Google), sans rien dévoiler d'autre
         answered: !!(inRound && r.answers.has(p.id)),
         status: statusOf(p.id),
         misses: multiTry ? r.misses?.get(p.id)?.length ?? 0 : 0, // essais ratés (nom tapé seulement)

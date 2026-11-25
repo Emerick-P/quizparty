@@ -41,6 +41,7 @@ const SESSION_KEY = 'quizparty:session';
 const NAME_KEY = 'quizparty:name';
 const THEME_KEY = 'quizparty:theme';
 const STEAM_KEY = 'quizparty:steam'; // adresse du profil Steam, retenue sur l'appareil
+const AUTH_KEY = 'quizparty:auth'; // compte connecté : jetons Supabase + nom/avatar affichés
 
 /** Thème clair / sombre (sombre par défaut), mémorisé sur l'appareil. Appliqué dès le <head> par index.html. */
 const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -252,8 +253,84 @@ socket.on('connect', async () => {
   $('#conn').hidden = true;
   await syncClock(state ? 3 : 5);
   if (SCREEN) await tvConnect();
-  else await resume();
+  else {
+    await accountSync();
+    await resume();
+  }
 });
+
+// =====================================================================  compte (facultatif)
+// Connexion Discord / Google via Supabase : le site part chez Supabase, qui revient ici avec les jetons
+// dans l'adresse (#access_token=…). On les garde sur l'appareil, on les passe au serveur, qui les fait
+// vérifier par Supabase. Les droits d'admin sont décidés par le serveur, jamais par le navigateur.
+const account = { cfg: null, user: store.get(AUTH_KEY)?.user ?? null, timer: null, busy: false };
+const PROVIDER_LABEL = { discord: 'Discord', google: 'Google' };
+(function readAuthRedirect() {
+  if (SCREEN || !/[#&](access_token|error)=/.test(location.hash)) return;
+  const h = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, '', location.pathname + location.search);
+  if (h.get('access_token')) {
+    const exp = Number(h.get('expires_at')) || Math.floor(Date.now() / 1000) + (Number(h.get('expires_in')) || 3600);
+    store.set(AUTH_KEY, { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: exp, user: null });
+    account.justIn = true;
+  } else {
+    account.failed = h.get('error_description') || h.get('error');
+  }
+})();
+async function accountConfig() {
+  if (account.cfg) return account.cfg;
+  try {
+    const r = await fetch('/api/auth/config', { cache: 'no-store' });
+    if (r.ok) account.cfg = await r.json();
+  } catch { /* hors ligne : pas de bouton de connexion pour l'instant */ }
+  return account.cfg;
+}
+if (!SCREEN) accountConfig().then(() => { if (account.cfg?.enabled && !state) render(); });
+async function accountRefresh(s) {
+  try {
+    const r = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) });
+    if (r.status === 401) return null; // session révoquée : il faut se reconnecter
+    if (!r.ok) return s; // serveur ou réseau indisponible : on garde la session et on réessaiera
+    return { ...s, ...(await r.json()) };
+  } catch { return s; }
+}
+/** Passe le jeton au serveur (à chaque connexion), en le renouvelant s'il expire bientôt. */
+async function accountSync() {
+  if (account.failed) { toast(`Connexion annulée${account.failed === 'access_denied' ? '' : ` : ${account.failed}`}`); account.failed = null; }
+  let s = store.get(AUTH_KEY);
+  clearTimeout(account.timer);
+  if (!s?.access_token) { account.user = null; return; }
+  if (s.expires_at * 1000 - Date.now() < 5 * 60_000 && s.refresh_token) {
+    s = await accountRefresh(s);
+    if (!s) return accountLost();
+    store.set(AUTH_KEY, s);
+  }
+  const r = await send('auth:set', { token: s.access_token });
+  if (r.user) {
+    account.user = r.user;
+    store.set(AUTH_KEY, { ...s, user: r.user });
+    if (!store.get(NAME_KEY)) store.set(NAME_KEY, [...r.user.name].slice(0, 16).join('').trim());
+    if (account.justIn) { account.justIn = false; toast(`Connecté avec ${PROVIDER_LABEL[r.user.provider] || 'ton compte'} : ${r.user.name}`); }
+  } else if (r.error && !/serveur/.test(r.error)) {
+    // Jeton refusé : une tentative de renouvellement, sinon on repasse en invité
+    const again = s.refresh_token ? await accountRefresh({ ...s, expires_at: 0 }) : null;
+    if (!again || again.access_token === s.access_token) return accountLost();
+    store.set(AUTH_KEY, again);
+    return accountSync();
+  }
+  // Renouvellement automatique 5 min avant l'expiration (le jeton dure 1 h)
+  const wait = Math.max(30_000, (store.get(AUTH_KEY)?.expires_at ?? 0) * 1000 - Date.now() - 4 * 60_000);
+  account.timer = setTimeout(() => { if (socket.connected) accountSync().then(render); }, wait);
+  render();
+}
+function accountLost() {
+  store.del(AUTH_KEY);
+  account.user = null;
+  send('auth:clear');
+  toast('Session expirée : reconnecte-toi pour retrouver ton compte');
+  render();
+}
+
 
 /** Écran télé : reprend son salon (après un rechargement), sinon affiche un code d'appairage. */
 async function tvConnect() {
@@ -524,6 +601,23 @@ const actions = {
   },
   replay() { replaySound(); },
   async pause() { const r = await send('game:pause'); if (r.error) toast(r.error); },
+  async login(btn) {
+    const cfg = await accountConfig();
+    if (!cfg?.enabled || !cfg.providers.includes(btn.dataset.value)) return toast('Connexion indisponible pour le moment');
+    // Retour sur la même page (garde ?code=… d'une invitation)
+    const back = location.origin + location.pathname + location.search;
+    location.href = `${cfg.url}/auth/v1/authorize?provider=${encodeURIComponent(btn.dataset.value)}&redirect_to=${encodeURIComponent(back)}`;
+  },
+  async logout() {
+    clearTimeout(account.timer);
+    store.del(AUTH_KEY);
+    account.user = null;
+    await send('auth:clear');
+    toast('Déconnecté : tu joues en invité');
+    render();
+  },
+  flag() { report.open = true; report.type = null; report.roundId = state.round?.id ?? null; render(); },
+  flagclose() { report.open = false; render(); },
   async resume() { const r = await send('game:resume'); if (r.error) toast(r.error); },
   reportType(btn) { report.type = btn.dataset.value; render(); },
   reportPick(btn) {
@@ -537,10 +631,11 @@ const actions = {
     if (report.type === 'accept' && !accept) return toast('Écris la réponse à accepter');
     if (report.type === 'other' && !comment) return toast('Décris le souci en quelques mots');
     btn.disabled = true;
-    const r = await send('game:report', { type: report.type, accept, comment, resume: btn.dataset.resume === 'yes' });
+    const r = await send('game:report', { type: report.type, accept, comment, roundId: state.round?.id, resume: btn.dataset.resume === 'yes' });
     btn.disabled = false;
     if (r.error) return toast(r.error);
     report.type = null;
+    report.open = false;
     for (const el of ['#report-accept', '#report-comment']) if ($(el)) $(el).value = '';
     toast('Retour enregistré, merci !');
     render();
@@ -1168,18 +1263,26 @@ const isHost = () => state && state.hostId === state.you;
 // =====================================================================  pause et retours de l'hôte
 // L'hôte peut figer la partie (⚑ Signaler) pour noter un souci sur la question : réponse à accepter en plus,
 // bonne réponse fausse, question à supprimer… Les retours sont enregistrés par le serveur (data/feedback.jsonl).
-const report = { type: null, pausedAt: null };
+// Tout joueur peut signaler une erreur (sans pause : la partie continue). Accepter une réponse ou supprimer
+// une question est réservé à l'admin (state.admin, décidé par le serveur).
+const report = { type: null, pausedAt: null, open: false, roundId: null };
 const REPORT_TYPES = [
-  ['accept', 'Accepter une autre réponse'],
-  ['wrong', 'La bonne réponse est fausse'],
-  ['remove', 'Question à supprimer'],
-  ['other', 'Autre'],
+  ['accept', 'Accepter une autre réponse', true],
+  ['wrong', 'La bonne réponse est fausse', true],
+  ['remove', 'Question à supprimer', true],
+  ['other', 'Autre', true],
+];
+const PLAYER_TYPES = [
+  ['wrong', 'Erreur dans la question ou la réponse'],
+  ['other', 'Autre souci'],
 ];
 
 function reportButton() {
   const n = state.round?.reported || 0;
   return `<button class="btn small ghost report-btn" data-action="pause" title="Mettre en pause et signaler un souci sur cette question">⚑ Signaler${n ? ` <span class="count">${n}</span>` : ''}</button>`;
 }
+/** Correction, joueur qui n'est pas l'hôte : son bouton ⚑ (sans pause). Pas pendant la question : pas de place perdue. */
+const playerBar = (extra = '') => (state.phase === 'end' ? '' : `<div class="host-bar player-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button></div>`);
 
 /** Manche à réponse tapée : on peut demander d'accepter une autre écriture. */
 function typedRound(r) {
@@ -1209,11 +1312,24 @@ function pauseOverlay() {
       <p class="muted">${esc(p.by || "L'hôte")} signale un souci sur cette question. Le chrono reprendra au même endroit pour tout le monde.</p>
     </div></div>`;
   }
-  const types = REPORT_TYPES.filter(([id]) => id !== 'accept' || typedRound(r));
+  return reportForm(r, true);
+}
+
+/** Joueur (ou hôte sans pause) : panneau ⚑ par-dessus le jeu, la partie continue pour les autres. */
+function flagOverlay() {
+  const r = state?.round;
+  if (!report.open) return '';
+  if (!r || r.id !== report.roundId || !['countdown', 'question', 'reveal'].includes(state.phase) || state.paused) { report.open = false; return ''; }
+  return reportForm(r, false);
+}
+
+function reportForm(r, paused) {
+  const types = state.admin ? REPORT_TYPES.filter(([id]) => id !== 'accept' || typedRound(r)) : PLAYER_TYPES;
+  if (report.type && !types.some(([id]) => id === report.type)) report.type = null;
   const picks = report.type === 'accept' ? missedAnswers() : [];
-  return `<div class="pause-overlay"><form class="pause-card card report" onsubmit="return false">
-    <h2>⏸ Partie en pause</h2>
-    <p class="muted small">Le chrono est figé pour tout le monde. Qu'est-ce qui ne va pas avec cette question ?</p>
+  return `<div class="pause-overlay ${paused ? '' : 'flag-overlay'}"><form class="pause-card card report" onsubmit="return false">
+    <h2>${paused ? '⏸ Partie en pause' : '⚑ Signaler un souci'}</h2>
+    <p class="muted small">${paused ? 'Le chrono est figé pour tout le monde. ' : 'La partie continue pendant ce temps. '}Qu'est-ce qui ne va pas avec cette question ?</p>
     <div class="report-types">${types.map(([id, label]) => `<button type="button" class="rchip ${report.type === id ? 'sel' : ''}" data-action="reportType" data-value="${id}">${label}</button>`).join('')}</div>
     <div class="report-fields" ${report.type ? '' : 'hidden'}>
       <label class="field" ${report.type === 'accept' ? '' : 'hidden'}>Réponse à accepter
@@ -1224,11 +1340,14 @@ function pauseOverlay() {
         <textarea id="report-comment" maxlength="1000" rows="3" placeholder="${report.type === 'wrong' ? 'Ex. : la bonne réponse est…' : 'Précise si besoin'}"></textarea>
       </label>
     </div>
-    <div class="report-actions">
+    ${paused ? `<div class="report-actions">
       <button type="button" class="btn primary" data-action="reportSend" data-resume="yes" ${report.type ? '' : 'disabled'}>Envoyer et reprendre</button>
       <button type="button" class="btn ghost small" data-action="reportSend" data-resume="no" ${report.type ? '' : 'disabled'}>Envoyer, rester en pause</button>
       <button type="button" class="link" data-action="resume">Reprendre sans signaler</button>
-    </div>
+    </div>` : `<div class="report-actions">
+      <button type="button" class="btn primary" data-action="reportSend" ${report.type ? '' : 'disabled'}>Envoyer</button>
+      <button type="button" class="link" data-action="flagclose">Annuler</button>
+    </div>`}
   </form></div>`;
 }
 // ---- Ta bande (profils Steam)
@@ -1646,12 +1765,13 @@ function playersList(host) {
 
 /** Pages (« page: true », plein écran sur téléphone) et panneaux du bas, par écran. */
 const SHEETS = {
-  name: { phase: 'home', render: () => ({ title: 'Ton pseudo', body: `
+  name: { phase: 'home', render: () => ({ title: 'Ton profil', body: `
     <form class="sh-form" data-form="name">
-      <input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="done">
+      <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="done"></label>
       <button class="btn primary" type="submit">C’est bon</button>
     </form>
-    <p class="sh-note">C’est le nom que verront tes potes. Pas de compte : il reste juste sur cet appareil.</p>` }) },
+    <p class="sh-note">C’est le nom que verront tes potes, retenu sur cet appareil.</p>
+    ${accountBlock()}` }) },
   create: { phase: 'home', render: () => ({ title: 'Créer un salon', body: `
     <form class="sh-form" data-form="create">
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
@@ -1691,6 +1811,27 @@ const SHEETS = {
     <button class="btn" data-action="sheet" data-value="steam">🎮 Lier mon Steam</button>
     <button class="btn" data-action="propose">💡 Proposer une question</button>` }) },
 };
+
+/** Bloc « Compte » du profil : connexion facultative (Discord, Google), ou compte connecté. */
+const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
+function accountBlock() {
+  const cfg = account.cfg;
+  const u = account.user;
+  if (u) {
+    return `<div class="acc acc-in">
+      <div class="acc-me">${u.avatar ? `<img class="acc-avatar" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : avatar(u.name)}
+        <div><b>${esc(u.name)}</b><small>Connecté avec ${esc(PROVIDER_LABEL[u.provider] || 'ton compte')}${u.admin ? ' · admin' : ''}</small></div></div>
+      <button class="link" data-action="logout">Se déconnecter</button>
+    </div>`;
+  }
+  if (!cfg?.enabled) return '';
+  return `<div class="acc">
+    <h3>Compte <small>facultatif</small></h3>
+    <p class="sh-note">Pour retrouver ton profil sur tous tes appareils (bientôt : stats et défis entre potes). Sans compte, tu joues en invité, comme avant.</p>
+    <div class="acc-btns">${cfg.providers.map((p) => `<button class="btn acc-btn acc-${p}" data-action="login" data-value="${p}">${providerIcon(p)}Continuer avec ${PROVIDER_LABEL[p] || p}</button>`).join('')}</div>
+    <p class="sh-note small"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a></p>
+  </div>`;
+}
 
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
@@ -1739,7 +1880,7 @@ const views = {
     <main class="screen home2">
       <div class="h-top">
         <div class="logo">Quiz<b>Party</b></div>
-        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Changer de pseudo">${name ? `${avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>
+        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Ton profil">${name ? `${account.user?.avatar ? `<img class="acc-avatar sm" src="${esc(account.user.avatar)}" alt="" referrerpolicy="no-referrer">` : avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>
       </div>
       <section class="h-play">
         <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
@@ -1756,10 +1897,11 @@ const views = {
       <div class="h-extras">
         ${TOUCH ? '<button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>' : ''}
         <button class="chip-btn" data-action="propose">💡 Proposer une question</button>
+        ${!account.user && account.cfg?.enabled ? '<button class="chip-btn" data-action="sheet" data-value="name">👤 Se connecter</button>' : ''}
         ${installCard()}
       </div>
       <div class="h-foot">${themeToggle()}</div>
-      <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
+      <p class="credits"><a href="/confidentialite">Confidentialité</a> · <a href="/conditions">Conditions</a> · Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
     </main>`;
   },
 
@@ -2056,14 +2198,14 @@ const views = {
             </li>`).join('')}
         </ul>
       </section>
-      ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
+      ${state.admin && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
       </div>
       </div>
       ${swipe ? `<div class="rv-dots" role="tablist" aria-label="Pages de la correction">
         <button class="rv-dot" data-action="rvpage" data-value="0" role="tab"><i></i>Réponse</button>
         <button class="rv-dot" data-action="rvpage" data-value="1" role="tab"><i></i>Classement</button>
       </div>` : ''}
-      ${isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+      ${isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
     </main>`;
   },
 
@@ -2151,7 +2293,7 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
+  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);

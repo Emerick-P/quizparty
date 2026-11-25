@@ -42,6 +42,13 @@ function supabaseBackend(url, key) {
       if (status) q.set('status', `eq.${status}`);
       return call('GET', `/rest/v1/${table}?${q}`);
     },
+    /** Insère ou met à jour (clé primaire id). */
+    async upsert(table, row) {
+      await call('POST', `/rest/v1/${table}`, { body: row, headers: { Prefer: 'resolution=merge-duplicates' } });
+    },
+    async remove(table, id) {
+      await call('DELETE', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`);
+    },
     async update(table, id, patch) {
       const out = await call('PATCH', `/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, { body: patch, headers: { Prefer: 'return=representation' } });
       return out?.[0] ?? null;
@@ -101,6 +108,14 @@ function localBackend(dir) {
       Object.assign(row, patch);
       write(table, rows);
       return row;
+    },
+    async upsert(table, row) {
+      const rows = read(table).filter((r) => r.id !== row.id);
+      fs.mkdirSync(dir, { recursive: true });
+      write(table, [...rows, row]);
+    },
+    async remove(table, id) {
+      write(table, read(table).filter((r) => r.id !== id));
     },
     async upload(name, buffer) {
       const p = path.join(dir, 'files', name);

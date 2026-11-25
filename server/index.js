@@ -14,6 +14,9 @@ import { createAccess } from './access.js';
 import { installSubmissions } from './submissions.js';
 import { store } from './store.js';
 import { syncContent } from './content-sync.js';
+import { createAuth } from './auth.js';
+import { installLegal } from './legal.js';
+import { Room } from './room.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,6 +38,12 @@ if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PRO
 const access = createAccess();
 access.install(app);
 io.use(access.socketGuard);
+
+// Comptes joueurs facultatifs (Discord, Google via Supabase Auth) et pages légales (ouvertes à tous)
+const auth = createAuth();
+Room.accounts = auth.enabled;
+auth.install(app, express);
+installLegal(app);
 
 // Formulaire « Proposer » (/proposer) : soumissions des amis, derrière le même code d'accès
 installSubmissions(app);
@@ -120,7 +129,7 @@ app.get('/sfx/:file', (req, res) => {
   res.sendFile(f);
 });
 
-const rooms = new RoomManager(io, { access });
+const rooms = new RoomManager(io, { access, auth });
 io.on('connection', (socket) => rooms.handleConnection(socket));
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -145,5 +154,5 @@ if (store.name === 'supabase') {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}`);
+  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
 });

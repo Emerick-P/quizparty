@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { store } from './store.js';
 
 /**
- * Retours de l'hôte sur une question (bouton ⚑ Signaler pendant la partie).
+ * Retours des joueurs sur une question (bouton ⚑ Signaler pendant la partie).
  *
  * Une ligne JSON par retour dans data/feedback.jsonl (ou FEEDBACK_FILE) : ajout seulement, jamais réécrit,
  * donc rien n'est perdu si le serveur s'arrête. Le fichier est sur le disque du serveur : sur le PC
@@ -23,6 +23,9 @@ export const FEEDBACK_TYPES = {
   remove: 'Question à supprimer',
   other: 'Autre',
 };
+
+/** Types réservés à l'admin (consignes appliquées telles quelles). Les autres joueurs signalent une erreur. */
+export const MODERATOR_TYPES = ['accept', 'remove'];
 
 const clip = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b-\u001f]/g, '').trim().slice(0, n) : '');
 
@@ -50,6 +53,10 @@ export function makeFeedback({ type, accept, comment }, ctx) {
     phase: ctx.phase,
     room: ctx.room,
     by: ctx.by,
+    // Compte de l'auteur ; admin = consigne du propriétaire du jeu, à appliquer sans revalider
+    user_id: ctx.userId ?? null,
+    admin: !!ctx.admin,
+    host: !!ctx.host,
     question: snapshot(ctx.round),
     // Ce que les joueurs ont répondu (utile pour « réponse à accepter »)
     answers: ctx.answers ?? [],

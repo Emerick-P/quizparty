@@ -339,3 +339,24 @@
   .screen.has-side .prompt { margin: 4px 0; }
   .screen.has-side .roster { gap: 4px; }
 }
+
+/* ---- Comptes (profil : connexion Discord / Google) et ⚑ des joueurs ---- */
+.acc { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.acc h3 { margin: 0; font-size: 1.05rem; }
+.acc h3 small { color: var(--muted); font-weight: 500; font-size: .85rem; margin-left: 6px; }
+.acc .sh-note.small { font-size: .8rem; }
+.acc .sh-note a { color: var(--muted); }
+.acc-btns { display: flex; flex-direction: column; gap: 8px; }
+.sh-body > .acc .btn.acc-btn, .acc-btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; font-weight: 700; text-align: center; border: 0; border-radius: 8px; }
+.acc-btn.acc-discord { background: #5865f2; color: #fff; }
+.acc-btn.acc-google { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; }
+.acc-ico { display: inline-grid; place-items: center; width: 22px; height: 22px; font-weight: 800; }
+.acc-google .acc-ico { color: #4285f4; font-family: Arial, sans-serif; font-size: 1.1rem; }
+.acc-in { flex-direction: row; align-items: center; justify-content: space-between; }
+.acc-me { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.acc-me b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-me small { color: var(--muted); }
+.acc-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex: none; }
+.acc-avatar.sm { width: 32px; height: 32px; }
+.player-bar .report-btn { opacity: .75; }
+.credits a { color: inherit; }
