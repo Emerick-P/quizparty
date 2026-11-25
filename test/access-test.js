@@ -37,7 +37,7 @@ try {
   let r = await get('/?code=ABCD', { accept: 'text/html' });
   assert.equal(r.status, 302);
   assert.equal(r.headers.get('location'), '/entree?next=%2F%3Fcode%3DABCD');
-  assert.equal((await get('/app.js')).status, 401);
+  assert.equal((await get('/proposer.js')).status, 401);
   assert.equal((await get('/sfx/x.mp3')).status, 401);
   assert.equal((await get('/health')).status, 200, '/health reste ouvert (surveillance)');
   r = await get('/entree');

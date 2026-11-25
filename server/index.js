@@ -5,6 +5,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
+import QRCode from 'qrcode';
 import { RoomManager } from './rooms.js';
 import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
@@ -49,23 +50,25 @@ const version = (file) => {
     return '0';
   }
 };
-function sendIndex(_req, res) {
-  const html = fs
+function sendIndex(_req, res, screen = false) {
+  let html = fs
     .readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
     .replace('"/app.js"', `"/app.js?v=${version('app.js')}"`)
     .replace('"/style.css"', `"/style.css?v=${version('style.css')}"`);
+  if (screen) html = html.replace('</head>', `  <link rel="stylesheet" href="/tv.css?v=${version('tv.css')}">\n</head>`);
   res.set('Cache-Control', 'no-store');
   res.type('html').send(html);
 }
-app.get(['/', '/index.html'], sendIndex);
-// Écran télé (mode télé) : même principe de version que l'accueil
-app.get(['/tv', '/tv.html'], (_req, res) => {
-  const html = fs
-    .readFileSync(path.join(PUBLIC, 'tv.html'), 'utf8')
-    .replace('"/tv.js"', `"/tv.js?v=${version('tv.js')}"`)
-    .replace('"/tv.css"', `"/tv.css?v=${version('tv.css')}"`);
-  res.set('Cache-Control', 'no-store');
-  res.type('html').send(html);
+app.get(['/', '/index.html'], (req, res) => sendIndex(req, res));
+// Écran télé (mode télé) : la même application, avec son habillage plein écran 16:9
+app.get(['/tv', '/tv.html'], (req, res) => sendIndex(req, res, true));
+// QR code du salon affiché sur la télé (lien direct vers le salon)
+app.get('/qr/:code.svg', async (req, res) => {
+  const code = String(req.params.code).toUpperCase();
+  if (!/^[A-Z]{4}$/.test(code)) return res.sendStatus(404);
+  const svg = await QRCode.toString(`${req.protocol}://${req.get('host')}/?code=${code}`, { type: 'svg', margin: 0, color: { dark: '#121418', light: '#ffffff' } });
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.type('image/svg+xml').send(svg);
 });
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));

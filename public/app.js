@@ -80,7 +80,79 @@ function setUrlCode(code) {
 }
 
 // =====================================================================  socket & horloge
-const socket = io({ transports: ['websocket', 'polling'] });
+// =====================================================================  mode télé
+// La même page sert d'écran télé sur /tv : elle s'appaire au salon de l'hôte (code à 4 chiffres ou Cast)
+// et affiche la partie pour tout le monde. Les téléphones passent alors en « manette » (state.tv).
+const SCREEN = /^\/tv(\.html)?$/.test(location.pathname);
+const TV_KEY = 'quizparty:tv';
+const tv = { pin: null, sheet: false };
+const controller = () => !SCREEN && !!state?.tv;
+if (SCREEN) {
+  document.documentElement.classList.add('tv');
+  // Interface dessinée pour 1280 px de large, agrandie à la taille de l'écran (télé 1080p ou 4K)
+  const fit = () => { document.body.style.zoom = String(Math.max(1, innerWidth / 1280)); };
+  fit();
+  addEventListener('resize', fit);
+}
+
+// =====================================================================  app installée (PWA)
+// Installable sans store : écran d'accueil, plein écran, écran qui reste allumé pendant la partie.
+const STANDALONE = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const pwa = { prompt: null, help: false, wake: null };
+if ('serviceWorker' in navigator && !SCREEN) navigator.serviceWorker.register('/sw.js').catch(() => {});
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; render(); });
+addEventListener('appinstalled', () => { pwa.prompt = null; render(); });
+/** Bouton « Installer l'app » de l'accueil (Android/PC : vraie installation ; iPhone : aide en 2 gestes). */
+function installCard() {
+  if (STANDALONE || SCREEN) return '';
+  if (pwa.prompt) return '<button class="btn install-btn" data-action="install">📲 Installer l’app</button>';
+  if (!IOS) return '';
+  return `<button class="link install-link" data-action="installhelp">📲 Installer l’app sur ton iPhone</button>
+    ${pwa.help ? '<p class="install-help">Dans Safari, touche <b>Partager</b> <span aria-hidden="true">⬆︎</span> puis <b>« Sur l’écran d’accueil »</b>. QuizParty s’ouvrira ensuite en plein écran, comme une app.</p>' : ''}`;
+}
+/** Écran allumé tant qu'on est dans un salon (le téléphone ne se met pas en veille entre deux questions). */
+async function keepAwake() {
+  const want = !!state && document.visibilityState === 'visible';
+  try {
+    if (want && !pwa.wake && 'wakeLock' in navigator) {
+      pwa.wake = await navigator.wakeLock.request('screen');
+      pwa.wake.addEventListener('release', () => { pwa.wake = null; });
+    } else if (!want && pwa.wake) {
+      await pwa.wake.release();
+      pwa.wake = null;
+    }
+  } catch { pwa.wake = null; }
+}
+document.addEventListener('visibilitychange', keepAwake);
+/** Petites vibrations (Android) : nouvelle question, bonne ou mauvaise réponse. */
+const buzz = (pattern) => { if (!SCREEN && navigator.vibrate) try { navigator.vibrate(pattern); } catch {} };
+let buzzedFor = null;
+function buzzOnPhase(phase) {
+  const r = state?.round;
+  if (!r) return;
+  const key = `${phase}:${r.id}`;
+  if (buzzedFor === key) return;
+  buzzedFor = key;
+  if (phase === 'question') buzz(40);
+  else if (phase === 'reveal') {
+    const me = state.reveal?.results?.find((x) => x.playerId === state.you);
+    buzz(me?.correct || me?.points > 0 ? [30, 60, 30] : 120);
+  }
+}
+// Retour (bouton ou geste Android) : pendant une partie, il ferme d'abord un panneau ouvert, puis il ne quitte pas le salon
+function guardBack() {
+  if (!SCREEN && state && !history.state?.qp) history.pushState({ qp: 1 }, '');
+}
+addEventListener('popstate', () => {
+  if (SCREEN || !state) return;
+  history.pushState({ qp: 1 }, '');
+  if (tv.sheet) { tv.sheet = false; render(); }
+  else if (typeof proposeOpen === 'function' && proposeOpen()) closePropose();
+  else toast('Pour quitter le salon, utilise « ← Quitter »');
+});
+
+const socket = io({ transports: ['websocket', 'polling'], ...(SCREEN ? { auth: { screen: true } } : {}) });
 
 /**
  * Synchronisation d'horloge (principe de NTP) :
@@ -127,12 +199,37 @@ function send(event, payload = {}) {
 let state = null;          // dernier état reçu du serveur
 let pending = null;        // réponse envoyée mais pas encore confirmée {roundId, answer}
 let renderedPhase = null;  // phase actuellement affichée
-let resuming = !!store.get(SESSION_KEY);
+let resuming = !SCREEN && !!store.get(SESSION_KEY);
 
 socket.on('connect', async () => {
   $('#conn').hidden = true;
   await syncClock(state ? 3 : 5);
-  await resume();
+  if (SCREEN) await tvConnect();
+  else await resume();
+});
+
+/** Écran télé : reprend son salon (après un rechargement), sinon affiche un code d'appairage. */
+async function tvConnect() {
+  const saved = store.get(TV_KEY);
+  if (saved) {
+    const r = await send('screen:resume', saved);
+    if (!r.error) return;
+    store.del(TV_KEY);
+  }
+  state = null;
+  const r = await send('screen:hello');
+  tv.pin = r.pin || null;
+  render();
+}
+socket.on('screen:paired', ({ code, token, grant }) => {
+  store.set(TV_KEY, { code, token });
+  // Site à code d'accès : le laissez-passer pose le cookie, puis la page revient sur /tv et reprend le salon
+  if (grant) location.href = `/tv/entree?g=${encodeURIComponent(grant)}`;
+});
+socket.on('screen:closed', () => {
+  store.del(TV_KEY);
+  state = null;
+  tvConnect();
 });
 socket.on('disconnect', () => { $('#conn').hidden = false; });
 // Site protégé par un code d'accès (cookie absent ou périmé) : retour à la page d'entrée
@@ -200,7 +297,10 @@ function leaveLocal(message) {
 // La phase "question" commence à r.startsAt selon l'horloge serveur : on bascule localement
 // à l'instant exact, sans attendre le message du serveur (qui arrive avec la latence).
 function displayPhase() {
-  if (!state) return resuming ? 'loading' : 'home';
+  if (SCREEN) {
+    if (!state) return 'tvpair';
+    if (state.phase === 'lobby') return 'tvlobby';
+  } else if (!state) return resuming ? 'loading' : 'home';
   if (state.phase === 'countdown' && state.round && shownNow() >= state.round.startsAt) return 'question';
   return state.phase;
 }
@@ -286,6 +386,11 @@ const actions = {
     enterRoom(res);
   },
   async leave() { await send('room:leave'); leaveLocal(); },
+  async install() { if (!pwa.prompt) return; pwa.prompt.prompt(); await pwa.prompt.userChoice.catch(() => {}); pwa.prompt = null; render(); },
+  installhelp() { pwa.help = !pwa.help; render(); },
+  tvsheet() { tv.sheet = true; render(); setTimeout(() => $('#tv-pin')?.focus(), 50); },
+  tvclose() { tv.sheet = false; render(); },
+  async tvoff() { const r = await send('room:screen-off'); if (r.error) toast(r.error); },
   share,
   async start() { const r = await send('game:start'); if (r.error) toast(r.error); },
   async skip() { const r = await send('game:skip'); if (r.error) toast(r.error); },
@@ -437,10 +542,21 @@ document.addEventListener('submit', (e) => {
     actions.join();
   } else if (e.target.matches('[data-form="steam"]')) {
     actions.steamLink();
+  } else if (e.target.matches('[data-form="tvpin"]')) {
+    const pin = $('#tv-pin').value.replace(/\D/g, '');
+    if (pin.length !== 4) return toast('Le code de la télé fait 4 chiffres');
+    send('room:screen', { pin }).then((r) => {
+      if (r.error) return toast(r.error);
+      tv.sheet = false;
+      $('#tv-pin').value = '';
+      toast('📺 Télé connectée : la partie s’affiche dessus');
+      render();
+    });
   }
 });
 
 document.addEventListener('input', (e) => {
+  if (e.target.id === 'tv-pin') e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
   if (e.target.id === 'code') e.target.value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
   if (e.target.id === 'guess-input') recall.pos = null; // on retape : la flèche repart de la dernière saisie
 });
@@ -678,7 +794,7 @@ async function playSound(url, at = null) {
 function syncSound() {
   const r = state?.round;
   const phase = displayPhase();
-  if (!r || r.kind !== 'sound' || !['countdown', 'question', 'reveal'].includes(phase)) {
+  if (!r || r.kind !== 'sound' || !['countdown', 'question', 'reveal'].includes(phase) || controller()) {
     if (sfx.roundId && (!r || r.id !== sfx.roundId)) { stopSound(); sfx.roundId = null; }
     return;
   }
@@ -1222,7 +1338,107 @@ function cwRoster(r) {
       </aside>`;
 }
 
+// =====================================================================  mode télé : vues
+/** Salon, côté téléphone : l'hôte branche (ou éteint) la télé ; les autres savent qu'elle est là. */
+function tvCard() {
+  if (!isHost()) return state.tv ? '<p class="tv-state">📺 La partie s’affiche sur la télé</p>' : '';
+  if (state.tv) return `<section class="tv-card on"><span>📺 <b>Télé connectée</b> · chacun joue sur son téléphone</span><button class="btn small ghost" data-action="tvoff">Éteindre</button></section>`;
+  return '<button class="btn tv-open" data-action="tvsheet">📺 Afficher sur la télé</button>';
+}
+
+/** Feuille « Afficher sur la télé » (hôte, dans le salon). */
+function tvSheet() {
+  if (!tv.sheet || SCREEN || !state || state.phase !== 'lobby' || !isHost()) return '';
+  return `
+  <div class="tv-sheet-bg" data-action="tvclose"></div>
+  <section class="tv-sheet" role="dialog" aria-modal="true" aria-label="Afficher sur la télé">
+    <div class="tv-sheet-head"><h2>Afficher sur la télé</h2><button class="btn small ghost" data-action="tvclose">✕</button></div>
+    <div class="tv-opt">
+      <b>⌨ Code de l’écran</b>
+      <p>Sur la télé, un PC branché en HDMI, une console ou un Fire Stick : ouvre <span class="tv-url">${esc(location.host)}/tv</span>, puis tape ici les 4 chiffres affichés.</p>
+      <form class="row" data-form="tvpin">
+        <input id="tv-pin" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000" aria-label="Code de la télé">
+        <button class="btn primary" type="submit">Connecter</button>
+      </form>
+    </div>
+    <p class="tv-note">La télé affiche les questions, les images et les sons ; chacun répond sur son téléphone. Sans télé, tout reste comme avant.</p>
+  </section>`;
+}
+
+/** Écran télé en attente : son code à 4 chiffres, à taper sur le téléphone de l'hôte. */
+function tvPairView() {
+  const digits = (tv.pin || '····').split('');
+  return `
+  <main class="screen tv-pair">
+    <div class="logo">Quiz<b>Party</b> <span class="tv-sub">· écran télé</span></div>
+    <div class="tv-label">Code de cet écran</div>
+    <div class="tv-digits">${digits.map((d) => `<span>${esc(d)}</span>`).join('')}</div>
+    <p class="tv-steps">Sur ton téléphone, dans le salon : <b>📺 Afficher sur la télé</b>, puis tape ce code.<br>Rien à saisir avec la télécommande.</p>
+  </main>`;
+}
+
+/** Salon sur la télé : code et QR code pour rejoindre, joueurs, jeu choisi. */
+function tvLobbyView() {
+  const { settings, options } = state;
+  const current = options.modes.find((m) => m.id === settings.mode);
+  const host = state.players.find((p) => p.id === state.hostId);
+  return `
+  <main class="screen tv-lobby">
+    <div class="tv-top"><div class="logo">Quiz<b>Party</b></div><span class="tv-site">${esc(location.host)}</span></div>
+    <div class="tv-lob">
+      <section class="tv-code">
+        <div class="tv-label">Rejoins la partie</div>
+        <div class="code">${esc(state.code)}</div>
+        <div class="tv-join"><img class="tv-qr" src="/qr/${esc(state.code)}.svg" alt="QR code du salon"><p>Scanne avec ton téléphone<br>ou tape le code <b>${esc(state.code)}</b> sur la page d’accueil.</p></div>
+      </section>
+      <section class="tv-players">
+        <h2>Joueurs <span>${state.players.length}</span></h2>
+        <ul>${state.players.map((p) => `<li data-key="${p.id}" class="${p.connected ? '' : 'off'}">${avatar(p.name)}<span>${esc(p.name)}</span>${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}</li>`).join('')}
+        <li class="empty">+ en attente…</li></ul>
+      </section>
+    </div>
+    <div class="tv-foot"><span class="mode-ico">${modeArt(settings.mode)[0]}</span><b>${esc(current?.name || '')}</b>
+      <span class="muted">${current?.grids ? `${settings.rounds} min` : `${settings.rounds} questions · ${settings.duration} s`}</span>
+      <span class="tv-wait">${esc(host?.name || 'L’hôte')} lance la partie depuis son téléphone</span></div>
+  </main>`;
+}
+
+/** Mots croisés sur la télé : chacun a sa grille sur son téléphone, la télé montre la course. */
+function tvCrossword(r) {
+  return `
+  <main class="screen tv-cw">
+    <div class="qhead"><span class="pill">Mots croisés</span><span class="timer" data-until="${r.endsAt}" data-mode="clock" data-urgent="30000"></span></div>
+    <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="30000"></div></div>
+    <h1 class="prompt">Les mêmes grilles pour tous : chacun remplit la sienne sur son téléphone</h1>
+    ${cwRoster(r)}
+  </main>`;
+}
+
+/** Téléphone en manette : la question est sur la télé, il ne reste que les réponses, en grand. */
+function padQuestion(r, body, answered) {
+  const me = state.players.find((p) => p.id === state.you);
+  const rank = sortedByScore().findIndex((p) => p.id === state.you) + 1;
+  const choice = /class="choices/.test(body);
+  const watch = r.kind === 'sound' ? 'Écoute le son sur la télé' : GUESS_KINDS.includes(r.kind) ? 'Regarde la télé' : 'La question est sur la télé';
+  return `
+  <main class="screen pad-screen">
+    <div class="qhead">
+      <span class="pill">${r.index + 1} / ${r.total}</span><span class="pad-kind">${esc(kindLabel(r))}</span>
+      <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
+    </div>
+    <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
+    <p class="tv-hint">📺 ${watch}</p>
+    ${r.kind === 'estimation' && r.unit ? `<p class="pad-unit">Réponse en ${esc(r.unit)}</p>` : ''}
+    <div class="pad-body ${choice ? 'pad-choices' : ''}">${body}</div>
+    ${answered && choice ? `<p class="pad-sent">✓ Réponse envoyée · ${r.answeredCount} / ${r.expected} ont répondu</p>` : ''}
+    ${me ? `<div class="pad-me">${avatar(me.name)}<span>${esc(me.name)} · ${rank}ᵉ</span><b>${me.score}</b></div>` : ''}
+    ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+  </main>`;
+}
+
 const views = {
+  tvpair: tvPairView,
+  tvlobby: tvLobbyView,
   loading: () => `<main class="screen center"><p class="muted">Reconnexion…</p></main>`,
 
   home: () => `
@@ -1244,6 +1460,7 @@ const views = {
         </form>
         ${urlCode() ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
       </div>
+      ${installCard()}
       <a class="link propose-link" href="/proposer">💡 Proposer une question, un pitch, une capture…</a>
       <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
     </main>`,
@@ -1269,6 +1486,7 @@ const views = {
         <div class="code">${esc(state.code)}</div>
         <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
       </section>
+      ${tvCard()}
       <p class="share-note">🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.</p>
       <div class="lobby-cols">
       <div class="lb-players">
@@ -1349,7 +1567,7 @@ const views = {
 
   question() {
     const r = state.round;
-    if (r.kind === 'crossword') return crosswordQuestion(r);
+    if (r.kind === 'crossword') return SCREEN ? tvCrossword(r) : crosswordQuestion(r);
     const mine = r.yourAnswer ?? (pending && pending.roundId === r.id ? pending.answer : null);
     const answered = mine !== null;
     let body;
@@ -1388,6 +1606,9 @@ const views = {
           </button>`).join('')}
       </div>`;
     }
+    // Écran télé : on n'y répond pas, les champs de saisie deviennent une consigne
+    if (SCREEN && !/class="choices/.test(body)) body = `<p class="tv-answer">📱 Réponds sur ton téléphone${r.tries > 1 ? ` · ${r.tries} essais` : ''}</p>`;
+    if (controller()) return padQuestion(r, body, answered);
     return `
     <main class="screen has-side">
       <div class="play">
@@ -1533,10 +1754,11 @@ const views = {
     <main class="screen">
       <div class="qhead"><span class="pill">${r.kind === 'crossword' ? 'Fin du chrono' : `${r.index + 1} / ${r.total}`}</span><span class="muted">${last ? 'Résultats' : r.kind === 'crossword' ? 'Grille suivante' : 'Question suivante'} dans <span data-until="${state.phaseEndsAt}" data-mode="count"></span> s</span></div>
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
-      ${banner}
+      ${SCREEN ? '' : banner}
+      ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
-      ${detail}
+      ${detail}`}
       <section class="card">
         <h2>Classement</h2>
         <ul class="list">
@@ -1567,6 +1789,7 @@ const views = {
     return `
     <main class="screen">
       <div class="title">${myPos === 1 ? 'Victoire ! 🏆' : 'Partie terminée'}</div>
+      ${SCREEN ? '<p class="waiting tv-only">L’hôte peut relancer une partie depuis son téléphone</p>' : ''}
       <div class="podium">${step(ranked[1], 2)}${step(ranked[0], 1)}${step(ranked[2], 3)}</div>
       <section class="card">
         <ul class="list">
@@ -1579,10 +1802,10 @@ const views = {
         </ul>
       </section>
       ${globalBoard()}
-      ${isHost()
+      ${SCREEN ? '' : isHost()
         ? '<button class="btn primary big sticky-bottom" data-action="lobby">Nouvelle partie</button>'
         : '<p class="waiting">En attente de l\'hôte pour une nouvelle partie</p>'}
-      <button class="link" data-action="leave">Quitter le salon</button>
+      ${SCREEN ? '' : '<button class="link" data-action="leave">Quitter le salon</button>'}
     </main>`;
   },
 };
@@ -1637,13 +1860,14 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay();
+  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay() + tvSheet();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
   // Écran de question : plus large sur ordinateur, pour la colonne des joueurs à droite
   app.classList.toggle('wide', phase === 'question');
   app.classList.toggle('wider', phase === 'lobby'); // salon sur trois colonnes
+  app.classList.toggle('pad-mode', controller() && ['countdown', 'question', 'reveal'].includes(phase)); // téléphone en manette
 
   const newInput = $('#est-input') || $('#guess-input') || $('#cw-word');
   if (newInput) {
@@ -1665,6 +1889,9 @@ function render() {
   }
   if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;
+  buzzOnPhase(phase);
+  guardBack();
+  keepAwake();
   updatePropose();
   updateTimers();
 }

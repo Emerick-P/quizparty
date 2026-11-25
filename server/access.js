@@ -9,7 +9,8 @@ import express from 'express';
 
 const COOKIE = 'qp_access';
 const MAX_AGE_S = 180 * 24 * 3600; // 6 mois
-const OPEN_PATHS = new Set(['/entree', '/health', '/tv', '/tv.html', '/tv.js', '/tv.css', '/plateau.css', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/sw.js']);
+const OPEN_PATHS = new Set(['/entree', '/health', '/tv', '/tv.html', '/tv.css', '/plateau.css', '/theme.css', '/style.css', '/manette.css', '/app.js', // écran télé pas encore entré (code sans contenu)
+   '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png', '/apple-touch-icon.png', '/favicon.png', '/sw.js']);
 const GRANT_TTL_MS = 3 * 60 * 1000; // laissez-passer d'un écran télé appairé par l'hôte
 const MAX_TRIES = 10; // essais ratés par adresse IP…
 const TRIES_WINDOW_MS = 10 * 60 * 1000; // …par tranche de 10 minutes

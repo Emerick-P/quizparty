@@ -106,7 +106,7 @@ try {
     headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code: 'Mario64', next: '/' }) });
   const cookie = r.headers.get('set-cookie').split(';')[0];
   assert.equal((await fetch(URL2 + '/tv', { redirect: 'manual' })).status, 200, 'la page télé est ouverte');
-  assert.equal((await fetch(URL2 + '/app.js', { redirect: 'manual' })).status, 401, 'le reste reste protégé');
+  assert.equal((await fetch(URL2 + '/sfx/x.mp3', { redirect: 'manual' })).status, 401, 'images et sons restent protégés');
 
   // Sans cookie et sans être un écran : refusé ; écran : appairage seulement
   const T = client(URL2, 'télé limitée', { auth: { screen: true } });
@@ -124,7 +124,7 @@ try {
   let g = await fetch(`${URL2}/tv/entree?g=${grant}`, { redirect: 'manual' });
   assert.equal(g.status, 303);
   const tvCookie = g.headers.get('set-cookie').split(';')[0];
-  assert.equal((await fetch(URL2 + '/app.js', { headers: { cookie: tvCookie } })).status, 200, 'la télé a maintenant accès aux images et sons');
+  assert.equal((await fetch(URL2 + '/', { headers: { cookie: tvCookie }, redirect: 'manual' })).status, 200, 'la télé a maintenant accès aux images et sons');
   g = await fetch(`${URL2}/tv/entree?g=${grant}`, { redirect: 'manual' });
   assert.equal(g.headers.get('set-cookie'), null, 'laissez-passer à usage unique');
   const T2 = client(URL2, 'télé entrée', { extraHeaders: { cookie: tvCookie } });

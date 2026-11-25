@@ -1,0 +1,51 @@
+/*
+ * Mode télé, côté téléphone : écran « manette » (la question est sur la télé) et feuille « Afficher sur la télé ».
+ * Toutes les couleurs viennent des variables de plateau.css.
+ */
+/* ---- salon : brancher la télé */
+.tv-open { width: 100%; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1.05rem; padding: 14px; border-radius: 6px; }
+.tv-card { display: flex; align-items: center; gap: 12px; background: var(--surf); border-radius: 6px; padding: 10px 14px; }
+.tv-card span { flex: 1; }
+.tv-state { text-align: center; color: var(--muted); margin: 0; }
+.tv-sheet-bg { position: fixed; inset: 0; background: rgba(10, 12, 16, .6); z-index: 40; }
+.tv-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-width: 560px; margin: 0 auto; background: var(--card); border-radius: 14px 14px 0 0;
+  padding: 18px 18px max(22px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; animation: enter .2s ease-out; }
+.tv-sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.tv-sheet h2 { font-size: 1.7rem; }
+.tv-opt { background: var(--surf); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.tv-opt b { font-size: 1.1rem; }
+.tv-opt p, .tv-note { margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.4; }
+.tv-url { color: var(--accent-text); font-weight: 700; }
+.tv-opt .row { display: flex; gap: 8px; }
+#tv-pin { flex: 1; min-width: 0; background: var(--deep); color: var(--text); border: 2px solid var(--line); border-radius: 6px; padding: 10px; text-align: center;
+  font-family: var(--display); font-weight: 800; font-size: 2rem; letter-spacing: .3em; }
+#tv-pin:focus { outline: none; border-color: var(--accent); }
+
+/* ---- manette : réponses en grand */
+.pad-screen { gap: 12px; min-height: 100dvh; }
+.pad-kind { color: var(--muted); font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin-right: auto; margin-left: 10px; }
+.pad-screen .timer { font-style: italic; font-weight: 800; font-size: 2.3rem; color: var(--accent-text); }
+.pad-screen .timer.urgent { color: var(--bad); }
+.tv-hint { text-align: center; color: var(--muted); font-size: .9rem; margin: 0; }
+.pad-unit { text-align: center; margin: 0; font-weight: 600; }
+.pad-body { display: flex; flex-direction: column; gap: 12px; }
+.pad-body.pad-choices { flex: 1; }
+.pad-choices .choices, .pad-choices .choices.compact { flex: 1; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px; }
+.pad-choices .choices.n2 { grid-template-rows: 1fr; grid-template-columns: 1fr; }
+.pad-choices .choice, .pad-choices .choices.compact:not(.reveal) .choice { min-height: 0; flex-direction: column; justify-content: center; text-align: center; gap: 10px; padding: 12px;
+  border-radius: 10px; font-family: var(--display); font-weight: 700; font-size: 1.25rem; line-height: 1.1; box-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
+.pad-choices .choice .shape { font-size: 3.4rem; line-height: 1; }
+.pad-choices .choices.n2 .choice { font-size: 2.2rem; }
+.pad-choices .choice.picked { outline: 5px solid #fff; outline-offset: -5px; transform: translateY(4px); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); opacity: 1; }
+.pad-choices .choice.dim { opacity: .25; }
+.pad-sent { text-align: center; background: var(--surf); border-radius: 6px; padding: 10px; margin: 0; font-weight: 600; }
+.pad-me { display: flex; align-items: center; gap: 10px; background: var(--surf); border-radius: 6px; padding: 8px 12px; font-weight: 600; }
+.pad-me .avatar { width: 30px; height: 30px; }
+.pad-me b { margin-left: auto; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.5rem; }
+#app.pad-mode .result { font-size: 2.4rem; padding: 28px 14px; }
+
+/* ---- app installable (accueil) */
+.install-btn { width: 100%; background: var(--surf); font-weight: 700; padding: 12px; border-radius: 6px; }
+.install-link { display: block; margin: 0 auto; }
+.install-help { margin: 0; text-align: center; color: var(--muted); font-size: .92rem; line-height: 1.45; }
+.install-help b { color: var(--text); }
