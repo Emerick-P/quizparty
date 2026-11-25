@@ -115,11 +115,12 @@ const pwa = { prompt: null, installed: false, wake: null };
 if ('serviceWorker' in navigator && !SCREEN) navigator.serviceWorker.register('/sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; render(); });
 const INSTALLED_KEY = 'quizparty:installed';
-const INSTALLED_MSG = '✓ QuizParty est installée : ouvre-la depuis l’icône QP de ton écran d’accueil';
+const INSTALLED_MSG = '📲 Installation lancée : QuizParty apparaîtra sur ton écran d’accueil dans quelques secondes';
 addEventListener('appinstalled', () => {
   pwa.prompt = null;
-  try { localStorage.setItem(INSTALLED_KEY, '1'); } catch {}
-  toast(INSTALLED_MSG);
+  let already = false;
+  try { already = localStorage.getItem(INSTALLED_KEY) === '1'; localStorage.setItem(INSTALLED_KEY, '1'); } catch {}
+  if (!already) toast(INSTALLED_MSG); // le message part déjà au clic sur « Installer »
   render();
 });
 /** L'app est-elle déjà installée ? Installée depuis ce navigateur (mémorisé), ou détectée par Chrome Android. */
@@ -1749,7 +1750,7 @@ const views = {
         <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
       </div>
       <div class="h-extras">
-        <button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>
+        ${TOUCH ? '<button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>' : ''}
         <button class="chip-btn" data-action="propose">💡 Proposer une question</button>
         ${installCard()}
       </div>
@@ -2152,8 +2153,8 @@ function render() {
     if (keep) {
       newInput.value = keep.value;
       if (keep.focus) newInput.focus();
-    } else if (renderedPhase !== 'question') {
-      newInput.focus();
+    } else if (renderedPhase !== 'question' && !TOUCH) {
+      newInput.focus(); // sur téléphone, le clavier ne s'ouvre qu'au toucher du champ (on voit d'abord la question)
     }
   }
   const steamNew = $('#steam-input');

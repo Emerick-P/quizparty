@@ -220,7 +220,11 @@
   .reveal-screen .rv-main .prompt.small { font-size: .95rem; padding: 8px 12px; }
   .reveal-screen .choices.reveal { gap: 6px; }
   .reveal-screen .choices.reveal .choice { padding: 7px 12px; font-size: .9rem; }
-  .reveal-screen .shot-wrap img { max-height: 38vh; }
+  .reveal-screen .shot-wrap img { max-height: 30vh; }
+  .reveal-screen .shot-meta { margin: 0; }
+  .reveal-screen .shot-meta .val { font-size: 1.15rem; }
+  .reveal-screen .emoji-why .emojis.small { font-size: 1.2rem; }
+  .reveal-screen .emoji-why p { font-size: .85rem; margin: 2px 0 0; }
   .reveal-screen .rv-main > *, .reveal-screen .rv-side > * { flex-shrink: 0; }
   .reveal-screen .result { padding: 6px 12px; font-size: 1.5rem; }
   .reveal-screen .result small { font-size: .85rem; }
@@ -238,4 +242,29 @@
 /* paysage très bas (téléphone avec la barre du navigateur) : la liste des joueurs laisse la place aux réponses */
 @media (orientation: landscape) and (max-height: 400px) {
   .screen.has-side > .roster { display: none; }
+}
+
+/* ---------- correction sur téléphone en portrait : plus compacte (moins de défilement) */
+@media (max-width: 640px) and (orientation: portrait) {
+  .reveal-screen { gap: 10px; }
+  .reveal-screen .result { padding: 8px 12px; font-size: 1.7rem; }
+  .reveal-screen .result small { font-size: .85rem; }
+  .reveal-screen .cover-reveal .cover-wrap { height: 120px; }
+  .reveal-screen .cover-meta .val { font-size: 1.3rem; }
+  .reveal-screen .shot-wrap img { max-height: 24vh; }
+  .reveal-screen .shot-meta { margin: 2px 0 4px; }
+  .reveal-screen .shot-meta .val { font-size: 1.25rem; }
+  .reveal-screen .emoji-why { padding: 8px 12px; }
+  .reveal-screen .emoji-why .emojis.small { font-size: 1.3rem; }
+  .reveal-screen .emoji-why p { margin: 4px 0 0; font-size: .88rem; }
+  .reveal-screen .pitch.done { margin: 6px 0; }
+  .reveal-screen .list li { padding-top: 7px; padding-bottom: 7px; }
+  .reveal-screen .rv-side .card { padding: 12px; }
+  .reveal-screen .rv-side .card h2 { font-size: 1.1rem; margin-bottom: 6px; }
+  .reveal-screen .choices.reveal { gap: 6px; }
+  .reveal-screen .choices.reveal .choice { padding: 6px 12px; font-size: .88rem; }
+  /* question : un peu moins d'air autour de l'énoncé */
+  .screen.has-side { gap: 10px; }
+  .screen.has-side .prompt { margin: 4px 0; }
+  .screen.has-side .roster { gap: 4px; }
 }
