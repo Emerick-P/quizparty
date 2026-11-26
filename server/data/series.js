@@ -6,7 +6,7 @@
  * En 4 choix, deux jeux d'une même série ne sont jamais proposés ensemble.
  */
 export const SERIES = [
-  { re: /^(new )?super mario (bros|64|world|sunshine|galaxy|odyssey|land|3d)/i, names: ['Super Mario'] },
+  { re: /^(new )?super mario (bros|64|world|sunshine|galaxy|odyssey|land|3d|maker)/i, names: ['Super Mario'] },
   { re: /mario kart/i, names: ['Mario Kart'] },
   { re: /legend of zelda/i, names: ['Zelda', 'The Legend of Zelda'] },
   { re: /metroid/i, names: ['Metroid'] },
@@ -27,7 +27,7 @@ export const SERIES = [
   { re: /^tekken/i, names: ['Tekken'] },
   { re: /^street fighter/i, names: ['Street Fighter'] },
   { re: /^mega man/i, names: ['Mega Man'] },
-  { re: /^castlevania/i, names: ['Castlevania'] },
+  { re: /^(super )?castlevania/i, names: ['Castlevania'] },
   { re: /^uncharted/i, names: ['Uncharted'] },
   { re: /^god of war/i, names: ['God of War'] },
   { re: /^horizon/i, names: ['Horizon'] },
@@ -59,7 +59,7 @@ export const SERIES = [
   { re: /^far cry/i, names: ['Far Cry'] },
   { re: /^sly cooper/i, names: ['Sly Cooper'] },
   { re: /^metro\b/i, names: ['Metro'] },
-  { re: /^xcom/i, names: ['XCOM'] },
+  { re: /^x-?com/i, names: ['XCOM'] },
   { re: /^helldivers/i, names: ['Helldivers'] },
   { re: /^euro truck/i, names: ['Euro Truck Simulator'] },
   { re: /^profess(eur|or) layton/i, names: ['Professeur Layton', 'Professor Layton'] },
@@ -111,6 +111,22 @@ export const SERIES = [
   { re: /^hades\b/i, names: ['Hades'] },
   { re: /^borderlands/i, names: ['Borderlands'] },
   { re: /^(marvel'?s )?spider-man/i, names: ['Spider-Man', 'Spiderman'] },
+  // Ajoutées avec les nouveaux jeux de jaquettes (2026-11-26)
+  { re: /^kid icarus/i, names: ['Kid Icarus'] },
+  { re: /^f-zero/i, names: ['F-Zero'] },
+  { re: /^pikmin/i, names: ['Pikmin'] },
+  { re: /^max payne/i, names: ['Max Payne'] },
+  { re: /^dragon'?s dogma/i, names: ["Dragon's Dogma"] },
+  { re: /^bayonetta/i, names: ['Bayonetta'] },
+  { re: /^xenoblade/i, names: ['Xenoblade Chronicles', 'Xenoblade'] },
+  { re: /^luigi'?s mansion/i, names: ["Luigi's Mansion"] },
+  { re: /^alan wake/i, names: ['Alan Wake'] },
+  { re: /^devil may cry/i, names: ['Devil May Cry'] },
+  { re: /^death stranding/i, names: ['Death Stranding'] },
+  { re: /^tales of/i, names: ['Tales of'] },
+  { re: /^ghost of/i, names: ['Ghost of'] },
+  { re: /^(sid meier'?s )?civilization/i, names: ['Civilization', 'Sid Meier’s Civilization'] },
+  { re: /^dragon quest/i, names: ['Dragon Quest'] },
 ];
 
 /** Série d'un titre, ou null. */
