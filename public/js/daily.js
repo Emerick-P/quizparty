@@ -70,8 +70,8 @@ function dailyTile() {
   const sub = !i ? 'Le même quiz pour tout le monde, résultat à partager'
     : mine ? `Joué : ${fmtPts(mine.score)} pts · prochain dans ${untilNext(i.nextAt)}`
     : `${i.rounds} questions mélangées, une seule tentative`;
-  return `<button class="h-tile daily ${mine ? 'done' : ''}" data-action="sheet" data-value="daily">${i ? `<i class="soon">n°${i.number}</i>` : ''}<span class="t-ico">📅</span><b>Défi du jour</b><small>${esc(sub)}</small>
-    ${mine ? cellsHtml(gridCells(mine.grid), 'tile') : `<span class="d-go">${streak ? `🔥 ${streak} jour${streak > 1 ? 's' : ''} · ` : ''}À jouer ▸</span>`}</button>`;
+  return `<button class="h-tile daily ${mine ? 'done' : ''}" data-action="sheet" data-value="daily">${i ? `<i class="soon">n°${i.number}</i>` : ''}<span class="t-ico">${ico('calendar')}</span><b>Défi du jour</b><small>${esc(sub)}</small>
+    ${mine ? cellsHtml(gridCells(mine.grid), 'tile') : `<span class="d-go">${streak ? `${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} · ` : ''}À jouer ▸</span>`}</button>`;
 }
 function dailyBody() {
   const i = daily.info;
@@ -83,9 +83,9 @@ function dailyBody() {
         <small>Défi n°${i.number} · ${mine.correct}/${mine.rounds} trouvées</small>
         <b>${fmtPts(mine.score)} <span>pts</span></b>
         ${cellsHtml(gridCells(mine.grid), 'big')}
-        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+        ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
-      <button class="btn primary" data-action="dailyshare">📤 Partager mon résultat</button>
+      <button class="btn primary" data-action="dailyshare">${ico('share')} Partager mon résultat</button>
       <div class="d-col"><h3>Classement du jour</h3>
       ${dailyBoard(daily.board, i.me, 8)}</div>
       ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? '<button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour apparaître au classement et garder ta série sur tous tes appareils.' : ''}</p>`}
@@ -100,7 +100,7 @@ function dailyBody() {
         <li><b>${i.duration} s</b> par question, plus tu réponds vite, plus tu marques</li>
         <li><b>Une seule tentative</b> : le même défi pour tout le monde aujourd’hui</li>
       </ul>
-      ${streak ? `<span class="d-streak">🔥 Série en cours : ${streak} jour${streak > 1 ? 's' : ''}</span>` : ''}
+      ${streak ? `<span class="d-streak">${ico('flame')} Série en cours : ${streak} jour${streak > 1 ? 's' : ''}</span>` : ''}
     </div>
     ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? 'En invité, ton score reste sur cet appareil. <button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour le classement du jour et ta série.' : 'Ton score reste sur cet appareil.'}</p>`}
     <button class="btn primary big" data-action="dailystart">C’est parti !</button>
@@ -117,7 +117,7 @@ function rememberDaily(s) {
 }
 /** Correction et question du défi : la progression (une case par question). */
 const dailyProgress = () => (state.daily ? cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'prog') : '');
-const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>`;
+const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">${ico('flag')} Signaler</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>`;
 function dailyEnd() {
   const d = state.daily;
   const me = state.players.find((p) => p.id === state.you);
@@ -130,9 +130,9 @@ function dailyEnd() {
         <small>Défi n°${d.number} · ${d.correct}/${d.rounds} trouvées</small>
         <b>${fmtPts(me?.score)} <span>pts</span></b>
         ${cellsHtml(d.cells.map((c) => CELL_CLASS[c] || 'ko'), 'big')}
-        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+        ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
-      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">📤 Partager mon résultat</button>
+      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
       <section class="card d-card">
         <h2>Classement du jour</h2>
         ${d.account ? (d.leaderboard ? dailyBoard(d.leaderboard, d.me) : '<p class="muted">Chargement…</p>') : `<p class="muted">En invité, tu n’es pas au classement.${account.cfg?.enabled ? ' Connecte-toi avant le défi de demain pour y être et garder ta série.' : ''}</p>${d.leaderboard ? dailyBoard(d.leaderboard, null, 3) : ''}`}

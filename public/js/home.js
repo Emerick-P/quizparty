@@ -5,7 +5,7 @@
 // =====================================================================  accueil et salon : pages et panneaux
 // Sur téléphone, le salon garde l'essentiel à l'écran ; le choix du jeu s'ouvre en page, le reste en panneau du bas.
 // Sur ordinateur (1000 px et plus), salon sur trois colonnes, et le choix du jeu s'ouvre en fenêtre.
-const SHARE_NOTE = '🔒 <b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.';
+const SHARE_NOTE = '<b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.';
 const WIDE_MQ = matchMedia('(min-width: 1000px)');
 const wide = () => WIDE_MQ.matches;
 WIDE_MQ.addEventListener?.('change', () => render());
@@ -82,11 +82,11 @@ function playersList(host) {
           ${state.players.map((p) => `
             <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
               ${avatar(p.name)}
-              ${p.account ? `<button class="pname pstats" data-action="pstats" data-id="${p.id}" aria-label="Stats de ${esc(p.name)}">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''} <span class="pstats-ico" aria-hidden="true">📊</span></button>`
+              ${p.account ? `<button class="pname pstats" data-action="pstats" data-id="${p.id}" aria-label="Stats de ${esc(p.name)}">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''} <span class="pstats-ico">${ico('chart')}</span></button>`
                 : `<span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>`}
               ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
               ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
-              ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
+              ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">${ico('x')}</button>` : ''}
             </li>`).join('')}
         </ul>`;
 }
@@ -111,7 +111,7 @@ const SHEETS = {
     <ol class="sh-steps">
       <li><b>Crée un salon</b> sur ton téléphone.</li>
       <li>Sur la télé (son navigateur, un PC branché en HDMI, une console…), ouvre <span class="tv-url">${esc(location.host)}/tv</span> : un code à 4 chiffres s’affiche.</li>
-      <li>Dans le salon, touche <b>📺 Sur la télé</b> et tape ce code.</li>
+      <li>Dans le salon, touche <b>Sur la télé</b> et tape ce code.</li>
     </ol>
     <p class="sh-note">La télé affiche les questions, les images et les scores ; chacun répond sur son téléphone, l’hôte aussi. Sans télé, tout se joue sur les téléphones.</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
@@ -125,7 +125,7 @@ const SHEETS = {
   players: { phase: 'lobby', render: () => ({ title: `Joueurs · ${state.players.length}`, body: playersList(isHost()) }) },
   steam: { phase: 'lobby', render: () => ({ title: 'Ton Steam', body: steamCard() }) },
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
-  note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
+  note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^<b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
   // Fenêtre au-dessus du Profil (pas une page) : « Valider » ou ✕ ramène au Profil
@@ -134,17 +134,17 @@ const SHEETS = {
   stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
-    <button class="btn" data-action="sheet" data-value="account">👤 Profil</button>
-    <button class="btn" data-action="sheet" data-value="players">👥 Joueurs (${state.players.length})</button>
-    ${state.gamesPlayed ? '<button class="btn" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
-    <button class="btn" data-action="sheet" data-value="steam">🎮 Lier mon Steam</button>
-    <button class="btn" data-action="propose">💡 Proposer une question</button>` }) },
+    <button class="btn" data-action="sheet" data-value="account">${ico('user')} Profil</button>
+    <button class="btn" data-action="sheet" data-value="players">${ico('users')} Joueurs (${state.players.length})</button>
+    ${state.gamesPlayed ? `<button class="btn" data-action="sheet" data-value="scores">${ico('trophy')} Score global</button>` : ''}
+    <button class="btn" data-action="sheet" data-value="steam">${ico('gamepad')} Lier mon Steam</button>
+    <button class="btn" data-action="propose">${ico('bulb')} Proposer une question</button>` }) },
 };
 
 /** Bloc « Compte » du profil : connexion facultative (Discord, Google), ou compte connecté. */
-const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
+const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? ico('gamepad') : 'G'}</span>`;
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
-const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
+const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">${ico('user')} Se connecter</button>` : '');
 
 /** Fenêtre « Image de profil » : galerie maison (emoji + couleur), photos des comptes reliés, initiale.
  *  Chaque choix est enregistré tout de suite ; « Valider » referme la fenêtre. */

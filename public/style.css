@@ -80,7 +80,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .brand { text-align: center; margin: 8vh 0 12px; }
 .logo {
   font-family: 'Press Start 2P', var(--display); font-size: clamp(1.6rem, 8vw, 2.4rem); line-height: 1.3;
-  text-shadow: 4px 4px 0 #5a2ea6;
+ 
 }
 .logo b { color: var(--accent); font-weight: 400; display: block; }
 .logo::before { content: '▶ PRESS START'; display: block; font-size: .7rem; color: var(--muted); text-shadow: none; margin-bottom: 18px; animation: blink 1.1s steps(2) infinite; }
@@ -95,12 +95,12 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .85rem; }
 .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
 .row { display: flex; gap: 10px; }
-.code-input { text-transform: uppercase; letter-spacing: 6px; text-align: center; font-family: var(--display); font-weight: 600; flex: 1; min-width: 0; }
+.code-input { letter-spacing: 6px; text-align: center; font-family: var(--display); font-weight: 600; flex: 1; min-width: 0; }
 
 /* ---------- salon */
 .top { display: flex; justify-content: space-between; align-items: center; }
 .code-card { text-align: center; padding: 8px 0 4px; }
-.code-card .label { color: var(--muted); font-size: .85rem; text-transform: uppercase; letter-spacing: 2px; }
+.code-card .label { color: var(--muted); font-size: .85rem; letter-spacing: 2px; }
 .code { font-family: var(--display); font-size: 3.6rem; font-weight: 700; letter-spacing: 10px; color: var(--accent); margin: 2px 0 8px; padding-left: 10px; }
 .players { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .players li { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.2); border-radius: 12px; padding: 8px; min-width: 0; }
@@ -193,7 +193,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .chip.me .cname { color: var(--accent); }
 .chip.wait { opacity: .6; }
 .chip.off { opacity: .35; }
-.chip .badge { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 800; flex: none; }
+.chip .badge { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: .7rem; font-weight: 700; flex: none; }
 .chip.answered { border-color: rgba(255,255,255,.35); }
 .chip.answered .badge { background: #fff; color: var(--bg); }
 .chip.found { background: rgba(61,220,132,.18); border-color: var(--good); }
@@ -298,7 +298,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .cover-meta .val { font-family: var(--display); font-weight: 700; font-size: 1.5rem; line-height: 1.15; color: var(--accent); }
 .cover-meta .credit { font-size: .72rem; color: var(--muted); margin-top: 8px; }
 .cover-meta .credit a, .credits a { color: inherit; }
-.mode.off small { font-style: italic; }
+.mode.off small { }
 .link.danger { color: var(--bad); font-size: .85rem; }
 .credits { font-size: .72rem; color: var(--muted); text-align: center; margin-top: auto; padding-top: 16px; }
 @media (min-width: 560px) {
@@ -403,7 +403,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
   display: grid; place-items: center;
   background: #f4f1ff; color: #14102a; border: 0; border-radius: 5px;
   font-family: var(--display); font-weight: 700; font-size: clamp(1rem, 5.2vw, 1.45rem); line-height: 1;
-  text-transform: uppercase; transition: background .15s;
+  transition: background .15s;
 }
 .cw-cell small {
   position: absolute; top: 2px; left: 3px; font-family: var(--body);
@@ -419,7 +419,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 /* Saisie du mot : reste visible en haut quand le clavier du téléphone est ouvert */
 .cw-entry { position: sticky; top: 0; z-index: 2; display: flex; flex-direction: column; gap: 8px; padding: 6px 0; background: var(--bg); }
 .cw-entry .cw-current { position: static; }
-.cw-entry input { font-size: 1.15rem; letter-spacing: .15em; text-transform: uppercase; }
+.cw-entry input { font-size: 1.15rem; letter-spacing: .15em; }
 .cw-cell.typed { background: #fff6cf; color: #8a5a00; }
 .cw-clues { display: grid; gap: 12px; }
 .cw-clues h3 { margin: 0 0 6px; font-family: var(--display); font-size: 1rem; font-weight: 600; color: var(--muted); }
@@ -513,7 +513,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 /* Salon : genres de jeux. Style sobre de base ; l'habillage (vignettes, titre…) est dans theme.css */
 .lb-modes { gap: 14px; }
 .mode-group { display: flex; flex-direction: column; gap: 8px; }
-.mode-group h3 { margin: 0; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); }
+.mode-group h3 { margin: 0; font-size: .8rem; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); }
 .mode-txt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .mode-ico, .lobby-logo, .lobby-count, .cur-mode .mode-ico { display: none; }
 .cur-mode b { font-family: var(--display); color: var(--accent); font-size: 1.1rem; }
@@ -527,7 +527,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .mix-part:disabled { cursor: default; }
 
 /* ---- Pause et retours de l'hôte (⚑ Signaler) ---- */
-.report-btn .count { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; margin-left: 4px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 800; }
+.report-btn .count { display: inline-grid; place-items: center; min-width: 1.4em; height: 1.4em; margin-left: 4px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); font-size: .75rem; font-weight: 700; }
 .pause-overlay {
   position: fixed; inset: 0; z-index: 9; display: grid; place-items: center; padding: 16px;
   background: rgba(10, 6, 30, .78); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
@@ -610,7 +610,7 @@ body.propose-on { overflow: hidden; }
 .steam-help h3 { margin: 6px 0 0; font-size: 1rem; }
 .steam-help .mock { background: #171d25; color: #c7d5e0; border-radius: 8px; padding: 10px; font-size: .85rem; display: flex; flex-direction: column; gap: 6px; }
 .steam-help .mock .hl { outline: 2px solid #ffcf3f; outline-offset: 2px; border-radius: 3px; color: #fff; }
-.steam-help .mock-bar { display: flex; gap: 12px; flex-wrap: wrap; color: #8f98a0; text-transform: uppercase; font-size: .75rem; letter-spacing: .04em; }
+.steam-help .mock-bar { display: flex; gap: 12px; flex-wrap: wrap; color: #8f98a0; font-size: .75rem; letter-spacing: .04em; }
 .steam-help .mock-menu { display: flex; flex-direction: column; gap: 4px; background: #3d4450; padding: 6px 8px; border-radius: 4px; width: max-content; max-width: 100%; }
 .steam-help .mock-panel { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #23262e; padding: 8px; border-radius: 4px; }
 .steam-help .mock-panel b { font-size: 1.2rem; letter-spacing: .05em; }

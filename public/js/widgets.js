@@ -24,10 +24,10 @@ const PLAYER_TYPES = [
 
 function reportButton() {
   const n = state.round?.reported || 0;
-  return `<button class="btn small ghost report-btn" data-action="pause" title="Mettre en pause et signaler un souci sur cette question">⚑ Signaler${n ? ` <span class="count">${n}</span>` : ''}</button>`;
+  return `<button class="btn small ghost report-btn" data-action="pause" title="Mettre en pause et signaler un souci sur cette question">${ico('flag')} Signaler${n ? ` <span class="count">${n}</span>` : ''}</button>`;
 }
 /** Correction, joueur qui n'est pas l'hôte : son bouton ⚑ (sans pause). Pas pendant la question : pas de place perdue. */
-const playerBar = (extra = '') => (state.phase === 'end' ? '' : `<div class="host-bar player-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button></div>`);
+const playerBar = (extra = '') => (state.phase === 'end' ? '' : `<div class="host-bar player-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">${ico('flag')} Signaler</button></div>`);
 
 /** Manche à réponse tapée : on peut demander d'accepter une autre écriture. */
 function typedRound(r) {
@@ -52,7 +52,7 @@ function pauseOverlay() {
   if (report.pausedAt !== p.at) { report.pausedAt = p.at; report.type = null; }
   if (!isHost()) {
     return `<div class="pause-overlay"><div class="pause-card card">
-      <div class="pause-icon">⏸</div>
+      <div class="pause-icon">${ico('pause')}</div>
       <h2>Pause</h2>
       <p class="muted">${esc(p.by || "L'hôte")} signale un souci sur cette question. Le chrono reprendra au même endroit pour tout le monde.</p>
     </div></div>`;
@@ -73,7 +73,7 @@ function reportForm(r, paused) {
   if (report.type && !types.some(([id]) => id === report.type)) report.type = null;
   const picks = report.type === 'accept' ? missedAnswers() : [];
   return `<div class="pause-overlay ${paused ? '' : 'flag-overlay'}"><form class="pause-card card report" onsubmit="return false">
-    <h2>${paused ? '⏸ Partie en pause' : '⚑ Signaler un souci'}</h2>
+    <h2>${paused ? 'Partie en pause' : 'Signaler un souci'}</h2>
     <p class="muted small">${paused ? 'Le chrono est figé pour tout le monde. ' : 'La partie continue pendant ce temps. '}Qu'est-ce qui ne va pas avec cette question ?</p>
     <div class="report-types">${types.map(([id, label]) => `<button type="button" class="rchip ${report.type === id ? 'sel' : ''}" data-action="reportType" data-value="${id}">${label}</button>`).join('')}</div>
     <div class="report-fields" ${report.type ? '' : 'hidden'}>
@@ -211,7 +211,7 @@ function globalBoard() {
             <li class="${p.id === state.you ? 'me' : ''} ${p.connected ? '' : 'off'}">
               <span class="pos">${i > 0 && p.total === ranked[i - 1].total ? '' : i + 1}</span>${avatar(p.name)}
               <span class="grow">${esc(p.name)}</span>
-              ${p.wins ? `<span class="wins" title="Parties gagnées">🏆 ${p.wins}</span>` : ''}
+              ${p.wins ? `<span class="wins" title="Parties gagnées">${ico('trophy')} ${p.wins}</span>` : ''}
               <span class="pts">${p.total}</span>
             </li>`).join('')}
         </ul>

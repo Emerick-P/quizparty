@@ -37,7 +37,7 @@ const pwa = { prompt: null, installed: false, wake: null };
 if ('serviceWorker' in navigator && !SCREEN) navigator.serviceWorker.register('/sw.js').catch(() => {});
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); pwa.prompt = e; render(); });
 const INSTALLED_KEY = 'quizparty:installed';
-const INSTALLED_MSG = '📲 Installation lancée : QuizParty apparaîtra sur ton écran d’accueil dans quelques secondes';
+const INSTALLED_MSG = 'Installation lancée : QuizParty apparaîtra sur ton écran d’accueil dans quelques secondes';
 addEventListener('appinstalled', () => {
   pwa.prompt = null;
   let already = false;
@@ -59,10 +59,10 @@ navigator.getInstalledRelatedApps?.().then((apps) => { if (apps?.length) { pwa.i
  */
 function installCard() {
   if (STANDALONE || SCREEN) return '';
-  if (!TOUCH) return '<button class="chip-btn" data-action="sheet" data-value="getapp">📱 L’app sur ton téléphone</button>';
-  if (appInstalled() && !pwa.prompt) return '<button class="chip-btn" data-action="sheet" data-value="getapp">✓ App installée</button>';
-  if (pwa.prompt) return '<button class="chip-btn" data-action="install">📲 Installer l’app</button>';
-  return '<button class="chip-btn" data-action="sheet" data-value="getapp">📲 Installer l’app</button>';
+  if (!TOUCH) return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('phone')} L’app sur ton téléphone</button>`;
+  if (appInstalled() && !pwa.prompt) return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('check')} App installée</button>`;
+  if (pwa.prompt) return `<button class="chip-btn" data-action="install">${ico('download')} Installer l’app</button>`;
+  return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('download')} Installer l’app</button>`;
 }
 /** Fenêtre « L'app sur ton téléphone » (ordinateur : QR code ; téléphone : la marche à suivre). */
 function getAppBody() {
@@ -73,7 +73,7 @@ function getAppBody() {
     <p class="sh-note">Sinon, ouvre <span class="tv-url">${host}</span> dans le navigateur de ton téléphone. L’app est gratuite, sans store, et se met à jour toute seule.</p>`;
   if (appInstalled() && !pwa.prompt) return '<p class="sh-note big">✓ L’app est déjà installée sur ce téléphone : ouvre-la depuis l’icône <b>QP</b> de ton écran d’accueil.</p>';
   if (pwa.prompt) return `<p class="sh-note big">QuizParty en plein écran, avec son icône sur ton écran d’accueil. Gratuit, sans store.</p>
-    <button class="btn primary big" data-action="install">📲 Installer l’app</button>`;
+    <button class="btn primary big" data-action="install">${ico('download')} Installer l’app</button>`;
   if (IOS) return `<ol class="sh-steps"><li>Dans <b>Safari</b>, touche <b>Partager</b> <span aria-hidden="true">⬆︎</span> (en bas de l’écran).</li><li>Choisis <b>« Sur l’écran d’accueil »</b>.</li></ol>
     <p class="sh-note">QuizParty s’ouvrira ensuite en plein écran, comme une app. Depuis Chrome ou un autre navigateur sur iPhone, ouvre d’abord la page dans Safari.</p>`;
   return `<ol class="sh-steps"><li>Ouvre le menu <b>⋮</b> de ton navigateur (en haut à droite).</li><li>Touche <b>« Installer l’application »</b> ou <b>« Ajouter à l’écran d’accueil »</b>.</li></ol>

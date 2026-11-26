@@ -45,10 +45,10 @@ function menuBody() {
   <div class="mn-head">${myAvatar(name)}
     <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')}` : 'Invité'}</small></div></div>
   <nav class="mn" role="menu">
-    ${item('👤', 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
-    ${u ? item('📊', 'Mes stats', 'data-action="mystats" role="menuitem"') : item('📊', 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
-    ${item('👥', 'Amis', 'disabled role="menuitem"', 'Bientôt')}
-    ${item('🎨', 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
+    ${item(ico('user'), 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
+    ${u ? item(ico('chart'), 'Mes stats', 'data-action="mystats" role="menuitem"') : item(ico('chart'), 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
+    ${item(ico('users'), 'Amis', 'disabled role="menuitem"', 'Bientôt')}
+    ${item(ico('palette'), 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
   </nav>
   <div class="mn-row"><span>Thème</span>${themeToggle()}</div>
   ${u ? `<div class="mn-sep"></div>${item('⎋', 'Se déconnecter', 'data-action="logout" role="menuitem"').replace('mn-item', 'mn-item mn-out')}` : ''}`;
@@ -71,7 +71,7 @@ function sheetHtml(name, under) {
   const page = def.page;
   return `
   <section class="sh ${page ? 'sh-page' : ''} ${under ? 'sh-under' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${name}"${name === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
-    <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
+    <div class="sh-head">${page ? `<button class="sh-back" data-action="sheetclose" aria-label="Retour">${ico('back')}</button>` : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
     <div class="sh-body">${body}</div>
   </section>`;
 }

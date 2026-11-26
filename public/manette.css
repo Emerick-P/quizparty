@@ -18,13 +18,13 @@
 .tv-url { color: var(--accent-text); font-weight: 700; }
 .tv-opt .row { display: flex; gap: 8px; }
 #tv-pin { flex: 1; min-width: 0; background: var(--deep); color: var(--text); border: 2px solid var(--line); border-radius: 6px; padding: 10px; text-align: center;
-  font-family: var(--display); font-weight: 800; font-size: 2rem; letter-spacing: .3em; }
+  font-family: var(--display); font-weight: 700; font-size: 2rem; letter-spacing: .3em; }
 #tv-pin:focus { outline: none; border-color: var(--accent); }
 
 /* ---- manette : réponses en grand */
 .pad-screen { gap: 12px; min-height: 100dvh; }
 .pad-kind { color: var(--muted); font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin-right: auto; margin-left: 10px; }
-.pad-screen .timer { font-style: italic; font-weight: 800; font-size: 2.3rem; color: var(--accent-text); }
+.pad-screen .timer { font-weight: 700; font-size: 2.3rem; color: var(--accent-text); }
 .pad-screen .timer.urgent { color: var(--bad); }
 .tv-hint { text-align: center; color: var(--muted); font-size: .9rem; margin: 0; }
 .pad-unit { text-align: center; margin: 0; font-weight: 600; }
@@ -34,14 +34,14 @@
 .pad-choices .choices.n2 { grid-template-rows: 1fr; grid-template-columns: 1fr; }
 .pad-choices .choice, .pad-choices .choices.compact:not(.reveal) .choice { min-height: 0; flex-direction: column; justify-content: center; text-align: center; gap: 10px; padding: 12px;
   border-radius: 10px; font-family: var(--display); font-weight: 700; font-size: 1.25rem; line-height: 1.1; box-shadow: 0 6px 0 rgba(0, 0, 0, .35); }
-.pad-choices .choice .shape { font-size: 3.4rem; line-height: 1; }
+.pad-choices .choice .shape { width: 64px; height: 64px; border-radius: 12px; font-size: 2rem; line-height: 1; }
 .pad-choices .choices.n2 .choice { font-size: 2.2rem; }
-.pad-choices .choice.picked { outline: 5px solid #fff; outline-offset: -5px; transform: translateY(4px); box-shadow: 0 2px 0 rgba(0, 0, 0, .35); opacity: 1; }
+.pad-choices .choice.picked { outline: 4px solid var(--text); outline-offset: -4px; transform: translateY(3px); box-shadow: 0 1px 0 var(--kc); opacity: 1; }
 .pad-choices .choice.dim { opacity: .25; }
 .pad-sent { text-align: center; background: var(--surf); border-radius: 6px; padding: 10px; margin: 0; font-weight: 600; }
 .pad-me { display: flex; align-items: center; gap: 10px; background: var(--surf); border-radius: 6px; padding: 8px 12px; font-weight: 600; }
 .pad-me .avatar { width: 30px; height: 30px; }
-.pad-me b { margin-left: auto; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.5rem; }
+.pad-me b { margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 1.5rem; }
 #app.pad-mode .result { font-size: 2.4rem; padding: 28px 14px; }
 
 /* ---- app installable (accueil) */
@@ -65,7 +65,7 @@
   #app.pad-mode .result { font-size: 1.8rem; padding: 12px; }
   .pad-screen .timer { font-size: 1.8rem; }
   .pad-choices .choices, .pad-choices .choices.compact { gap: 10px; }
-  .pad-choices .choice .shape { font-size: 1.9rem; }
+  .pad-choices .choice .shape { width: 44px; height: 44px; font-size: 1.4rem; }
   .pad-me, .pad-sent { padding: 6px 12px; }
   .tv-hint { display: none; }
 }

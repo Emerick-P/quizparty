@@ -52,7 +52,7 @@ function statsBody() {
   const s = statsUi.data || {};
   const me = statsUi.who === 'me';
   if (!s.answers && !s.games) {
-    return `<div class="st-empty"><span aria-hidden="true">📊</span><p>${me ? 'Pas encore de stats : elles commencent à ta première partie finie, connecté à ton compte.' : 'Pas encore de partie finie avec son compte.'}</p></div>`;
+    return `<div class="st-empty">${ico('chart')}<p>${me ? 'Pas encore de stats : elles commencent à ta première partie finie, connecté à ton compte.' : 'Pas encore de partie finie avec son compte.'}</p></div>`;
   }
   const who = statsUi.person || {};
   const face = statsUi.who === 'me' ? myAvatar(who.name) : avatar(who.name || '?');
@@ -73,8 +73,8 @@ function statsBody() {
     </div>
     <div class="st-col st-recs-col"><h3 class="st-h">Records</h3>
     <ul class="st-recs">
-      <li><span aria-hidden="true">🔥</span><div><b>${s.streak ?? 0}</b><small>bonnes réponses d’affilée</small></div></li>
-      <li><span aria-hidden="true">⚡</span><div><b>${s.fastest ? secs(s.fastest.ms) : '–'}</b><small>${s.fastest?.game ? `réponse juste la plus rapide, sur ${esc(s.fastest.game)}` : 'réponse juste la plus rapide'}</small></div></li>
+      <li>${ico('flame')}<div><b>${s.streak ?? 0}</b><small>bonnes réponses d’affilée</small></div></li>
+      <li>${ico('zap')}<div><b>${s.fastest ? secs(s.fastest.ms) : '–'}</b><small>${s.fastest?.game ? `réponse juste la plus rapide, sur ${esc(s.fastest.game)}` : 'réponse juste la plus rapide'}</small></div></li>
     </ul></div>`;
   const modes = (s.modes || []).length ? `<div class="st-col st-modes-col"><h3 class="st-h">Réussite par jeu</h3><ul class="st-modes">${s.modes.map((m) => `
       <li style="--mc:${modeArt(m.mode)[1]}"><span class="st-mi" aria-hidden="true">${modeArt(m.mode)[0]}</span>

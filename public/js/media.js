@@ -128,9 +128,9 @@ function setVolume(v) {
   store.set(VOLUME_KEY, v);
   if (sfx.el && sfx.el.src !== SILENT_MP3) sfx.el.volume = volumeGain(v);
   const icon = $('[data-vol-icon]');
-  if (icon) icon.textContent = volumeIcon(v);
+  if (icon) icon.innerHTML = volumeIcon(v);
 }
-const volumeIcon = (v) => (v === 0 ? '🔇' : v < 40 ? '🔈' : v < 75 ? '🔉' : '🔊');
+const volumeIcon = (v) => ico(v === 0 ? 'vol0' : v < 40 ? 'vol1' : v < 75 ? 'vol2' : 'vol3');
 
 function audioEl() {
   if (!sfx.el) {

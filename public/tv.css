@@ -17,8 +17,8 @@ html.tv .host-bar, html.tv .sound-vol, html.tv .propose-link, html.tv .proposer-
 .tv-sub { color: var(--muted); font-size: 2.4rem; }
 .tv-label { font-size: 1.6rem; color: var(--muted); }
 .tv-digits { display: flex; gap: 18px; }
-.tv-digits span { background: #fff; color: var(--accent-ink); font-family: var(--display); font-style: italic; font-weight: 800; font-size: 7rem; width: 120px; line-height: 1.15;
-  border-radius: 6px; transform: skewX(-6deg); box-shadow: 8px 8px 0 var(--ink); }
+.tv-digits span { background: var(--lime); color: var(--lime-ink); font-family: var(--mono); font-weight: 700; font-size: 7rem; width: 120px; line-height: 1.15;
+  border-radius: 6px; box-shadow: none; }
 .tv-steps { font-size: 1.5rem; line-height: 1.5; margin: 0; }
 .tv-steps b { color: var(--accent-text); }
 
@@ -27,15 +27,15 @@ html.tv .host-bar, html.tv .sound-vol, html.tv .propose-link, html.tv .proposer-
 .tv-top .logo { font-size: 2.4rem; }
 .tv-site { margin-left: auto; color: var(--muted); font-family: var(--display); font-weight: 700; font-size: 1.4rem; }
 .tv-lob { flex: 1; display: grid; grid-template-columns: 500px 1fr; gap: 44px; min-height: 0; }
-.tv-code { background: #fff; color: var(--accent-ink); border-radius: 6px; transform: skewX(-6deg); box-shadow: 10px 10px 0 var(--ink); padding: 26px 34px;
+.tv-code { background: var(--lime); color: var(--lime-ink); border-radius: 6px 6px var(--radius) var(--radius); box-shadow: none; padding: 26px 34px;
   display: flex; flex-direction: column; align-items: center; gap: 12px; align-self: start; }
-.tv-code > * { transform: skewX(6deg); }
-.tv-code .tv-label { color: var(--ink-soft); font-weight: 600; }
+.tv-code > * { }
+.tv-code .tv-label { color: color-mix(in srgb, var(--lime-ink) 65%, var(--lime)); font-weight: 500; }
 .tv-code .code { font-size: 7.5rem; line-height: .95; letter-spacing: .12em; }
 .tv-join { display: flex; align-items: center; gap: 22px; }
 .tv-qr { width: 150px; height: 150px; }
 .tv-join p { margin: 0; font-size: 1.3rem; line-height: 1.35; }
-.tv-players h2 { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 2.6rem; margin-bottom: 16px; }
+.tv-players h2 { font-family: var(--display); font-weight: 700; font-size: 2.6rem; margin-bottom: 16px; }
 .tv-players h2 span { color: var(--accent-text); }
 .tv-players ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .tv-players li { display: flex; align-items: center; gap: 14px; background: var(--surf); border-radius: 6px; padding: 10px 14px; font-size: 1.6rem; font-weight: 600; min-width: 0; }
@@ -46,26 +46,26 @@ html.tv .host-bar, html.tv .sound-vol, html.tv .propose-link, html.tv .proposer-
 .tv-players li.empty { background: transparent; border: 2px dashed var(--line); color: var(--muted); font-weight: 500; }
 .tv-foot { display: flex; align-items: center; gap: 16px; background: var(--surf); border-radius: 6px; padding: 14px 22px; font-size: 1.4rem; }
 .tv-foot .mode-ico { font-size: 2rem; width: 48px; height: 48px; display: grid; place-items: center; }
-.tv-foot b { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.9rem; }
+.tv-foot b { font-family: var(--display); font-weight: 700; font-size: 1.9rem; }
 .tv-wait { margin-left: auto; color: var(--muted); }
 
 /* ---- question : bandeau, réponses en 2 × 2, joueurs en bas */
 html.tv .screen.has-side { display: flex !important; flex-direction: column; align-items: stretch; }
 html.tv .play { display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0; }
 html.tv .qhead .pill { font-size: 1.7rem; padding: 6px 18px; }
-html.tv .timer { font-size: 4.2rem; line-height: .8; font-style: italic; font-weight: 800; color: var(--accent-text); }
+html.tv .timer { font-size: 4.2rem; line-height: .8; font-weight: 700; color: var(--accent-text); }
 html.tv .timer.urgent { color: var(--bad); }
 html.tv .bar { height: 10px; }
-html.tv .prompt { font-size: 2.9rem; line-height: 1.08; margin: 4px 0; background: #fff; color: var(--accent-ink); border-radius: 6px; padding: 20px 34px;
-  font-style: italic; font-weight: 800; transform: skewX(-4deg); box-shadow: 10px 10px 0 var(--ink); }
+html.tv .prompt { font-size: 2.9rem; line-height: 1.12; margin: 4px 0; background: none; color: var(--text); border-radius: 0; padding: 12px 4px;
+  font-weight: 500; letter-spacing: -.015em; box-shadow: none; }
 html.tv .prompt.small { font-size: 1.7rem; padding: 10px 24px; }
 html.tv .choices { flex: 1; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 0; max-height: 330px; }
 html.tv .choice { font-family: var(--display); font-weight: 700; font-size: 2.2rem; min-height: 0; padding: 0 26px; gap: 18px; border-radius: 8px; }
-html.tv .choice .shape { font-size: 2rem; }
+html.tv .choice .shape { width: 52px; height: 52px; font-size: 1.6rem; }
 html.tv .choices.compact { flex: 0 0 auto; }
 html.tv .choices.compact:not(.reveal) .choice { min-height: 100px; font-size: 2rem; }
 html.tv .choices.n2 .choice { font-size: 3rem; justify-content: center; }
-html.tv .tv-answer { text-align: center; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 2.2rem; color: var(--muted); margin: 6px 0; }
+html.tv .tv-answer { text-align: center; font-family: var(--display); font-weight: 700; font-size: 2.2rem; color: var(--muted); margin: 6px 0; }
 html.tv .roster { margin-top: 0; flex-direction: row; align-items: center; gap: 16px; }
 html.tv .roster-head { order: 2; margin-left: auto; font-family: var(--display); font-weight: 700; font-size: 1.5rem; white-space: nowrap; }
 html.tv .roster ul { flex-wrap: nowrap; overflow: hidden; gap: 10px; }
@@ -86,10 +86,10 @@ html.tv .screen:has(> .card) { display: grid; grid-template-columns: 1fr 440px; 
 html.tv .screen:has(> .card) > * { grid-column: 1; }
 html.tv .screen:has(> .card) > .qhead, html.tv .screen:has(> .card) > .bar { grid-column: 1 / -1; }
 html.tv .screen:has(> .card) > .card { grid-column: 2; grid-row: 3 / span 6; align-self: start; }
-html.tv .card h2 { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 2.2rem; }
+html.tv .card h2 { font-family: var(--display); font-weight: 700; font-size: 2.2rem; }
 html.tv .list li { font-size: 1.5rem; padding: 10px 14px; }
 html.tv .list .avatar { width: 40px; height: 40px; font-size: 1.4rem; }
-html.tv .list .pts { font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.9rem; }
+html.tv .list .pts { font-family: var(--display); font-weight: 700; font-size: 1.9rem; }
 html.tv .list .delta { font-size: 1.3rem; }
 html.tv .choices.reveal { flex: none; grid-template-columns: 1fr; gap: 10px; }
 html.tv .choices.reveal .choice { font-size: 1.8rem; padding: 14px 22px; }
@@ -128,14 +128,14 @@ html.tv .tv-media .shot, html.tv .tv-media figure { max-height: 460px; }
 .tv-unit { text-align: center; font-size: 1.6rem; color: var(--muted); margin: 0; }
 html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
 .tv-q-players { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-.tv-q-count { font-family: var(--display); font-weight: 800; font-style: italic; font-size: 1.9rem; }
+.tv-q-count { font-family: var(--display); font-weight: 700; font-size: 1.9rem; }
 .tv-q-count .dots::after { content: ''; animation: dots 1.4s steps(4) infinite; }
 .tv-q-players ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
 .tvp { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center; background: var(--surf); border-radius: 6px; padding: 8px 12px; border-left: 6px solid transparent; transition: background .2s, border-color .2s; }
 .tvp .avatar { grid-row: 1 / span 2; width: 44px; height: 44px; font-size: 1.5rem; }
 .tvp-name { font-size: 1.45rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tvp-st { grid-column: 2; font-size: 1rem; color: var(--muted); }
-.tvp-pts { grid-row: 1 / span 2; grid-column: 3; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.6rem; }
+.tvp-pts { grid-row: 1 / span 2; grid-column: 3; font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
 .tvp.answered { border-left-color: var(--good); }
 .tvp.answered .tvp-st { color: var(--good); }
 .tvp.found { border-left-color: var(--accent); background: var(--surf-hi); }
@@ -147,3 +147,4 @@ html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
 html.tv .reveal-screen { display: grid; grid-template-columns: minmax(0, 1fr) 440px; column-gap: 40px; align-content: start; }
 html.tv .reveal-screen > .qhead, html.tv .reveal-screen > .bar { grid-column: 1 / -1; }
 html.tv .reveal-screen .rv-main, html.tv .reveal-screen .rv-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+:root[data-theme="light"] .tv-code .code { color: var(--lime-ink); }

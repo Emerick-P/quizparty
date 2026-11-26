@@ -22,11 +22,11 @@ const views = {
       </section>
       <div class="h-tiles">
         ${dailyTile()}
-        <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
+        <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">${ico('swords')}</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
       </div>
       <div class="h-extras">
-        ${TOUCH ? '<button class="chip-btn" data-action="sheet" data-value="tvinfo">📺 Jouer sur la télé</button>' : ''}
-        <button class="chip-btn" data-action="propose">💡 Proposer une question</button>
+        ${TOUCH ? `<button class="chip-btn" data-action="sheet" data-value="tvinfo">${ico('tv')} Jouer sur la télé</button>` : ''}
+        <button class="chip-btn" data-action="propose">${ico('bulb')} Proposer une question</button>
         ${installCard()}
       </div>
       <div class="h-foot">${themeToggle()}</div>
@@ -48,9 +48,9 @@ const views = {
     <main class="screen lobby lobby-m">
       <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
-        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
-        ${host && !state.tv && TOUCH ? '<button class="chip-btn tv-chip" data-action="tvsheet">📺 Sur la télé</button>' : ''}
-        <button class="chip-btn" data-action="sheet" data-value="note">🔒 Entre potes <span aria-hidden="true">ⓘ</span></button>
+        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? `${ico('check')} Code copié` : `${ico('copy')} Copier le code`}</button>
+        ${host && !state.tv && TOUCH ? `<button class="chip-btn tv-chip" data-action="tvsheet">${ico('tv')} Sur la télé</button>` : ''}
+        <button class="chip-btn" data-action="sheet" data-value="note">${ico('lock')} Entre potes</button>
       </div>
       ${state.tv ? tvCard() : ''}
       <button class="lm-players" data-action="sheet" data-value="players" aria-label="Voir les joueurs (${count})">
@@ -62,9 +62,9 @@ const views = {
       </div>
       ${start}
       <nav class="lm-foot">
-        ${state.gamesPlayed ? '<button class="link" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
-        <button class="link" data-action="sheet" data-value="steam">🎮 ${linked ? 'Steam ✓' : 'Mon Steam'}</button>
-        <button class="link" data-action="propose">💡 Proposer</button>
+        ${state.gamesPlayed ? `<button class="link" data-action="sheet" data-value="scores">${ico('trophy')} Score global</button>` : ''}
+        <button class="link" data-action="sheet" data-value="steam">${ico('gamepad')} ${linked ? 'Steam lié' : 'Mon Steam'}</button>
+        <button class="link" data-action="propose">${ico('bulb')} Proposer</button>
       </nav>
     </main>`;
     }
@@ -74,7 +74,7 @@ const views = {
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
-        <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? '✓ Lien copié !' : 'Copier le lien'}</button>
+        <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? 'Lien copié' : 'Copier le lien'}</button>
       </section>
       ${tvCard()}
       <p class="share-note">${SHARE_NOTE}</p>
@@ -154,14 +154,14 @@ const views = {
       </div>`;
     }
     // Écran télé : on n'y répond pas, les champs de saisie deviennent une consigne
-    if (SCREEN && !/class="choices/.test(body)) body = `<p class="tv-answer">📱 Réponds sur ton téléphone${r.tries > 1 ? ` · ${r.tries} essais` : ''}</p>`;
+    if (SCREEN && !/class="choices/.test(body)) body = `<p class="tv-answer">${ico('phone')} Réponds sur ton téléphone${r.tries > 1 ? ` · ${r.tries} essais` : ''}</p>`;
     if (SCREEN) return tvQuestion(r, media);
     if (controller()) return padQuestion(r, body, answered);
     return `
     <main class="screen has-side">
       <div class="play">
       <div class="qhead">
-        <span class="pill">${state.daily ? `📅 n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
+        <span class="pill">${state.daily ? `n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
         <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
@@ -307,7 +307,7 @@ const views = {
       ${SCREEN ? '' : `<div class="rv-top">${banner}${state.daily ? dailyProgress() : ''}</div>`}
       <div class="rv-swipe ${swipe ? 'on' : ''}" data-swipe>
       <div class="rv-main rv-page">
-      ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
+      ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">${ico('tv')} La correction est sur la télé</p>` : `
       ${GUESS_KINDS.includes(r.kind) || r.kind === 'crossword' ? '' : `<p class="prompt small">${esc(r.prompt)}</p>`}
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}`}
@@ -352,7 +352,7 @@ const views = {
     const myPos = ranked.findIndex((p) => p.id === state.you) + 1;
     return `
     <main class="screen">
-      <div class="title">${myPos === 1 ? 'Victoire ! 🏆' : 'Partie terminée'}</div>
+      <div class="title">${myPos === 1 ? 'Victoire' : 'Partie terminée'}</div>
       ${SCREEN ? '<p class="waiting tv-only">L’hôte peut relancer une partie depuis son téléphone</p>' : ''}
       <div class="podium">${step(ranked[1], 2)}${step(ranked[0], 1)}${step(ranked[2], 3)}</div>
       <section class="card">

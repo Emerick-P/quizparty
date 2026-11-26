@@ -11,3 +11,5 @@ data/feedback.jsonl
 # Soumissions enregistrées en local (sans Supabase)
 data/submissions/
 .cap/
+# Sortie de graphify (graphe du code, régénérable)
+graphify-out/

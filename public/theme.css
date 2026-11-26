@@ -1,5 +1,5 @@
 /*
- * Habillage du salon (2026-11-23) : titre, jeux en vignettes de couleur, réglages illustrés.
+ * Mise en page du salon : titre, jeux en vignettes, réglages.
  * Pour revenir à l'ancien graphisme : supprimer (ou commenter) la ligne
  *   <link rel="stylesheet" href="/theme.css">
  * dans public/index.html, puis F5. Rien d'autre ne dépend de ce fichier.
@@ -9,48 +9,29 @@
 .lobby-top { position: relative; min-height: 34px; }
 .lobby-logo {
   display: block; position: absolute; left: 50%; transform: translateX(-50%);
-  font-family: 'Press Start 2P', var(--display); font-size: clamp(.85rem, 3.6vw, 1.15rem); white-space: nowrap;
-  text-shadow: 3px 3px 0 #5a2ea6;
+  font-size: clamp(1rem, 4vw, 1.3rem); white-space: nowrap;
 }
 .lobby-logo b { color: var(--accent); font-weight: 400; }
 .lobby-count { display: inline; font-size: .85rem; font-weight: 600; }
 
 /* ---------- code du salon */
-.lobby .code-card {
-  position: relative; padding: 18px 16px 16px; border-radius: var(--radius);
-  background:
-    linear-gradient(135deg, rgba(255,207,63,.14), rgba(124,92,255,.14)),
-    var(--card);
-  border: 1px solid rgba(255,207,63,.25);
-  box-shadow: 0 10px 40px -18px rgba(255,207,63,.45);
-}
-.lobby .code { text-shadow: 4px 4px 0 #5a2ea6; }
+.lobby .code-card { position: relative; padding: 18px 16px 16px; margin-top: 14px; }
 
 /* ---------- vignettes des jeux */
 .lobby .mode {
   position: relative; overflow: hidden;
   flex-direction: row; align-items: flex-start; gap: 12px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--mc) 16%, transparent), rgba(0,0,0,.18) 70%);
-  border-color: color-mix(in srgb, var(--mc) 28%, transparent);
-  transition: transform .12s, border-color .15s, box-shadow .15s;
-}
-.lobby .mode:not(:disabled):hover { transform: translateY(-2px); border-color: var(--mc); }
-.lobby .mode.sel {
-  border-color: var(--mc);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--mc) 34%, transparent), rgba(0,0,0,.12) 80%);
-  box-shadow: 0 0 0 1px var(--mc), 0 10px 28px -12px var(--mc);
+  transition: background-color .15s var(--ease), outline-color .15s var(--ease);
 }
 .lobby .mode.sel::after {
   content: '✓'; position: absolute; top: 8px; right: 10px;
   width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--mc); color: #14102a; font-weight: 800; font-size: .8rem;
+  font-weight: 700; font-size: .8rem;
 }
-.lobby .mode.off { filter: grayscale(.8); }
+.lobby .mode.off { opacity: .5; }
 .mode-ico {
   display: grid; place-items: center; flex: none;
-  width: 44px; height: 44px; border-radius: 12px; font-size: 1.5rem; line-height: 1;
-  background: color-mix(in srgb, var(--mc) 30%, rgba(0,0,0,.25));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mc) 50%, transparent);
+  width: 44px; height: 44px; border-radius: 10px; font-size: 1.5rem; line-height: 1;
 }
 .lobby .mode b { padding-right: 18px; }
 /* Vignettes compactes : pictogramme au-dessus du nom, 2 colonnes sur téléphone, 3 sur ordinateur */
@@ -66,15 +47,9 @@
 .mode-group h3::after { content: ''; flex: 1; height: 1px; background: var(--card-border); }
 
 /* ---------- réglages */
-.cur-mode { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 14px; background: color-mix(in srgb, var(--mc) 18%, rgba(0,0,0,.2)); }
+.cur-mode { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; }
 .cur-mode .mode-ico { display: grid; width: 52px; height: 52px; font-size: 1.8rem; }
-.lb-settings { border-top: 3px solid var(--mc); }
 
-/* ---------- lancer */
-.lobby .sticky-bottom.primary {
-  background: linear-gradient(180deg, #ffe07a, var(--accent));
-  box-shadow: 0 6px 0 #b8860b, 0 14px 30px -10px rgba(255,207,63,.7);
-}
 
 @media (min-width: 1000px) {
   .lobby .modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }

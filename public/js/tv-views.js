@@ -6,10 +6,10 @@
 /** Salon, côté téléphone : l'hôte branche (ou éteint) la télé ; les autres savent qu'elle est là. */
 const TOUCH = matchMedia('(pointer: coarse)').matches; // téléphone ou tablette : seuls appareils qui servent de manette
 function tvCard() {
-  if (!isHost()) return state.tv ? '<p class="tv-state">📺 La partie s’affiche sur la télé</p>' : '';
+  if (!isHost()) return state.tv ? `<p class="tv-state">${ico('tv')} La partie s’affiche sur la télé</p>` : '';
   if (!state.tv && !TOUCH) return ''; // sur ordinateur, pas de bouton « Afficher sur la télé »
-  if (state.tv) return `<section class="tv-card on"><span>📺 <b>Télé connectée</b> · chacun joue sur son téléphone</span><button class="btn small ghost" data-action="tvoff">Éteindre</button></section>`;
-  return '<button class="btn tv-open" data-action="tvsheet">📺 Afficher sur la télé</button>';
+  if (state.tv) return `<section class="tv-card on"><span>${ico('tv')} <b>Télé connectée</b> · chacun joue sur son téléphone</span><button class="btn small ghost" data-action="tvoff">Éteindre</button></section>`;
+  return `<button class="btn tv-open" data-action="tvsheet">${ico('tv')} Afficher sur la télé</button>`;
 }
 
 /** Feuille « Afficher sur la télé » (hôte, dans le salon). */
@@ -18,7 +18,7 @@ function tvSheet() {
   return `
   <div class="tv-sheet-bg" data-action="tvclose"></div>
   <section class="tv-sheet" role="dialog" aria-modal="true" aria-label="Afficher sur la télé">
-    <div class="tv-sheet-head"><h2>Afficher sur la télé</h2><button class="btn small ghost" data-action="tvclose">✕</button></div>
+    <div class="tv-sheet-head"><h2>Afficher sur la télé</h2><button class="btn small ghost" data-action="tvclose" aria-label="Fermer">${ico('x')}</button></div>
     <div class="tv-opt">
       <b>⌨ Code de l’écran</b>
       <p>Sur la télé, un PC branché en HDMI, une console ou un Fire Stick : ouvre <span class="tv-url">${esc(location.host)}/tv</span>, puis tape ici les 4 chiffres affichés.</p>
@@ -39,7 +39,7 @@ function tvPairView() {
     <div class="logo">Quiz<b>Party</b> <span class="tv-sub">· écran télé</span></div>
     <div class="tv-label">Code de cet écran</div>
     <div class="tv-digits">${digits.map((d) => `<span>${esc(d)}</span>`).join('')}</div>
-    <p class="tv-steps">Sur ton téléphone, dans le salon : <b>📺 Afficher sur la télé</b>, puis tape ce code.<br>Rien à saisir avec la télécommande.</p>
+    <p class="tv-steps">Sur ton téléphone, dans le salon : <b>Afficher sur la télé</b>, puis tape ce code.<br>Rien à saisir avec la télécommande.</p>
     ${fullHint()}
   </main>`;
 }
@@ -103,7 +103,7 @@ function tvQuestion(r, media) {
         ${aboutLine(r)}
         ${guess ? `<h1 class="prompt small">${esc(r.prompt)}</h1>${r.picture ? gamePicture(r.picture) : ''}<div class="tv-media">${media}</div>`
           : `${r.picture ? gamePicture(r.picture) : ''}<h1 class="prompt">${esc(r.prompt)}</h1>${r.kind === 'estimation' && r.unit ? `<p class="tv-unit">Réponse en ${esc(r.unit)}</p>` : ''}`}
-        <p class="tv-answer">📱 ${how}</p>
+        <p class="tv-answer">${ico('phone')} ${how}</p>
       </section>
       <aside class="tv-q-players">
         <div class="tv-q-count">${count}${done >= r.expected ? '' : '<span class="dots"></span>'}</div>
@@ -137,10 +137,10 @@ function padQuestion(r, body, answered) {
       <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
     </div>
     <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
-    <p class="tv-hint">📺 ${watch}</p>
+    <p class="tv-hint">${ico('tv')} ${watch}</p>
     ${r.kind === 'estimation' && r.unit ? `<p class="pad-unit">Réponse en ${esc(r.unit)}</p>` : ''}
     <div class="pad-body ${choice ? 'pad-choices' : ''}">${body}</div>
-    ${answered && choice ? `<p class="pad-sent">✓ Réponse envoyée · ${r.answeredCount} / ${r.expected} ont répondu</p>` : ''}
+    ${answered && choice ? `<p class="pad-sent">${ico('check')} Réponse envoyée · ${r.answeredCount} / ${r.expected} ont répondu</p>` : ''}
     ${me ? `<div class="pad-me">${avatar(me.name)}<span>${esc(me.name)} · ${rank}ᵉ</span><b>${me.score}</b></div>` : ''}
     ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
   </main>`;

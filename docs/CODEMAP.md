@@ -166,10 +166,12 @@ getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
 actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, zoom, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
-### public/js/core.js (83 l.)
+### public/js/core.js (127 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
-app, esc, nf, hue, SHAPES, KIND_LABEL, SCREEN_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
+app, esc, nf, hue, SHAPES, KIND_LABEL, SCREEN_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
+
+ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, hourglass, music, grid, shuffle
 
 MODE_ART : quiz, covers, loading, bande
 

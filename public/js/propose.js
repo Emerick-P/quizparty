@@ -8,7 +8,7 @@
 // Bouton seulement dans le salon (choix du client : ne pas casser le rythme d'une partie).
 const PROPOSE_PHASES = ['lobby', 'end'];
 const proposeButton = (label = 'Une idée de question, de pitch, de son ? Proposer') =>
-  `<button class="btn small ghost propose-btn" data-action="propose">💡 ${esc(label)}</button>`;
+  `<button class="btn small ghost propose-btn" data-action="propose">${ico('bulb')} ${esc(label)}</button>`;
 const proposePanel = () => $('#propose');
 const proposeOpen = () => !proposePanel().hidden;
 function openPropose() {
@@ -34,7 +34,7 @@ function updatePropose() {
   const live = !PROPOSE_PHASES.includes(phase) && !['home', 'loading'].includes(phase);
   const head = $('#propose-live');
   head.hidden = !live;
-  if (live && state.round) head.textContent = state.round.kind === 'crossword' ? '⏱ La grille commence · revenir au jeu' : `⏱ Question ${state.round.index + 1} · revenir au jeu`;
+  if (live && state.round) head.textContent = state.round.kind === 'crossword' ? 'La grille commence · revenir au jeu' : `Question ${state.round.index + 1} · revenir au jeu`;
 }
 actions.propose = openPropose;
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && proposeOpen()) closePropose(); });
@@ -78,7 +78,7 @@ document.addEventListener('submit', (e) => {
       if (r.error) return toast(r.error);
       tv.sheet = false;
       $('#tv-pin').value = '';
-      toast('📺 Télé connectée : la partie s’affiche dessus');
+      toast('Télé connectée : la partie s’affiche dessus');
       render();
     });
   }
