@@ -9,7 +9,7 @@
   --bg: #141517; --bg2: #111214; --card: #1b1d20; --card-border: #26292d; --surf: #212327; --surf-hi: #292c31;
   --deep: #0f1012; --btn: #26292d; --line: #33363c; --glow: #141517; --ink: #0b0c0d; --ink-soft: #6f737a; --tint: #2c2f34;
   --text: #ecedef; --muted: #a6a9af; --accent: #d6f45b; --accent-ink: #14160b; --good: #4fd18b; --bad: #f2555a;
-  --lime: #d6f45b; --lime-ink: #14160b;
+  --lime: #d6f45b; --lime-ink: #14160b; --ring: #d6f45b;
   --c0: #ff6a47; --c1: #4f8cff; --c2: #ffbe2e; --c3: #a46bff;
   --key-mix: 20%; --on-tile: #14160b; --tile: #ecedef; --shadow: #0b0c0d; --accent-text: #d6f45b;
   color-scheme: dark;
@@ -21,8 +21,8 @@
 :root[data-theme="light"] {
   --bg: #f3f2ee; --bg2: #ebeae5; --card: #ffffff; --card-border: #e2e1db; --surf: #ffffff; --surf-hi: #f7f6f2;
   --deep: #e8e7e2; --btn: #e8e7e2; --line: #d6d5cf; --glow: #f3f2ee; --ink: #18181a; --ink-soft: #85868b; --tint: #e8e7e2;
-  --text: #18181a; --muted: #55565b; --accent: #18181a; --accent-ink: #f3f2ee; --good: #127a45; --bad: #d9363b;
-  --c0: #f25a36; --c1: #3a78f0; --c2: #f0a90f; --c3: #8f55f2;
+  --text: #18181a; --muted: #55565b; --accent: #d6f45b; --accent-ink: #14160b; --good: #127a45; --bad: #d9363b;
+  --c0: #f25a36; --c1: #3a78f0; --c2: #f0a90f; --c3: #8f55f2; --ring: #18181a;
   --key-mix: 16%; --on-tile: #18181a; --tile: #ffffff; --shadow: #d4d3cc; --accent-text: #18181a;
   color-scheme: light;
 }
@@ -38,7 +38,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 /* logo et code */
 .lobby-logo, .logo { font-family: var(--display); font-weight: 600; text-shadow: none; font-size: 1.45rem; letter-spacing: -.02em; }
 .lobby-logo b, .logo b { color: var(--accent-text); font-weight: 600; }
-:root[data-theme="light"] .lobby-logo b, :root[data-theme="light"] .logo b { color: var(--ink); }
+:root[data-theme="light"] .lobby-logo b, :root[data-theme="light"] .logo b { color: var(--lime-ink); background: var(--lime); padding: 0 4px; margin-left: 2px; border-radius: 4px; }
 /* étiquette de cartouche : bloc citron (noir en clair), stries au-dessus */
 .lobby .code-card { background: var(--lime); color: var(--lime-ink); border: 0; box-shadow: none; border-radius: 4px 4px var(--radius) var(--radius); position: relative; }
 .lobby .code-card::before { content: ''; position: absolute; left: 12px; right: 12px; top: -14px; height: 8px; border-radius: 2px;
@@ -46,10 +46,6 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 .code-card .label { color: color-mix(in srgb, var(--lime-ink) 65%, var(--lime)); letter-spacing: .04em; font-family: var(--mono); font-weight: 500; font-size: .72rem; }
 .code, .lobby .code { font-family: var(--mono); font-weight: 700; color: var(--lime-ink); text-shadow: none; letter-spacing: .1em; }
 .lobby .code-card .share-btn { background: var(--lime-ink); color: var(--lime); }
-:root[data-theme="light"] .lobby .code-card { background: var(--ink); color: #fff; }
-:root[data-theme="light"] .code-card .label { color: #9a9b9f; }
-:root[data-theme="light"] .code, :root[data-theme="light"] .lobby .code { color: #f3f2ee; }
-:root[data-theme="light"] .lobby .code-card .share-btn { background: var(--lime); color: var(--lime-ink); }
 .share-note { margin: 16px auto 4px; max-width: 640px; text-align: center; color: var(--muted); font-size: .88rem; line-height: 1.45; }
 .share-note b { color: var(--text); font-weight: 600; }
 /* joueurs */
@@ -59,7 +55,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 /* jeux */
 .lobby .mode { background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--radius); box-shadow: none; transform: none !important; }
 .lobby .mode:not(:disabled):hover { background: var(--surf-hi); }
-.lobby .mode.sel { background: var(--surf-hi); color: var(--text); box-shadow: none; outline: 2px solid var(--accent); outline-offset: -2px; }
+.lobby .mode.sel { background: var(--surf-hi); color: var(--text); box-shadow: none; outline: 2px solid var(--ring); outline-offset: -2px; }
 .lobby .mode.sel small { color: var(--muted); }
 .lobby .mode.sel::after { background: var(--accent); color: var(--accent-ink); }
 .lobby .mode b { font-family: var(--display); font-size: 1.1rem; font-weight: 600; }
@@ -110,12 +106,12 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 .field input, .code-input, .est input, .guess input, .report-fields textarea, .cw-entry input, .steam-form input {
   background: var(--deep); border-color: var(--line); color: var(--text); border-radius: var(--r-ctl);
 }
-.field input:focus, .code-input:focus, .est input:focus, .guess input:focus, .report-fields textarea:focus { border-color: var(--accent); }
+.field input:focus, .code-input:focus, .est input:focus, .guess input:focus, .report-fields textarea:focus { border-color: var(--ring); }
 .code-input { font-family: var(--mono); font-weight: 600; letter-spacing: .2em; }
 .players li.off, .list li.off { opacity: .5; }
 .tries i { background: var(--line); }
 .mix-part, .rchip { background: var(--deep); border-color: var(--line); color: var(--muted); }
-.mix-part.sel, .rchip.sel { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.mix-part.sel, .rchip.sel { background: var(--accent); border-color: var(--ring); color: var(--accent-ink); }
 .toast { background: var(--tile); color: var(--on-tile); border-radius: var(--r-ctl); box-shadow: 0 8px 24px rgba(0,0,0,.25); font-weight: 500; }
 .pause-card, .propose-sheet { background: var(--card); color: var(--text); border: 1px solid var(--card-border); border-radius: var(--radius); }
 .cw-cell.miss, .cw-legend .sw.miss { background: var(--line); }
@@ -136,13 +132,15 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 .theme-toggle { display: inline-flex; flex: none; background: var(--deep); border: 1px solid var(--line); border-radius: var(--r-ctl); padding: 3px; }
 .theme-toggle button { border: 0; background: none; color: var(--muted); padding: 5px 12px; border-radius: 7px; font-family: var(--body); font-weight: 500; font-size: .9rem; }
 .theme-toggle button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-.theme-toggle button:focus-visible, .btn:focus-visible, .choice:focus-visible, .mode:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.theme-toggle button:focus-visible, .btn:focus-visible, .choice:focus-visible, .mode:focus-visible { outline: 3px solid var(--ring); outline-offset: 2px; }
 .lobby-end { display: flex; align-items: center; gap: 12px; }
 .home-top { display: flex; justify-content: flex-end; }
 
 /* ---------- thème clair : réglages propres au fond clair */
 :root[data-theme="light"] .btn, :root[data-theme="light"] .btn.ghost { color: var(--text); }
 :root[data-theme="light"] .btn.primary { color: var(--accent-ink); }
+:root[data-theme="light"] .bar-fill { background: #a9cf1f; }
+:root[data-theme="light"] .lobby .code-card::before, :root[data-theme="light"] .lm-code::before { background: repeating-linear-gradient(90deg, #c9c8c1 0 6px, transparent 6px 12px); }
 :root[data-theme="light"] .choice.picked { outline-color: var(--ink); }
 :root[data-theme="light"] .choice.correct { color: #121214; }
 :root[data-theme="light"] .chip { background: #fff; }
@@ -150,8 +148,6 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 :root[data-theme="light"] .chip.answered { border-color: var(--ink); }
 :root[data-theme="light"] .chip.answered .badge { background: var(--ink); color: #fff; }
 :root[data-theme="light"] .list li.me .delta { color: var(--accent-ink); }
-:root[data-theme="light"] .result.good { background: var(--ink); color: var(--lime); }
-:root[data-theme="light"] .step.p1 .block { background: var(--ink); color: var(--lime); }
 :root[data-theme="light"] .step.p2 .block { background: var(--deep); }
 
 /* ---------- mots croisés et son */
@@ -166,5 +162,6 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 
 /* ---------- page Proposer */
 .submit .mode { background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--r-ctl); color: var(--text); }
-.submit .mode.sel { background: var(--surf-hi); color: var(--text); border-color: var(--accent); box-shadow: none; }
+.submit .mode.sel { background: var(--surf-hi); color: var(--text); border-color: var(--ring); box-shadow: none; }
 .submit .field textarea, .submit .field input, .submit .field select { background: var(--deep); border-color: var(--line); border-radius: var(--r-ctl); }
+:root[data-theme="light"] .lobby .code-card .share-btn { color: var(--lime); }

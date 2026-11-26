@@ -19,7 +19,7 @@
 .tv-opt .row { display: flex; gap: 8px; }
 #tv-pin { flex: 1; min-width: 0; background: var(--deep); color: var(--text); border: 2px solid var(--line); border-radius: 6px; padding: 10px; text-align: center;
   font-family: var(--display); font-weight: 700; font-size: 2rem; letter-spacing: .3em; }
-#tv-pin:focus { outline: none; border-color: var(--accent); }
+#tv-pin:focus { outline: none; border-color: var(--ring); }
 
 /* ---- manette : réponses en grand */
 .pad-screen { gap: 12px; min-height: 100dvh; }

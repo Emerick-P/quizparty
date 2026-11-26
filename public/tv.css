@@ -138,7 +138,7 @@ html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
 .tvp-pts { grid-row: 1 / span 2; grid-column: 3; font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
 .tvp.answered { border-left-color: var(--good); }
 .tvp.answered .tvp-st { color: var(--good); }
-.tvp.found { border-left-color: var(--accent); background: var(--surf-hi); }
+.tvp.found { border-left-color: var(--ring); background: var(--surf-hi); }
 .tvp.found .tvp-st { color: var(--accent-text); }
 .tvp.missed { border-left-color: var(--bad); }
 .tvp.missed .tvp-st { color: var(--bad); }
