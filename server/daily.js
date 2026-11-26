@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { Room } from './room.js';
-import { MODES } from './games/index.js';
+import { MODES, KINDS } from './games/index.js';
 import { covers } from './images/index.js';
 import { store } from './store.js';
 import { stats, answerRow } from './stats.js';
@@ -87,7 +87,7 @@ export class Daily {
 
   async load(day) {
     const saved = await store.get('daily_challenges', day).catch((err) => { console.error('[défi] lecture :', err.message); return null; });
-    if (saved?.rounds?.length) return { day, number: dayNumber(day), rounds: saved.rounds };
+    if (saved?.rounds?.length) return { day, number: dayNumber(day), rounds: await this.repair(day, saved) };
     // Questions des derniers défis : pas reposées
     const used = new Set();
     if (hasDb()) {
@@ -107,6 +107,29 @@ export class Daily {
       if (again?.rounds?.length) return { day, number: dayNumber(day), rounds: again.rounds };
     }
     return { day, number: row.number, rounds: row.rounds };
+  }
+
+  /**
+   * Défi déjà tiré qui contient une manche devenue injouable (type de manche supprimé, comme HUD et Écran de
+   * chargement) ou un mode réservé (tiré avant qu'ils soient exclus du défi) : ces manches sont remplacées par
+   * de nouvelles, enregistrées pour que tous les joueurs suivants aient le même défi.
+   */
+  async repair(day, saved) {
+    const bad = (r) => !KINDS[r.kind] || (r.mixPart && !DAILY_PARTS.includes(r.mixPart));
+    const n = saved.rounds.filter(bad).length;
+    if (!n) return saved.rounds;
+    const used = new Set(saved.keys ?? []);
+    let fresh = [];
+    try {
+      fresh = MODES.mix.build(n, used, { mixParts: DAILY_PARTS, mixInput: 'mixed', level: 'easy' }, null);
+    } catch (err) {
+      console.error('[défi] remplacement :', err.message);
+    }
+    const rounds = saved.rounds.flatMap((r) => (bad(r) ? (fresh.length ? [fresh.shift()] : []) : [r]));
+    const row = { ...saved, rounds: JSON.parse(JSON.stringify(rounds)), keys: [...used] };
+    await store.upsert('daily_challenges', row).catch((err) => console.error('[défi] remplacement :', err.message));
+    console.log(`[défi] ${day} : ${n} manche(s) injouable(s) remplacée(s)`);
+    return row.rounds;
   }
 
   /** Résultat d'un compte pour ce jour (null : pas encore joué). */

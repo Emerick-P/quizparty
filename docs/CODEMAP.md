@@ -22,7 +22,7 @@ Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour qu
 
 ROOT, readJson, contentRows, syncContent
 
-### server/daily.js (368 l.)
+### server/daily.js (391 l.)
 Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
 
 DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, EPOCH, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, dayNumber, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, refreshImages, Daily, publicResult, DailyRoom, startDaily, openDaily

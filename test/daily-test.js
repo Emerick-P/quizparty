@@ -271,6 +271,22 @@ try {
   const scores = endC.daily.leaderboard.map((x) => x.score);
   assert.deepEqual(scores, [...scores].sort((a, b) => b - a), 'classement par score');
 
+  // ---- Défi déjà tiré avec des manches devenues injouables (type supprimé, mode réservé) : remplacées
+  await stopServer();
+  const row = T('daily_challenges').find((r) => r.id === day);
+  row.rounds[1] = { kind: 'screen', mixPart: 'loading', prompt: 'Écran de chargement' };
+  row.rounds[4] = { ...row.rounds[4], mixPart: 'sounds' };
+  await startServer();
+  const R = client('Rescapé');
+  await R.connected;
+  assert.ok((await R.emit('daily:start', { name: 'Rescapé' })).ok);
+  const seenR = await play(R);
+  assert.equal(seenR.length, 10, 'toujours 10 manches');
+  assert.ok(seenR.every((x) => !x.startsWith('screen:')), 'plus de manche HUD / chargement');
+  assert.ok(T('daily_challenges').find((r) => r.id === day).rounds.every((r) => r.kind !== 'screen' && r.mixPart !== 'sounds'), 'défi réparé en base');
+  assert.deepEqual(seenR.filter((_, i) => i !== 1 && i !== 4), seenA.filter((_, i) => i !== 1 && i !== 4), 'les autres manches ne changent pas');
+  R.socket.close();
+
   for (const c of [A, B, G, X, C]) c.socket.close();
   console.log('✓ défi du jour : même défi pour tous (et après redémarrage), une tentative, classement, série, partage');
 } catch (err) {

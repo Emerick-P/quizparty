@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { Room } from './room.js';
-import { MODES, MIX_PARTS, allowed, modeList } from './games/index.js';
+import { MODES, KINDS, MIX_PARTS, allowed, modeList } from './games/index.js';
 import { store } from './store.js';
 import { stats } from './stats.js';
 import { DailyRoom, gridText } from './daily.js';
@@ -96,7 +96,7 @@ export class Challenges {
       mode: row.mode,
       modeName: MODES[row.mode]?.name ?? row.mode,
       settings: row.settings ?? {},
-      rounds: row.rounds,
+      rounds: row.rounds.filter((r) => KINDS[r.kind]), // type de manche supprimé depuis : manche retirée
       createdAt: Date.parse(row.created_at) || Date.now(),
       endsAt: Date.parse(row.ends_at),
     };
@@ -107,7 +107,7 @@ export class Challenges {
     const id = cleanCode(code);
     if (id.length !== CODE_LEN) return Promise.resolve(null);
     if (!this.cache.has(id)) {
-      const p = store.get('challenges', id).then((row) => (row?.rounds?.length ? this.shape(row) : null)).catch((err) => {
+      const p = store.get('challenges', id).then((row) => (row?.rounds?.some((r) => KINDS[r.kind]) ? this.shape(row) : null)).catch((err) => {
         console.error('[défis] lecture :', err.message);
         this.cache.delete(id);
         return null;
