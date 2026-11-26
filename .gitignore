@@ -2,8 +2,6 @@ node_modules/
 .env
 .cache/
 # Fichiers bruts du client (non publiés) et sauvegardes locales
-basehud/
-baseloading/
 basesound/
 backup/
 # Retours de l'hôte enregistrés pendant les parties (bouton ⚑ Signaler)

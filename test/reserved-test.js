@@ -1,4 +1,4 @@
-// Contenus réservés (sons, HUD, écrans de chargement : droits non acquis), avec un faux Supabase :
+// Contenus réservés (sons : droits non acquis), avec un faux Supabase :
 // - salon d'un invité ou d'un compte « player » : modes absents de la liste et du Mix, refusés par le serveur ;
 // - salon d'un compte « friend » (ou admin) : modes ouverts à tout le salon, invités compris ;
 // - fichiers : jamais en accès direct, seulement ceux de la partie du salon, avec sa clé ;
@@ -17,7 +17,7 @@ import { DAILY_PARTS } from '../server/daily.js';
 const PORT = 3981;
 const URL = `http://localhost:${PORT}`;
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qp-reserved-'));
-const RESERVED = ['hud', 'loading', 'sounds'];
+const RESERVED = ['sounds'];
 assert.deepEqual([...RESERVED_MODES].sort(), [...RESERVED].sort());
 assert.ok(!DAILY_PARTS.some((id) => RESERVED.includes(id)), 'défi du jour sans modes réservés');
 
@@ -88,13 +88,13 @@ try {
     const { code } = await host.emit('room:create', { name: 'Hôte' });
     const s = await host.waitFor((x) => x.code === code);
     assert.ok(hidden(s), `${host.label} : modes réservés absents`);
-    assert.ok(!/HUD|sons/.test(s.options.modes.find((m) => m.id === 'mix').description), 'description du Mix sans eux');
+    assert.ok(!/sons/.test(s.options.modes.find((m) => m.id === 'mix').description), 'description du Mix sans eux');
     for (const mode of RESERVED) assert.match((await host.emit('room:settings', { mode })).error, /inconnu/, `${mode} refusé`);
     assert.match((await host.emit('room:settings', { mixPart: 'sounds' })).error, /inconnu/, 'pas dans le Mix');
     assert.equal((await host.emit('room:settings', { mode: 'mix', rounds: 20 })).ok, true);
     assert.equal((await host.emit('game:start')).ok, true);
     const q = await host.waitFor((x) => x.phase === 'question');
-    assert.ok(!['sound', 'screen'].includes(q.round.kind));
+    assert.notEqual(q.round.kind, 'sound');
     await host.emit('game:stop');
     await host.emit('room:leave');
   }
@@ -118,7 +118,7 @@ try {
   await F.waitFor((x) => x.phase === 'end' || x.phase === 'lobby');
 
   // ---- L'ami se déconnecte de son compte : retour à un mode ouvert, modes réservés retirés
-  await F.emit('room:settings', { mode: 'hud' });
+  await F.emit('room:settings', { mode: 'sounds' });
   await F.emit('auth:clear');
   const after = await G.waitFor((x) => x.settings.mode === 'quiz');
   assert.ok(hidden(after), 'modes réservés retirés après la déconnexion du compte de l\'hôte');
@@ -138,7 +138,7 @@ try {
   }
   assert.ok(RESERVED.every((id) => friendIds.includes(id)), 'Proposer : modes réservés pour un ami');
   assert.notEqual((await submit('tok-friend-aaaaaaaaaaaaaaaaaaaaaaa')).status, 403, 'proposition réservée acceptée pour un ami');
-  console.log('✓ Proposer : sons, HUD et chargements seulement pour un compte ami/admin');
+  console.log('✓ Proposer : sons seulement pour un compte ami/admin');
 } catch (err) {
   failed = true;
   console.error('✗', err);

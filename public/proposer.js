@@ -12,7 +12,7 @@
 
   /**
    * Jeton du compte connecté (renouvelé s'il expire bientôt), envoyé au serveur : les modes réservés
-   * (sons, HUD, écrans de chargement) ne sont proposés qu'aux comptes au rôle friend/admin.
+   * (sons) ne sont proposés qu'aux comptes au rôle friend/admin.
    */
   async function authHeader() {
     let s = store.get(AUTH_KEY);
@@ -70,17 +70,14 @@
       ${field('2. Les emojis', `<textarea id="f-prompt" class="emojis" maxlength="120" placeholder="🍰 🤥 🔵 🟠"></textarea>`)}
       ${gameField('3. Le jeu')}
       ${infoField('Explication', '(facultatif, pour que les autres comprennent à la correction)')}`,
-    hud: () => `${fileField('image', '2. La capture', 'Une capture en pleine partie, avec l’interface bien visible. On masquera le décor nous-mêmes.')}${gameField('3. Le jeu')}`,
-    loading: () => `${fileField('image', '2. La capture', 'Une capture de l’écran de chargement. On masquera le titre et le logo nous-mêmes.')}${gameField('3. Le jeu')}`,
-    sounds: () => `${fileField('audio', '2. Le son', 'Quelques secondes, sans que le nom du jeu soit prononcé.')}${gameField('3. Le jeu')}
+    sounds: () => `${fileField('2. Le son', 'Quelques secondes, sans que le nom du jeu soit prononcé.')}${gameField('3. Le jeu')}
       ${field('Ce qu’on entend', `<input id="f-info" maxlength="400" placeholder="Ex : la pièce, le cri du Pokémon, le menu…">`, '(facultatif)')}`,
   };
 
-  function fileField(kind, label, hint) {
-    const accept = kind === 'image' ? 'image/jpeg,image/png,image/webp' : 'audio/*';
+  function fileField(label, hint) {
     return `<div class="field"><span>${label}</span>
-      <label class="drop" id="drop"><input type="file" id="f-file" accept="${accept}">
-        <span id="drop-txt">${kind === 'image' ? '📷 Choisir une image' : '🔊 Choisir un son'}</span></label>
+      <label class="drop" id="drop"><input type="file" id="f-file" accept="audio/*">
+        <span id="drop-txt">🔊 Choisir un son</span></label>
       <small class="muted">${hint}</small>
       <div class="preview" id="preview"></div></div>`;
   }
@@ -107,7 +104,7 @@
     $('send').hidden = false;
     showError('');
     const f = $('f-file');
-    if (f) f.addEventListener('change', () => pickFile(f.files[0], opts.modes[id].file));
+    if (f) f.addEventListener('change', () => pickFile(f.files[0]));
   }
 
   function showError(msg) {
@@ -122,33 +119,17 @@
     r.readAsDataURL(blob);
   });
 
-  /** Image trop lourde : réduite à 2560 px de large au plus, en WebP (qualité 0,92). */
-  async function shrink(f) {
-    const img = await createImageBitmap(f);
-    const scale = Math.min(1, 2560 / Math.max(img.width, img.height));
-    const c = document.createElement('canvas');
-    c.width = Math.round(img.width * scale);
-    c.height = Math.round(img.height * scale);
-    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    return new Promise((ok) => c.toBlob(ok, 'image/webp', 0.92));
-  }
-
-  async function pickFile(f, kind) {
+  async function pickFile(f) {
     showError('');
     if (!f) return;
-    let blob = f;
-    if (kind === 'image' && f.size > opts.maxImage * 0.9) {
-      try { blob = await shrink(f); } catch { /* on tente l'envoi tel quel */ }
-    }
-    const max = kind === 'image' ? opts.maxImage : opts.maxAudio;
-    if (blob.size > max) {
+    if (f.size > opts.maxAudio) {
       file = null;
-      return showError(`Fichier trop lourd (${Math.ceil(max / 1048576)} Mo maximum).`);
+      return showError(`Fichier trop lourd (${Math.ceil(opts.maxAudio / 1048576)} Mo maximum).`);
     }
-    file = { dataUrl: await readAsDataUrl(blob), name: f.name };
+    file = { dataUrl: await readAsDataUrl(f), name: f.name };
     $('drop').classList.add('has');
-    $('drop-txt').textContent = `✓ ${f.name} (${(blob.size / 1048576).toFixed(1)} Mo) · changer`;
-    $('preview').innerHTML = kind === 'image' ? `<img alt="" src="${file.dataUrl}">` : `<audio controls src="${file.dataUrl}"></audio>`;
+    $('drop-txt').textContent = `✓ ${f.name} (${(f.size / 1048576).toFixed(1)} Mo) · changer`;
+    $('preview').innerHTML = `<audio controls src="${file.dataUrl}"></audio>`;
   }
 
   const val = (id) => $(id)?.value.trim() ?? '';

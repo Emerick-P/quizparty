@@ -16,6 +16,8 @@ const URL = `http://localhost:${PORT}`;
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qp-submit-'));
 const png = Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), Buffer.alloc(400, 1)]);
 const pngUrl = `data:image/png;base64,${png.toString('base64')}`;
+const mp3 = Buffer.concat([Buffer.from('494433', 'hex'), Buffer.alloc(400, 2)]);
+const mp3Url = `data:audio/mpeg;base64,${mp3.toString('base64')}`;
 
 // ---- 1. Validation pure
 assert.throws(() => parseSubmission({ mode: 'crossword' }), /Choisis un mode/);
@@ -23,8 +25,9 @@ assert.throws(() => parseSubmission({ mode: 'quiz', prompt: 'Q ?' }), /bonne ré
 assert.throws(() => parseSubmission({ mode: 'quiz', prompt: 'Q ?', answer: 'A', wrong: ['a'] }), /identique/);
 assert.throws(() => parseSubmission({ mode: 'vraifaux', prompt: 'X' }), /vrai ou faux/);
 assert.throws(() => parseSubmission({ mode: 'estimation', prompt: 'X', number: 'beaucoup' }), /nombre/);
-assert.throws(() => parseSubmission({ mode: 'hud', game: 'Doom' }), /Ajoute une image/);
-assert.throws(() => parseSubmission({ mode: 'hud', game: 'Doom', file: 'data:image/gif;base64,AAAA' }), /JPG, PNG ou WebP/);
+assert.throws(() => parseSubmission({ mode: 'sounds', game: 'Doom' }), /Ajoute un son/);
+assert.throws(() => parseSubmission({ mode: 'hud', game: 'Doom', file: pngUrl }), /Choisis un mode/); // HUD et chargements supprimés
+assert.throws(() => parseSubmission({ mode: 'loading', game: 'Doom', file: pngUrl }), /Choisis un mode/);
 assert.throws(() => parseSubmission({ mode: 'sounds', game: 'Doom', file: pngUrl }), /MP3/);
 assert.throws(() => parseSubmission({ mode: 'pitch', game: 'Doom' }), /pitch/);
 assert.ok(!('crossword' in SUBMIT_MODES), 'mots croisés exclus');
@@ -60,7 +63,7 @@ try {
   res = await post({ mode: 'quiz', prompt: 'Sans réponse' });
   assert.equal(res.status, 400);
   assert.match((await res.json()).error, /bonne réponse/);
-  res = await post({ mode: 'loading', game: 'Doom', file: pngUrl });
+  res = await post({ mode: 'sounds', game: 'Doom', file: mp3Url });
   assert.equal(res.status, 200);
 
   const rows = fs.readFileSync(path.join(tmp, 'submissions.jsonl'), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
@@ -68,9 +71,9 @@ try {
   assert.equal(rows[0].id, id);
   assert.equal(rows[0].status, 'pending');
   assert.equal(rows[0].author, 'Camille');
-  assert.match(rows[1].file_path, /^loading\/[0-9a-f-]+\.png$/);
-  assert.deepEqual(fs.readFileSync(path.join(tmp, 'files', rows[1].file_path)), png, 'image enregistrée telle quelle');
-  console.log('✓ soumissions enregistrées (local), image comprise');
+  assert.match(rows[1].file_path, /^sounds\/[0-9a-f-]+\.mp3$/);
+  assert.deepEqual(fs.readFileSync(path.join(tmp, 'files', rows[1].file_path)), mp3, 'son enregistré tel quel');
+  console.log('✓ soumissions enregistrées (local), son compris');
 } finally {
   server.kill();
 }

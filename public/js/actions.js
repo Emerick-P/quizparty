@@ -160,7 +160,6 @@ const actions = {
     if (r.error) toast(r.error);
   },
   answer(btn) { answer(Number(btn.dataset.index)); },
-  zoom(el) { zoomShot(el.getAttribute('src')); },
   async ban(btn) {
     if (btn.dataset.confirm !== 'yes') {
       btn.dataset.confirm = 'yes';
@@ -170,7 +169,7 @@ const actions = {
     const kind = state.round?.kind;
     const r = await send('game:ban-cover');
     if (r.error) return toast(r.error);
-    toast(kind === 'screen' ? 'Image retirée des prochaines parties' : kind === 'sound' ? 'Son retiré des prochaines parties' : 'Jeu retiré des prochaines parties');
+    toast(kind === 'sound' ? 'Son retiré des prochaines parties' : 'Jeu retiré des prochaines parties');
   },
   replay() { replaySound(); },
   async pause() { const r = await send('game:pause'); if (r.error) toast(r.error); },

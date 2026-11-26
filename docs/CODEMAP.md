@@ -12,7 +12,7 @@ Images de profil : galerie maison (un emoji sur une couleur), la photo du compte
 
 AVATAR_EMOJIS, AVATAR_HUES, cleanLook, photoOf, defaultLook, lookView
 
-### server/content-sync.js (45 l.)
+### server/content-sync.js (44 l.)
 Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour que le client puisse
 
 ROOT, readJson, contentRows, syncContent
@@ -34,7 +34,7 @@ FEEDBACK_TYPES : accept, wrong, remove, other
 
 feedback : file, add, list
 
-### server/index.js (152 l.)
+### server/index.js (150 l.)
 
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
@@ -44,7 +44,7 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/room.js (992 l.)
+### server/room.js (984 l.)
 ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
@@ -54,7 +54,7 @@ Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
 
-### server/stats.js (176 l.)
+### server/stats.js (175 l.)
 Stats des joueurs connectés (comptes Supabase).
 
 contentIndex, contentIdOf, INPUT_OF_KIND, answerRow, createStats, normalize, computeStats, stats
@@ -69,12 +69,12 @@ Stockage des soumissions des amis et des signalements ⚑ de l'hôte.
 
 ROOT, BUCKET, supabaseBackend, localBackend, createStore, store
 
-### server/submissions.js (163 l.)
+### server/submissions.js (158 l.)
 Formulaire « Proposer » : les amis soumettent du contenu pour tous les modes (sauf mots croisés,
 
-clip, IMAGE_TYPES, AUDIO_TYPES, MAX_IMAGE, MAX_AUDIO, SUBMIT_MODES, knownGames, decodeFile, parseSubmission, limiter, reservedOk, installSubmissions
+clip, AUDIO_TYPES, MAX_AUDIO, SUBMIT_MODES, knownGames, decodeFile, parseSubmission, limiter, reservedOk, installSubmissions
 
-SUBMIT_MODES : quiz, vraifaux, estimation, covers, pitch, emoji, hud, loading, sounds
+SUBMIT_MODES : quiz, vraifaux, estimation, covers, pitch, emoji, sounds
 
 ### server/games/bande.js (438 l.)
 « Ta bande » : questions tirées des profils Steam liés par les joueurs du salon.
@@ -104,27 +104,24 @@ Comparaison d'un titre tapé par un joueur avec les réponses acceptées.
 
 LEADING_ARTICLES, AND, ROMAN, tokensOf, normalize, keys, matches, EDITION, baseTitles, SHORTCUTS, NUMBERED_SUBTITLE, shortTitles, answersFor
 
-### server/games/index.js (707 l.)
+### server/games/index.js (621 l.)
 
 
-KINDS, shuffle, pick, makeQcm, makeTf, LEADING, makeTyped, TYPED, makeEstimation, acceptedAnswers, distractors, gameKey, avoidSkip, remember, buildCovers, coverUnavailable, GAME_BY_SLUG, buildPitches, emojiGame, emojiKey, EMOJI_ITEMS, EMOJI_SERIES_TITLES, EMOJI_SERIES_COUNT, emojiAnswers, buildEmojis, titleKey, buildScreens, screensUnavailable, soundAnswers, PLATFORMS, SOUND_PROMPT, buildSounds, soundsUnavailable, buildCrosswords, MIX_PARTS, QUIZ_PARTS, GUESS_BUILD, FIXED_INPUT, QUIZ_BUILD, spoilers, mentions, spread, MIX_INPUTS, mixPartsOf, buildMix, MODES, RESERVED_MODES, allowed, modeList
+KINDS, shuffle, pick, makeQcm, makeTf, LEADING, makeTyped, TYPED, makeEstimation, acceptedAnswers, distractors, gameKey, avoidSkip, remember, buildCovers, coverUnavailable, GAME_BY_SLUG, buildPitches, emojiGame, emojiKey, EMOJI_ITEMS, EMOJI_SERIES_TITLES, EMOJI_SERIES_COUNT, emojiAnswers, buildEmojis, titleKey, soundAnswers, PLATFORMS, SOUND_PROMPT, buildSounds, soundsUnavailable, buildCrosswords, MIX_PARTS, QUIZ_PARTS, GUESS_BUILD, FIXED_INPUT, QUIZ_BUILD, spoilers, mentions, spread, MIX_INPUTS, mixPartsOf, buildMix, MODES, RESERVED_MODES, allowed, modeList
 
 PLATFORMS : console, store, brand
 
-GUESS_BUILD : covers, pitch, emoji, hud, loading, sounds, bande
+GUESS_BUILD : covers, pitch, emoji, sounds, bande
 
 QUIZ_BUILD : quiz, vraifaux, estimation
 
-MODES : quiz, vraifaux, estimation, covers, pitch, emoji, hud, loading, sounds, crossword, mix, bande
+MODES : quiz, vraifaux, estimation, covers, pitch, emoji, sounds, crossword, mix, bande
 
 ### server/games/pitch.js (28 l.)
 Pitch mal expliqué : le résumé tordu (mais exact) d'un jeu, en une ou deux phrases.
 
 ### server/games/qcm.js (31 l.)
 Question à choix (QCM 4 choix, ou Vrai/Faux à 2 choix).
-
-### server/games/screen.js (29 l.)
-HUD / Écran de chargement : une capture retouchée (indices masqués), il faut trouver le jeu.
 
 ### server/games/sound.js (37 l.)
 Quel jeu fait ce bruit ? : un son court (pièce de Mario, « Hadouken ! »…), il faut trouver le jeu.
@@ -144,31 +141,26 @@ Bibliothèque de jaquettes : fait le lien entre la liste de jeux, un fournisseur
 
 ROOT, EXT, MIME, RETRY_MISSING_AFTER_MS, readJson, writeJson, CoverLibrary, covers
 
-### server/images/screens.js (139 l.)
-Captures d'écran des modes « HUD » et « Écran de chargement ».
-
-ROOT, FILE_RE, readJson, SCREEN_TYPES, ScreenLibrary, screens
-
 ### server/images/sounds.js (141 l.)
 Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (252 l.)
+### public/js/actions.js (251 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
 getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
-actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, zoom, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
+actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
-### public/js/core.js (127 l.)
+### public/js/core.js (125 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
-app, esc, nf, hue, SHAPES, KIND_LABEL, SCREEN_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
+app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
 
-ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, hourglass, music, grid, shuffle
+ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, music, grid, shuffle
 
-MODE_ART : quiz, covers, loading, bande
+MODE_ART : quiz, covers, sounds, bande
 
 store : get, set, del
 
@@ -201,10 +193,10 @@ SHEETS : name, create, join, daily, getapp, tvinfo, games, settings, players, st
 ### public/js/main.js (20 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
 
-### public/js/media.js (254 l.)
-Jaquettes pixelisées, captures, sons (« Quel jeu fait ce bruit ? »).
+### public/js/media.js (235 l.)
+Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 
-images, loadImage, PIX_COLS, PIX_LAST_AT, pixColumns, drawCover, coverFigure, shotFigure, zoomShot, closeZoom, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
+images, loadImage, PIX_COLS, PIX_LAST_AT, pixColumns, drawCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
 ### public/js/nav.js (112 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.
@@ -225,7 +217,7 @@ PROPOSE_PHASES, proposeButton, proposePanel, proposeOpen, openPropose, closeProp
 
 actions : propose
 
-### public/js/render.js (168 l.)
+### public/js/render.js (167 l.)
 Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
@@ -247,7 +239,7 @@ Mode télé : vues de l’écran télé et du téléphone en manette.
 
 TOUCH, tvCard, tvSheet, tvPairView, tvLobbyView, tvQuestion, tvCrossword, padQuestion
 
-### public/js/views.js (378 l.)
+### public/js/views.js (361 l.)
 Écrans de jeu par phase (views[phase]) : salon, décompte, question, correction, podium…
 
 views
@@ -284,5 +276,5 @@ ROOT, PORT, LOCAL, children, findCloudflared, serverIsUp, waitForServer, stopAll
 ### scripts/submissions.js (45 l.)
 Propositions des amis : npm run submissions [-- options]
 
-### public/proposer.js (218 l.)
+### public/proposer.js (199 l.)
 Page « Proposer » : formulaire de soumission des amis (aucune dépendance).

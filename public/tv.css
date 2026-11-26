@@ -93,7 +93,7 @@ html.tv .list .pts { font-family: var(--display); font-weight: 700; font-size: 1
 html.tv .list .delta { font-size: 1.3rem; }
 html.tv .choices.reveal { flex: none; grid-template-columns: 1fr; gap: 10px; }
 html.tv .choices.reveal .choice { font-size: 1.8rem; padding: 14px 22px; }
-html.tv .truth .val, html.tv .cover-meta .val, html.tv .shot-meta .val { font-size: 3rem; }
+html.tv .truth .val, html.tv .cover-meta .val { font-size: 3rem; }
 html.tv .cover-reveal .cover-wrap { height: 300px; }
 html.tv .info { font-size: 1.3rem; }
 html.tv .qhead .muted { font-size: 1.3rem; }
@@ -124,7 +124,7 @@ html.tv body { display: flex; justify-content: center; }
 html.tv .tv-media .cover-wrap { height: 100%; max-height: 460px; }
 html.tv .tv-media .emojis:not(.small) { font-size: 7rem; }
 html.tv .tv-media .pitch { font-size: 2.6rem; }
-html.tv .tv-media .shot, html.tv .tv-media figure { max-height: 460px; }
+html.tv .tv-media figure { max-height: 460px; }
 .tv-unit { text-align: center; font-size: 1.6rem; color: var(--muted); margin: 0; }
 html.tv .tv-q .tv-answer { font-size: 1.7rem; margin: 0; }
 .tv-q-players { display: flex; flex-direction: column; gap: 10px; min-height: 0; }

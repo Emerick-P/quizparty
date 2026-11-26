@@ -20,7 +20,7 @@ import { stats, answerRow } from './stats.js';
 export const DAILY_ROUNDS = 10;
 export const DAILY_DURATION = 15; // secondes par manche (+ temps en plus des manches à taper)
 // Modes du Mix utilisés : pas « Ta bande » (profils Steam du salon) ni les mots croisés (partie entière)
-// Sans les modes réservés (sons, HUD, écrans de chargement : voir RESERVED_MODES), ouverts à tous
+// Sans les modes réservés (sons : voir RESERVED_MODES), ouverts à tous
 export const DAILY_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji'];
 const EPOCH = process.env.DAILY_EPOCH || '2026-11-25'; // défi n° 1
 const NO_REPEAT_DAYS = 30; // une question des 30 derniers défis n'est pas reposée
@@ -186,7 +186,7 @@ export class DailyRoom extends Room {
       if (r.kind === 'estimation') r.absolute = true; // seul : points selon l'écart, pas selon le rang
       return refreshImages(r);
     });
-    this.protectMedia(); // défis déjà enregistrés avec des sons/captures : servis à ce joueur seulement
+    this.protectMedia(); // défis déjà enregistrés avec des sons : servis à ce joueur seulement
     for (const p of this.players.values()) { p.score = 0; p.lastPoints = 0; }
     this.roundIndex = -1;
     this.nextRound();

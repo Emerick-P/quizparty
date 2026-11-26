@@ -10,7 +10,7 @@ import { store } from './store.js';
  *   secrète : aucune clé n'est donnée au navigateur, et ça marche quelle que soit la méthode de signature.
  * - Rôles : colonne « role » de la table profiles (player par défaut, friend, admin), modifiable seulement dans
  *   Supabase. Un admin seul peut accepter une réponse, supprimer une question ou retirer un jeu/une image/un son.
- *   friend et admin ouvrent les modes réservés (sons, HUD, écrans de chargement) au salon dont ils sont l'hôte.
+ *   friend et admin ouvrent les modes réservés (sons) au salon dont ils sont l'hôte.
  *   ADMIN_USER_IDS (identifiants séparés par des virgules) reste possible en secours.
  * - Sans SUPABASE_URL / SUPABASE_SECRET_KEY (PC, tests) : pas de comptes, l'hôte garde ces droits.
  */
@@ -102,7 +102,7 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
         if (row?.role) user.role = row.role;
       }
       user.admin = user.role === 'admin' || admins.has(user.id); // ADMIN_USER_IDS : secours facultatif
-      // Contenus réservés (sons, HUD, écrans de chargement) pour le salon dont il est l'hôte : rôle 'friend' ou admin
+      // Contenus réservés (sons) pour le salon dont il est l'hôte : rôle 'friend' ou admin
       user.reserved = user.admin || user.role === 'friend';
       if (cache.size > 2000) cache.clear();
       cache.set(h, { user, until: Date.now() + CACHE_MS });

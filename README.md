@@ -3,8 +3,8 @@
 Quiz multijoueur en temps réel entre amis. Chacun joue depuis son téléphone ou son ordinateur, dans le navigateur.
 
 - Salons à code de 4 lettres, avec un lien à partager
-- 11 modes : Quiz classique (4 choix ou réponse tapée), Vrai ou faux, Estimation, Jaquette pixelisée, Pitch mal expliqué, Le jeu en emojis, HUD, Écran de chargement, Quel jeu fait ce bruit ?, Mots croisés, Mix
-- Jaquette, Pitch, Emojis, HUD et Écran de chargement : l'hôte choisit le format de réponse dans le salon (« 4 choix » ou « Réponse tapée »)
+- 9 modes : Quiz classique (4 choix ou réponse tapée), Vrai ou faux, Estimation, Jaquette pixelisée, Pitch mal expliqué, Le jeu en emojis, Quel jeu fait ce bruit ?, Mots croisés, Mix
+- Jaquette, Pitch, Emojis et Sons : l'hôte choisit le format de réponse dans le salon (« 4 choix » ou « Réponse tapée »)
 - Réglages de l'hôte : nombre de questions (5 à 20), temps par question (10 à 30 s)
 - Classement après chaque question, podium à la fin
 - Score global du salon : cumul des parties terminées et nombre de victoires, affiché dans le salon et à la fin de chaque partie ; l'hôte peut le remettre à zéro
@@ -71,7 +71,7 @@ Ubuntu + Node + Caddy (HTTPS automatique, WebSocket compris). Node n'écoute que
 
 Commandes utiles sur la VM : `sudo journalctl -u quizparty -f` (logs du jeu), `sudo journalctl -u caddy -n 50` (HTTPS), `sudo systemctl restart quizparty`.
 
-**Contenus réservés** (sons, captures HUD / écrans de chargement, droits non acquis) : le site est ouvert à tous, mais ces modes n'apparaissent que dans les salons dont l'hôte a un compte au rôle `friend` ou `admin` (table `profiles`, colonne `role`, dans Supabase). Leurs fichiers ne sont jamais servis en accès direct : seulement ceux de la partie en cours d'un salon, avec la clé de ce salon.
+**Contenus réservés** (sons, droits non acquis) : le site est ouvert à tous, mais ce mode n'apparaît que dans les salons dont l'hôte a un compte au rôle `friend` ou `admin` (table `profiles`, colonne `role`, dans Supabase). Leurs fichiers ne sont jamais servis en accès direct : seulement ceux de la partie en cours d'un salon, avec la clé de ce salon.
 
 **Depuis ton PC, en une commande (tunnel Cloudflare)**
 1. Une seule fois : `winget install --id Cloudflare.cloudflared` (gratuit, sans compte).
@@ -122,16 +122,6 @@ Séries (`server/data/series.js`) : si la banque n'a qu'un jeu d'une série, le 
 
 Contenu : `server/data/emojis.js` (328 jeux : 99 faciles, 229 difficiles). Une énigme pointe soit vers un jeu de `cover-games.js` (champ `slug`), soit décrit un jeu hors liste (`title`, `year`, `aliases`), qui s'affiche alors sans jaquette. Emojis limités à Unicode 12 pour s'afficher partout. Le mode marche sans clés IGDB. Pour retirer une énigme, supprimer son entrée.
 
-## HUD et Écran de chargement
-
-Deux modes « Quel est ce jeu ? » à partir de captures personnelles. 4 choix ou réponse tapée, mêmes points et même validation stricte des titres que la jaquette (`games/screen.js` réutilise `cover.js`). Un jeu n'apparaît qu'une fois par partie, même s'il a plusieurs captures.
-
-- **HUD** : seule l'interface reste ; le décor est masqué, ainsi que les noms et portraits des personnages et les noms de lieux trop parlants.
-- **Écran de chargement** : l'écran tel quel, avec les noms du jeu, des personnages et des lieux masqués.
-- À la correction, la capture d'origine s'affiche en entier. Toucher l'image l'agrandit (utile sur téléphone).
-
-Les images finales sont dans `data/screens/` (WebP, noms aléatoires pour que l'URL ne trahisse pas le jeu), décrites par `data/screens/screens.json` : jeu (slug de `cover-games.js` ou titre, année et alias), capture d'origine, zones gardées et masquées. Les captures brutes vont dans `basehud/` et `baseloading/` ; Claude les retouche et met à jour `data/screens/`. Le serveur relit `screens.json` à chaud : pas besoin de le relancer quand des images arrivent. L'hôte peut retirer une image en fin de manche (clé `screens` de `data/blacklist.json`), le jeu reste jouable dans les autres modes.
-
 ## Quel jeu fait ce bruit ?
 
 Un son culte (pièce de Mario, « Hadouken ! », alerte de Metal Gear Solid…), il faut trouver le jeu. 4 choix ou réponse tapée, mêmes points et même validation stricte que la jaquette (`games/sound.js` réutilise `cover.js`).
@@ -152,9 +142,9 @@ Test : `node test/sound-test.js` (dans `npm test`).
 
 ## Mix
 
-Le Mix pioche dans les modes que l'hôte coche dans les réglages (tous par défaut) : Quiz classique, Vrai ou faux, Estimation, Jaquette, Pitch mal expliqué, Le jeu en emojis, HUD, Écran de chargement et Quel jeu fait ce bruit ?. Il faut en garder au moins un. Un mode grisé (jaquettes pas encore chargées, aucune capture) est simplement sauté ; si un mode coché manque d'images pour toutes ses manches, le Mix complète avec des questions.
+Le Mix pioche dans les modes que l'hôte coche dans les réglages (tous par défaut) : Quiz classique, Vrai ou faux, Estimation, Jaquette, Pitch mal expliqué, Le jeu en emojis et Quel jeu fait ce bruit ?. Il faut en garder au moins un. Un mode grisé (jaquettes pas encore chargées, aucun son) est simplement sauté ; si un mode coché manque d'images pour toutes ses manches, le Mix complète avec des questions.
 
-- **Répartition** : parts égales entre les modes disponibles, le reste tiré au hasard (10 questions sur 9 modes : 1 de chaque et un mode en a 2 ; 5 questions : 5 modes différents). Les manches sont mélangées sans deux manches du même mode d'affilée. Si un mode manque d'images (peu de captures, toutes déjà vues dans le salon), ses manches vont aux modes qui en ont le moins.
+- **Répartition** : parts égales entre les modes disponibles, le reste tiré au hasard (10 questions sur 7 modes : 1 de chaque et 3 modes en ont 2 ; 5 questions : 5 modes différents). Les manches sont mélangées sans deux manches du même mode d'affilée. Si un mode manque d'images (peu de sons, tous déjà entendus dans le salon), ses manches vont aux modes qui en ont le moins.
 - **Réglages** : « Réponse » (Au hasard / 4 choix / tapée, Au hasard par défaut) s'applique au Quiz et aux modes « Quel est ce jeu ? » ; Vrai ou faux et Estimation ne changent pas. « Au hasard » tire chaque manche en 4 choix ou en réponse tapée, avec au moins une de chaque dans la partie. Réglages du salon : `mixInput` et `mixParts` (le mode seul garde son propre réglage `input`). « Niveau » s'applique au Pitch et aux emojis.
 - **Chrono** : la durée choisie dans le salon pour toutes les manches, avec les mêmes 5 s de plus que dans chaque mode quand on tape (réponse tapée, estimation). Chaque manche garde ses règles (essais, dépixelisation, points).
 - **Pas de doublon** : un jeu n'est à deviner qu'une fois par partie, édition comprise (FF7 et FF7 Remake comptent pour un) ; une question qui cite un jeu à deviner dans la même partie est écartée (elle soufflerait la réponse) ; pas de répétition d'une partie à l'autre dans un salon, comme pour chaque mode.
@@ -204,10 +194,10 @@ server/
   rooms.js        création / accès aux salons, routage des événements
   room.js         moteur de partie (phases, chrono, réponses, scores)
   games/          logique de chaque type de manche (cover.js = jaquettes, fuzzy.js = comparaison des titres tapés)
-  images/         fournisseurs d'images (igdb.js), cache disque, liste noire, captures (screens.js)
+  images/         fournisseurs d'images (igdb.js), cache disque, liste noire, sons (sounds.js)
   data/           banques de questions, liste des jeux à jaquette
 data/blacklist.json  jeux et images retirés
-data/screens/    captures retouchées des modes HUD et Écran de chargement
+data/sounds/     sons du mode « Quel jeu fait ce bruit ? »
 .cache/images/   jaquettes téléchargées (non versionné)
 public/
   index.html, *.css  page unique et habillages (ordre des CSS : voir CLAUDE.md)

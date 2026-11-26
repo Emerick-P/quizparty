@@ -13,7 +13,7 @@ import { SoundLibrary } from '../server/images/sounds.js';
 import { MODES, gameKey, soundAnswers } from '../server/games/index.js';
 import { matches, normalize } from '../server/games/fuzzy.js';
 import { seriesOf } from '../server/data/series.js';
-// Salon dont l'hôte a accès aux modes réservés (sons, HUD, chargements) : voir RESERVED_MODES
+// Salon dont l'hôte a accès aux modes réservés (sons) : voir RESERVED_MODES
 const FRIEND = { reserved: true };
 
 // ------------------------------------------------------------------ contenu réel (data/sounds)

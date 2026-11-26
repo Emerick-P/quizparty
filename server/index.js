@@ -8,7 +8,6 @@ import { Server } from 'socket.io';
 import QRCode from 'qrcode';
 import { RoomManager } from './rooms.js';
 import { covers } from './images/index.js';
-import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { installSubmissions } from './submissions.js';
 import { store } from './store.js';
@@ -106,7 +105,7 @@ app.get('/img/:id', (req, res) => {
   res.sendFile(f.path);
 });
 
-// Captures HUD / Écran de chargement (data/screens/) et sons (data/sounds/) : contenus réservés (droits non acquis).
+// Sons (data/sounds/) : contenus réservés (droits non acquis).
 // Jamais en accès libre : seulement les fichiers de la partie en cours d'un salon, avec sa clé (?r=CODE&k=CLÉ,
 // ajoutés par Room.protectMedia). Pas de cache partagé (proxy, CDN).
 function mediaRoute(kind, lib, type) {
@@ -119,7 +118,6 @@ function mediaRoute(kind, lib, type) {
     res.sendFile(f);
   });
 }
-mediaRoute('shot', screens, 'image/webp');
 mediaRoute('sfx', sounds, 'audio/mpeg');
 
 const rooms = new RoomManager(io, { auth });

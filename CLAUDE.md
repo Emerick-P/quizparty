@@ -59,9 +59,9 @@ Toujours vérifier les deux thèmes (Clair / Obscur), en portrait et en paysage 
   On ne merge et on ne pousse sur `main` qu'avec l'accord du client (seule exception : la tâche nocturne des propositions).
 - La base de travail du client est `D:\Dev\quizparty\quizparty`. Relire son fichier avant de le modifier : il a pu le changer.
 - Aucun secret dans le code : variables d'env, documentées dans `.env.example`.
-- **Contenus réservés** (droits non acquis : sons, captures HUD / écrans de chargement) : modes marqués `reserved: true`
+- **Contenus réservés** (droits non acquis : sons) : modes marqués `reserved: true`
   dans `MODES` (`RESERVED_MODES`). Visibles seulement si l'hôte a le rôle `friend` ou `admin` (`profiles.role`) : filtrés
-  par `allowed()` dans la liste, le Mix et les réglages, absents du Défi du jour. Fichiers `/shot` et `/sfx` jamais
+  par `allowed()` dans la liste, le Mix et les réglages, absents du Défi du jour. Fichiers `/sfx` jamais
   en accès direct : seulement ceux de la partie d'un salon, avec sa clé (`Room.protectMedia`). Tout nouveau contenu
   aux droits douteux suit ce chemin. Plus de code d'accès au site (`ACCESS_CODE` supprimé).
 - Aucun changement visible pour le joueur sans accord du client. Les choix techniques reviennent à Claude.
