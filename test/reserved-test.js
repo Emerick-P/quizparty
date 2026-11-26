@@ -125,6 +125,20 @@ try {
   assert.match((await F.emit('game:start')).ok ? 'ok' : 'x', /ok/);
 
   console.log('✓ Contenus réservés : cachés et refusés sans le rôle, ouverts au salon d\'un ami, fichiers protégés');
+
+  // ---- Page « Proposer » : modes réservés proposés seulement aux comptes friend/admin
+  const bearer = (t) => (t ? { Authorization: `Bearer ${t}` } : {});
+  const options = async (t) => Object.keys((await (await fetch(`${URL}/api/submit/options`, { headers: bearer(t) })).json()).modes);
+  const submit = (t) => fetch(`${URL}/api/submissions`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...bearer(t) }, body: JSON.stringify({ mode: 'sounds', game: 'Doom', file: 'data:audio/mpeg;base64,AAAA' }) });
+  const friendIds = await options('tok-friend-aaaaaaaaaaaaaaaaaaaaaaa');
+  for (const t of [null, 'tok-player-bbbbbbbbbbbbbbbbbbbbbbb', 'tok-inconnu-ccccccccccccccccccccccc']) {
+    const ids = await options(t);
+    assert.ok(ids.includes('quiz') && !ids.some((id) => RESERVED.includes(id)), `Proposer sans modes réservés (${t})`);
+    assert.equal((await submit(t)).status, 403, `proposition réservée refusée (${t})`);
+  }
+  assert.ok(RESERVED.every((id) => friendIds.includes(id)), 'Proposer : modes réservés pour un ami');
+  assert.notEqual((await submit('tok-friend-aaaaaaaaaaaaaaaaaaaaaaa')).status, 403, 'proposition réservée acceptée pour un ami');
+  console.log('✓ Proposer : sons, HUD et chargements seulement pour un compte ami/admin');
 } catch (err) {
   failed = true;
   console.error('✗', err);

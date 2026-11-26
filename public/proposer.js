@@ -3,7 +3,29 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const NAME_KEY = 'quizparty:name';
-  const store = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } } };
+  const AUTH_KEY = 'quizparty:auth'; // compte connecté dans le jeu (jetons Supabase, en JSON)
+  // Mêmes clés que le jeu, valeurs en JSON (voir store dans public/js/core.js)
+  const store = {
+    get: (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage bloqué */ } },
+  };
+
+  /**
+   * Jeton du compte connecté (renouvelé s'il expire bientôt), envoyé au serveur : les modes réservés
+   * (sons, HUD, écrans de chargement) ne sont proposés qu'aux comptes au rôle friend/admin.
+   */
+  async function authHeader() {
+    let s = store.get(AUTH_KEY);
+    if (!s?.access_token) return {};
+    if (s.expires_at * 1000 - Date.now() < 5 * 60_000 && s.refresh_token) {
+      const r = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) }).catch(() => null);
+      if (r?.ok) {
+        s = { ...s, ...(await r.json()) };
+        store.set(AUTH_KEY, s);
+      }
+    }
+    return { Authorization: `Bearer ${s.access_token}` };
+  }
 
   // Ouvert depuis le jeu (panneau du salon) : pas de lien « Retour », on ferme le panneau à la place
   const embed = new URLSearchParams(location.search).has('embed') && window.parent !== window;
@@ -151,7 +173,7 @@
     $('send').disabled = true;
     $('send').textContent = 'Envoi…';
     try {
-      const res = await fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const res = await fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeader()) }, body: JSON.stringify(body) });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || 'Envoi impossible, réessaie.');
       $('form').hidden = true;
@@ -181,7 +203,8 @@
     selectMode(mode);
   });
 
-  fetch('/api/submit/options')
+  authHeader()
+    .then((headers) => fetch('/api/submit/options', { headers }))
     .then((r) => r.json())
     .then((o) => {
       opts = o;

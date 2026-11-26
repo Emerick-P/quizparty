@@ -41,7 +41,7 @@ auth.install(app, express);
 installLegal(app);
 
 // Formulaire « Proposer » (/proposer) : soumissions des joueurs
-installSubmissions(app);
+installSubmissions(app, { auth });
 
 // Page d'accueil : les liens vers les scripts (public/js) et les feuilles de style portent une version tirée des fichiers
 // (?v=…). Dès qu'un fichier change, son URL change : ni le navigateur ni le tunnel Cloudflare

@@ -69,10 +69,10 @@ Stockage des soumissions des amis et des signalements ⚑ de l'hôte.
 
 ROOT, BUCKET, supabaseBackend, localBackend, createStore, store
 
-### server/submissions.js (145 l.)
+### server/submissions.js (163 l.)
 Formulaire « Proposer » : les amis soumettent du contenu pour tous les modes (sauf mots croisés,
 
-clip, IMAGE_TYPES, AUDIO_TYPES, MAX_IMAGE, MAX_AUDIO, SUBMIT_MODES, knownGames, decodeFile, parseSubmission, limiter, installSubmissions
+clip, IMAGE_TYPES, AUDIO_TYPES, MAX_IMAGE, MAX_AUDIO, SUBMIT_MODES, knownGames, decodeFile, parseSubmission, limiter, reservedOk, installSubmissions
 
 SUBMIT_MODES : quiz, vraifaux, estimation, covers, pitch, emoji, hud, loading, sounds
 
@@ -284,5 +284,5 @@ ROOT, PORT, LOCAL, children, findCloudflared, serverIsUp, waitForServer, stopAll
 ### scripts/submissions.js (45 l.)
 Propositions des amis : npm run submissions [-- options]
 
-### public/proposer.js (195 l.)
+### public/proposer.js (218 l.)
 Page « Proposer » : formulaire de soumission des amis (aucune dépendance).

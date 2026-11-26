@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { store as defaultStore } from './store.js';
 import { COVER_GAMES } from './data/cover-games.js';
 import { EMOJI_PUZZLES } from './data/emojis.js';
+import { RESERVED_MODES } from './games/index.js';
 
 /**
  * Formulaire « Proposer » : les amis soumettent du contenu pour tous les modes (sauf mots croisés,
@@ -114,13 +115,30 @@ function limiter(max = 40, windowMs = 3600_000) {
   };
 }
 
-export function installSubmissions(app, { store = defaultStore } = {}) {
+/**
+ * Modes réservés (sons, HUD, écrans de chargement : droits non acquis, voir RESERVED_MODES) : proposables
+ * seulement par un compte au rôle friend/admin (jeton Supabase dans l'en-tête Authorization).
+ * Sans comptes (local, tests sans Supabase), ouverts comme en jeu.
+ */
+async function reservedOk(req, auth) {
+  if (!auth?.enabled) return true;
+  const token = /^Bearer (.+)$/.exec(req.get('authorization') || '')?.[1];
+  return !!(token && (await auth.verify(token).catch(() => null))?.reserved);
+}
+
+export function installSubmissions(app, { store = defaultStore, auth = null } = {}) {
   const allow = limiter();
-  app.get('/api/submit/options', (_req, res) => {
-    res.json({ modes: SUBMIT_MODES, games: knownGames(), maxImage: MAX_IMAGE, maxAudio: MAX_AUDIO });
+  app.get('/api/submit/options', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const ok = await reservedOk(req, auth);
+    const modes = Object.fromEntries(Object.entries(SUBMIT_MODES).filter(([id]) => ok || !RESERVED_MODES.includes(id)));
+    res.json({ modes, games: knownGames(), maxImage: MAX_IMAGE, maxAudio: MAX_AUDIO });
   });
   app.post('/api/submissions', express.json({ limit: '12mb' }), async (req, res) => {
     if (!allow(req.ip)) return res.status(429).json({ error: 'Beaucoup de propositions d’un coup ! Réessaie dans un moment.' });
+    if (RESERVED_MODES.includes(req.body?.mode) && !(await reservedOk(req, auth))) {
+      return res.status(403).json({ error: 'Ce mode n’est pas ouvert aux propositions avec ce compte.' });
+    }
     let parsed;
     try {
       parsed = parseSubmission(req.body);
