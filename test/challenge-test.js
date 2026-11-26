@@ -134,7 +134,7 @@ async function play(c, n = Infinity) {
     const s = await c.waitFor((x) => x.phase === 'end' || (x.round && x.round.index === i && ['countdown', 'question'].includes(x.phase)));
     if (s.phase === 'end') break;
     const r = s.round;
-    seen.push(`${r.kind}:${r.prompt}:${(r.choices || []).join('|')}:${r.pitch || ''}${JSON.stringify(r.emojis ?? '')}${r.image?.url ?? ''}${r.sound?.url ?? ''}`);
+    seen.push(`${r.kind}:${r.prompt}:${[...(r.choices || [])].sort().join('|')}:${r.pitch || ''}${JSON.stringify(r.emojis ?? '')}${r.image?.url ?? ''}${r.sound?.url ?? ''}`);
     await new Promise((res) => setTimeout(res, Math.max(0, r.startsAt - Date.now() + 30)));
     // Plusieurs essais (réponse tapée) : on les épuise
     for (let t = 0; t < (r.tries || 1); t++) {

@@ -35,6 +35,10 @@ function writeJson(file, data) {
   fs.renameSync(tmp, file);
 }
 
+// sharp (réduction des jaquettes) chargé à la demande : le serveur démarre même sans `npm install`
+let sharpLib = null;
+const loadSharp = () => (sharpLib ??= import('sharp').then((m) => m.default));
+
 export class CoverLibrary {
   constructor({ games = COVER_GAMES, provider = null, cacheDir, blacklistFile } = {}) {
     this.games = games;
@@ -149,6 +153,29 @@ export class CoverLibrary {
       pageUrl: entry.pageUrl,
       publisher: entry.publisher ?? null,
     };
+  }
+
+  /**
+   * Palier pixelisé d'une jaquette : l'image réduite à `cols` colonnes (PNG de quelques centaines d'octets),
+   * agrandie en gros pixels par le navigateur. Gardé en mémoire. null si l'image est inconnue ou retirée.
+   */
+  async pixel(id, cols) {
+    const f = this.file(id);
+    if (!f) return null;
+    this.pixCache ??= new Map();
+    const key = `${id}:${cols}`;
+    let p = this.pixCache.get(key);
+    if (!p) {
+      p = loadSharp().then(async (sharp) => {
+        const img = sharp(f.path);
+        const { width, height } = await img.metadata();
+        return img.resize(cols, Math.max(1, Math.round((cols * height) / width)), { fit: 'fill' }).png().toBuffer();
+      });
+      p.catch((err) => { this.pixCache.delete(key); console.error('[jaquettes] palier :', err.message); });
+      this.pixCache.set(key, p);
+      if (this.pixCache.size > 4000) this.pixCache.delete(this.pixCache.keys().next().value);
+    }
+    return p;
   }
 
   /** Fichier à servir pour /img/:id, ou null (inconnu ou retiré). */

@@ -122,7 +122,7 @@ const views = {
     let body;
     let media = '';
     if (GUESS_KINDS.includes(r.kind)) {
-      media = r.kind === 'cover' ? coverFigure(r.image, { until: r.endsAt, from: r.startsAt, input: r.input })
+      media = r.kind === 'cover' ? coverFigure(r.image)
         : r.kind === 'sound' ? soundFigure(r)
         : r.kind === 'emoji' ? emojiLine(r.emojis)
         : `<blockquote class="pitch">${r.pitch ? esc(r.pitch) : '<span class="muted">Le serveur n’est pas à jour : relance-le pour voir le pitch.</span>'}</blockquote>`;

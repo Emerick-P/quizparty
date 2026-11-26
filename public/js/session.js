@@ -106,7 +106,7 @@ socket.on('disconnect', () => { $('#conn').hidden = false; });
 socket.on('state', (s) => {
   state = s;
   // Les images sont chargées pendant le « 3, 2, 1 » (et dès la correction précédente) pour être prêtes à l'heure
-  if (s.round?.image) loadImage(s.round.image.url);
+  if (s.round?.image) loadImage(s.round.image.levels?.[0]?.url); // jaquette : premier palier seulement
   if (s.round?.sound) loadSound(s.round.sound.url);
   if (s.preload) (s.preload.startsWith('/sfx/') ? loadSound : loadImage)(s.preload);
   if (s.round?.picture) loadImage(s.round.picture.url);

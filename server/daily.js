@@ -69,6 +69,24 @@ function refreshImages(round) {
   return round;
 }
 
+/**
+ * Anti-triche : chaque joueur d'un défi reçoit les 4 choix dans son propre ordre (un « c'est la B »
+ * partagé ne sert à rien). Vrai/Faux garde son ordre. Les salons, eux, gardent le même ordre pour
+ * tous (mode télé : la couleur à l'écran = la touche du téléphone).
+ */
+export function shuffleChoices(round) {
+  const n = round.choices?.length;
+  if (!(n > 2) || !Number.isInteger(round.correctIndex)) return round;
+  const order = [...Array(n).keys()];
+  for (let i = n - 1; i > 0; i--) {
+    const j = crypto.randomInt(i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  round.choices = order.map((i) => round.choices[i]);
+  round.correctIndex = order.indexOf(round.correctIndex);
+  return round;
+}
+
 export class Daily {
   constructor() {
     this.cache = new Map(); // jour → Promise<{ day, number, rounds }>
@@ -207,7 +225,7 @@ export class DailyRoom extends Room {
     if (this.roundIndex >= 0) throw new Error('Le défi du jour ne se joue qu’une fois');
     this.rounds = JSON.parse(JSON.stringify(this.challenge.rounds)).map((r) => {
       if (r.kind === 'estimation') r.absolute = true; // seul : points selon l'écart, pas selon le rang
-      return refreshImages(r);
+      return shuffleChoices(refreshImages(r));
     });
     this.protectMedia(); // défis déjà enregistrés avec des sons : servis à ce joueur seulement
     for (const p of this.players.values()) { p.score = 0; p.lastPoints = 0; }

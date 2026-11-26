@@ -22,10 +22,10 @@ Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour qu
 
 ROOT, readJson, contentRows, syncContent
 
-### server/daily.js (391 l.)
+### server/daily.js (409 l.)
 Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
 
-DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, EPOCH, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, dayNumber, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, refreshImages, Daily, publicResult, DailyRoom, startDaily, openDaily
+DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, EPOCH, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, dayNumber, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, refreshImages, shuffleChoices, Daily, publicResult, DailyRoom, startDaily, openDaily
 
 ### server/env.js (7 l.)
 Charge le fichier .env s'il existe (Node 20.12+). Importé en premier par server/index.js.
@@ -39,7 +39,7 @@ FEEDBACK_TYPES : accept, wrong, remove, other
 
 feedback : file, add, list
 
-### server/index.js (150 l.)
+### server/index.js (161 l.)
 
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
@@ -49,7 +49,7 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/room.js (984 l.)
+### server/room.js (1019 l.)
 ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
@@ -86,10 +86,10 @@ SUBMIT_MODES : quiz, vraifaux, estimation, covers, pitch, emoji, sounds
 
 MIN_LINKED, ONCE, GROUP, shuffle, nf, hoursText, picture, linkedPlayers, bandeUnavailable, choiceRound, playerChoices, topGame, JUNK, LEGACY, familyKey, shameCandidates, shame, hours, mostHours, recent, df, dayf, pctText, rankQuestion, binge, lastPlayed, perfect, rarestOf, rarest, accountAge, steamLevel, library, gameCount, friendship, buildBande, spreadAbout
 
-### server/games/cover.js (66 l.)
+### server/games/cover.js (91 l.)
 Jaquette pixelisée : une jaquette s'affiche très pixelisée et se précise au fil du chrono.
 
-TEXT_TRIES, MAX_GUESS_LENGTH, isCorrect
+TEXT_TRIES, PIX_COLS, PIX_LAST_AT, PIX_PREFETCH_MS, pixLevels, MAX_GUESS_LENGTH, isCorrect
 
 ### server/games/crossword.js (253 l.)
 Mots croisés, partie au chrono : une seule manche, d'une durée fixe (5 à 20 min), pendant laquelle chacun
@@ -141,10 +141,10 @@ Fournisseur d'images IGDB (base de données de jeux de Twitch).
 
 TOKEN_URL, API_URL, IMAGE_URL, sleep, MIN_GAP_MS, SLUG_YEAR_TOLERANCE, SEARCH_YEAR_TOLERANCE, FIELDS, quote, simplify, yearOf, igdbConfig, createIgdbProvider
 
-### server/images/index.js (180 l.)
+### server/images/index.js (207 l.)
 Bibliothèque de jaquettes : fait le lien entre la liste de jeux, un fournisseur d'images
 
-ROOT, EXT, MIME, RETRY_MISSING_AFTER_MS, readJson, writeJson, CoverLibrary, covers
+ROOT, EXT, MIME, RETRY_MISSING_AFTER_MS, readJson, writeJson, sharpLib, loadSharp, CoverLibrary, covers
 
 ### server/images/sounds.js (141 l.)
 Sons du mode « Quel jeu fait ce bruit ? ».
@@ -210,7 +210,7 @@ potesUrl
 ### public/js/media.js (235 l.)
 Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 
-images, loadImage, PIX_COLS, PIX_LAST_AT, pixColumns, drawCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
+images, loadImage, PIX_PREFETCH_MS, drawCover, drawClearCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
 ### public/js/nav.js (213 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.

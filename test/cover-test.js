@@ -10,6 +10,7 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import assert from 'node:assert/strict';
 import { io } from 'socket.io-client';
+import sharp from 'sharp';
 import { matches, normalize, baseTitles, answersFor } from '../server/games/fuzzy.js';
 import { COVER_GAMES } from '../server/data/cover-games.js';
 
@@ -301,8 +302,28 @@ try {
   assert.equal(index['igdb:minecraft-java-edition'].status, 'ready', 'slug inconnu retrouvé par la recherche');
   assert.equal(index['igdb:the-witcher-3-wild-hunt'].publisher, `Éditeur ${COVER_GAMES.findIndex((g) => g.slug === 'the-witcher-3-wild-hunt')}`, 'éditeur gardé pour la mention');
   console.log(`✓ ${h.covers.ready} jaquettes résolues et en cache (requêtes : ${stats.games} groupée(s), ${stats.search} recherche(s))`);
-  const bySlug = (url) => Object.values(index).find((e) => `/img/${e.id}` === url);
-  const titleOf = (url) => COVER_GAMES.find((g) => g.slug === bySlug(url).slug).title;
+  // L'image nette n'est jamais envoyée pendant la question : le test retrouve le jeu en comparant
+  // le premier palier (4 colonnes) à la même réduction de chaque jaquette du cache.
+  const raw = (img) => img.raw().toBuffer();
+  const firstLevels = new Map();
+  for (const e of Object.values(index)) {
+    if (e.status !== 'ready') continue;
+    const img = sharp(path.join(cacheDir, e.file));
+    const { width, height } = await img.metadata();
+    firstLevels.set(e, await raw(img.resize(4, Math.round((4 * height) / width), { fit: 'fill' })));
+  }
+  const entryOf = async (round) => {
+    const res = await fetch(URL + round.image.levels[0].url);
+    assert.equal(res.status, 200, 'premier palier servi');
+    const got = await raw(sharp(Buffer.from(await res.arrayBuffer())));
+    const found = [...firstLevels].filter(([, b]) => b.equals(got)).map(([e]) => e);
+    assert.ok(found.length >= 1, 'palier reconnu');
+    return found;
+  };
+  const titleOf = async (round) => {
+    const titles = (await entryOf(round)).map((e) => COVER_GAMES.find((g) => g.slug === e.slug).title);
+    return titles.find((t) => !round.choices || round.choices.includes(t)) ?? titles[0];
+  };
 
   const A = client('A'), B = client('B');
   clients.push(A, B);
@@ -327,16 +348,22 @@ try {
     assert.equal(r.kind, 'cover');
     assert.equal(r.choices.length, 4);
     assert.equal(new Set(r.choices).size, 4, 'propositions distinctes');
-    assert.ok(r.image.url.startsWith('/img/'), 'image servie par notre serveur');
+    assert.equal(r.image.url, undefined, 'pas d\'image nette pendant la question');
+    assert.ok(!JSON.stringify(cd).includes('/img/'), 'aucune adresse d\'image nette dans l\'état');
     assert.equal(r.correctIndex, undefined, 'la bonne réponse ne fuit pas');
     assert.equal(r.image.pageUrl, undefined, 'la page IGDB (qui donne le nom) ne fuit pas pendant la question');
-    assert.ok(!/[a-z]/.test(r.image.url.slice(5).replace(/[A-Za-z0-9_-]/g, '')), 'URL opaque');
-    seen.add(r.image.url);
-    const img = await fetch(URL + r.image.url);
-    assert.equal(img.status, 200);
+    const lv = r.image.levels;
+    assert.ok(lv.length >= 8 && lv.every((l) => l.url.startsWith('/pix/')), `paliers servis par notre serveur (${lv.length})`);
+    assert.ok(lv.every((l, k) => !k || (l.at > lv[k - 1].at && l.cols > lv[k - 1].cols && l.at < r.endsAt)), 'paliers de plus en plus fins, avant la fin du chrono');
+    const img = await fetch(URL + lv[0].url);
     assert.equal(img.headers.get('content-type'), 'image/png');
-    assert.match(img.headers.get('cache-control'), /immutable/);
-    const title = titleOf(r.image.url);
+    assert.equal((await sharp(Buffer.from(await img.arrayBuffer())).metadata()).width, 4, 'premier palier : 4 colonnes');
+    const early = await fetch(URL + lv.at(-1).url);
+    assert.equal(early.status, 404, 'palier fin refusé avant son heure (anti-triche)');
+    assert.equal((await fetch(URL + lv[1].url.replace(/\?r=.*/, '?r=ZZZZ'))).status, 404, 'palier refusé hors du salon');
+    const [entry] = await entryOf(r);
+    seen.add(entry.slug);
+    const title = await titleOf(r);
     const right = r.choices.indexOf(title);
     assert.ok(right >= 0, 'le bon titre est parmi les propositions');
 
@@ -351,7 +378,9 @@ try {
     const rb = rev.reveal.results.find((x) => x.name === 'Bob');
     assert.ok(ra.correct && ra.points >= 200 && ra.points <= 1000, `points Alice ${ra.points}`);
     assert.ok(!rb.correct && rb.points === 0);
-    if (i < 4) assert.ok(rev.preload && rev.preload.startsWith('/img/'), 'image suivante annoncée pour préchargement');
+    assert.equal((await fetch(URL + lv.at(-1).url)).status, 200, 'tous les paliers libres après la correction');
+    assert.ok(rev.reveal.image.url.startsWith('/img/'), 'jaquette nette à la correction');
+    if (i < 4) assert.ok(rev.preload && rev.preload.startsWith('/pix/') && rev.preload.endsWith(`?r=${created.code}`), 'premier palier suivant annoncé pour préchargement');
   }
   assert.equal(seen.size, 5, 'pas deux fois le même jeu');
   await A.waitFor((s) => s.phase === 'end');
@@ -362,7 +391,7 @@ try {
   assert.equal((await A.emit('room:settings', { mode: 'covers', input: 'text', rounds: 5 })).ok, true);
   assert.equal((await A.emit('game:start')).ok, true);
   const q = await A.waitFor((s) => s.phase === 'question' && s.round.index === 0);
-  const title = titleOf(q.round.image.url);
+  const title = await titleOf(q.round);
   assert.equal(q.round.choices, undefined);
   assert.equal(q.round.durationMs, 15000, '5 s de plus pour taper');
   assert.ok(!JSON.stringify(q).includes(title), 'le titre ne fuit pas dans l\'état');
@@ -383,9 +412,10 @@ try {
   // ---------------- liste noire
   assert.ok((await B.emit('game:ban-cover')).error, 'seul l\'hôte peut retirer un jeu');
   assert.equal((await A.emit('game:ban-cover')).ok, true);
-  const banned = bySlug(q.round.image.url).slug;
+  const bannedEntry = Object.values(index).find((e) => e.slug === COVER_GAMES.find((g) => g.title === title).slug);
+  const banned = bannedEntry.slug;
   assert.deepEqual(JSON.parse(fs.readFileSync(blacklistFile, 'utf8')).games, [banned]);
-  assert.equal((await fetch(URL + q.round.image.url)).status, 404, 'image retirée plus servie');
+  assert.equal((await fetch(URL + `/img/${bannedEntry.id}`)).status, 404, 'image retirée plus servie');
   assert.equal((await health()).covers.ready, expected - 1);
   await A.emit('game:stop');
   console.log(`✓ liste noire (${banned})`);

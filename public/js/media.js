@@ -7,11 +7,12 @@ const images = new Map(); // url → { img, ok }
 function loadImage(url) {
   if (!url) return null;
   let e = images.get(url);
+  if (e?.failedAt && performance.now() - e.failedAt > 500) e = null; // nouvel essai, sans insister à chaque frame
   if (!e) {
     const img = new Image();
     e = { img, ok: false };
     img.onload = () => { e.ok = true; updateTimers(); };
-    img.onerror = () => { images.delete(url); };
+    img.onerror = () => { e.failedAt = performance.now(); };
     img.src = url;
     images.set(url, e);
   }
@@ -19,56 +20,55 @@ function loadImage(url) {
 }
 
 /**
- * Niveau de détail en fonction du temps écoulé, mesuré sur l'horloge serveur : tous les joueurs
- * voient exactement le même niveau au même moment. L'image reste un peu pixelisée jusqu'au bout
- * de la question ; elle n'est nette qu'à la correction.
+ * Jaquette pixelisée. Anti-triche : le navigateur ne reçoit jamais l'image nette pendant la question,
+ * seulement des paliers déjà réduits par le serveur (image.levels : { cols, at, url }), chacun servi
+ * à son heure. Le palier affiché dépend de l'horloge serveur : tout le monde voit le même au même moment.
+ * Le suivant est téléchargé un peu avant son heure (le serveur l'accepte 800 ms avant).
  */
-const PIX_COLS = [4, 6, 8, 11, 15, 20, 27, 36, 48, 64];
-// Vitesse de découverte : le niveau « devinable par la plupart » (27 colonnes, 7e palier) arrive
-// quand il reste environ 30 % du chrono (4 choix) et 33 % en saisie, pour laisser le temps de taper.
-// Au-delà de 1, les derniers paliers ne sont jamais atteints : l'image reste un peu pixelisée jusqu'au bout.
-const PIX_LAST_AT = { choice: 1.05, text: 1.0 };
-function pixColumns(t, from, until, input) {
-  const p = (t - from) / Math.max(1, until - from);
-  const step = Math.floor((p / (PIX_LAST_AT[input] ?? 0.6)) * (PIX_COLS.length - 1));
-  return PIX_COLS[Math.max(0, Math.min(PIX_COLS.length - 1, step))];
-}
+const PIX_PREFETCH_MS = 600;
 
 function drawCover(canvas, t) {
-  const e = loadImage(canvas.dataset.src);
-  if (!e?.ok) return;
-  const img = e.img;
-  const cols = canvas.dataset.clear ? 0 : pixColumns(t, Number(canvas.dataset.from), Number(canvas.dataset.until), canvas.dataset.input);
-  const key = `${cols}`;
-  if (canvas.dataset.key === key) return;
-  canvas.dataset.key = key;
-  const W = img.naturalWidth, H = img.naturalHeight;
+  if (canvas.dataset.clear) return drawClearCover(canvas);
+  if (canvas._raw !== canvas.dataset.levels) {
+    canvas._raw = canvas.dataset.levels;
+    try { canvas._levels = JSON.parse(canvas._raw || '[]').filter((l) => l.url); } catch { canvas._levels = []; }
+  }
+  const levels = canvas._levels;
+  let k = 0;
+  while (k + 1 < levels.length && levels[k + 1].at <= t) k++;
+  if (levels[k + 1] && levels[k + 1].at - PIX_PREFETCH_MS <= t) loadImage(levels[k + 1].url);
+  // Palier à l'heure ; s'il n'est pas encore arrivé, le dernier palier déjà chargé
+  let e = null;
+  for (let j = k; j >= 0 && !e?.ok; j--) e = loadImage(levels[j].url);
+  if (!e?.ok || canvas.dataset.key === e.img.src) return;
+  canvas.dataset.key = e.img.src;
+  const small = e.img;
+  const W = 512, H = Math.round((W * small.naturalHeight) / small.naturalWidth);
   if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
   canvas.parentElement.classList.add('loaded');
   const ctx = canvas.getContext('2d');
-  if (!cols) { ctx.imageSmoothingEnabled = true; ctx.drawImage(img, 0, 0); return; }
-  // Réduction par moitiés successives : chaque gros pixel est la moyenne de sa zone (couleurs fidèles)
-  let src = img, w = W, h = H;
-  while (w / 2 >= cols * 2) {
-    const half = document.createElement('canvas');
-    half.width = w = Math.floor(w / 2);
-    half.height = h = Math.floor(h / 2);
-    half.getContext('2d').drawImage(src, 0, 0, w, h);
-    src = half;
-  }
-  const rows = Math.max(1, Math.round((cols * H) / W));
-  const small = document.createElement('canvas');
-  small.width = cols;
-  small.height = rows;
-  small.getContext('2d').drawImage(src, 0, 0, cols, rows);
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, W, H);
-  ctx.drawImage(small, 0, 0, cols, rows, 0, 0, W, H);
+  ctx.drawImage(small, 0, 0, W, H);
 }
 
-function coverFigure(image, { from, until, clear, input } = {}) {
+/** Correction : la jaquette nette. */
+function drawClearCover(canvas) {
+  const e = loadImage(canvas.dataset.src);
+  if (!e?.ok || canvas.dataset.key === 'clear') return;
+  canvas.dataset.key = 'clear';
+  const img = e.img;
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.parentElement.classList.add('loaded');
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(img, 0, 0);
+}
+
+function coverFigure(image, { clear } = {}) {
   return `<figure class="cover-wrap">
-    <canvas class="cover" data-src="${esc(image.url)}" ${clear ? 'data-clear="1"' : `data-from="${from}" data-until="${until}" data-input="${input}"`}></canvas>
+    <canvas class="cover" ${clear ? `data-src="${esc(image.url)}" data-clear="1"` : `data-levels="${esc(JSON.stringify(image.levels ?? []))}"`}></canvas>
     <span class="cover-loading">Chargement…</span>
     ${clear ? '' : `<figcaption>Image : ${esc(image.source)}</figcaption>`}
   </figure>`;

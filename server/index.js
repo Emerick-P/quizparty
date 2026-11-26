@@ -105,6 +105,17 @@ app.get('/img/:id', (req, res) => {
   res.sendFile(f.path);
 });
 
+// Paliers des jaquettes pixelisées : jamais l'image nette pendant la question (anti-triche, voir Room.pixAllowed)
+app.get('/pix/:token/:k', async (req, res) => {
+  const room = rooms.rooms.get(String(req.query.r || ''));
+  const p = room?.pixAllowed(req.params.token, Number(req.params.k));
+  const buf = p ? await covers.pixel(p.imageId, p.cols).catch(() => null) : null;
+  if (!buf) return res.sendStatus(404);
+  res.type('image/png');
+  res.set('Cache-Control', 'private, max-age=3600');
+  res.send(buf);
+});
+
 // Sons (data/sounds/) : contenus réservés (droits non acquis).
 // Jamais en accès libre : seulement les fichiers de la partie en cours d'un salon, avec sa clé (?r=CODE&k=CLÉ,
 // ajoutés par Room.protectMedia). Pas de cache partagé (proxy, CDN).

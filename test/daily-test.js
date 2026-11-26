@@ -136,7 +136,7 @@ async function play(c, n = Infinity) {
     const s = await c.waitFor((x) => x.phase === 'end' || (x.round && x.round.index === i && ['countdown', 'question'].includes(x.phase)));
     if (s.phase === 'end') break;
     const r = s.round;
-    seen.push(`${r.kind}:${r.prompt}:${(r.choices || []).join('|')}:${r.pitch || ''}${JSON.stringify(r.emojis ?? '')}${r.image?.url ?? ''}${r.sound?.url ?? ''}`);
+    seen.push(`${r.kind}:${r.prompt}:${[...(r.choices || [])].sort().join('|')}:${r.pitch || ''}${JSON.stringify(r.emojis ?? '')}${r.image?.url ?? ''}${r.sound?.url ?? ''}`);
     await new Promise((res) => setTimeout(res, Math.max(0, r.startsAt - Date.now() + 30)));
     // Plusieurs essais (réponse tapée) : on les épuise
     for (let t = 0; t < (r.tries || 1); t++) {
@@ -208,7 +208,7 @@ try {
 
   const [seenA, seenG] = await Promise.all([play(A), play(G)]);
   assert.equal(seenA.length, 10);
-  assert.deepEqual(seenA, seenG, 'mêmes manches pour tous, dans le même ordre (choix compris)');
+  assert.deepEqual(seenA, seenG, 'mêmes manches pour tous, dans le même ordre (les choix, eux, sont mélangés pour chacun)');
   assert.ok(new Set(seenA.map((x) => x.split(':')[0])).size >= 4, 'des manches de plusieurs modes');
 
   const endA = await A.waitFor((s) => s.phase === 'end' && s.daily.leaderboard);

@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { MODES, KINDS, modeList, MIX_PARTS, MIX_INPUTS, allowed } from './games/index.js';
 import { emptyProgress, gridAt, VALIDATE_AT } from './games/crossword.js';
+import { pixLevels, PIX_COLS, PIX_PREFETCH_MS } from './games/cover.js';
 import { covers } from './images/index.js';
 import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
@@ -245,6 +246,33 @@ export class Room {
       }
     };
     walk(this.rounds);
+    // Jaquettes pixelisées : chaque palier a sa propre adresse, inconnue hors du salon (voir pixAllowed)
+    for (const r of this.rounds) {
+      if (r.kind === 'cover' && r.image?.url?.startsWith('/img/')) r.pix = { token: crypto.randomBytes(9).toString('base64url'), q: `?r=${this.code}` };
+    }
+  }
+
+  /**
+   * Palier k d'une jaquette (/pix/:token/:k) : servi seulement à partir de son heure (moins une petite avance
+   * pour le préchargement), jamais plus tôt, même en pause. Le premier palier de la manche suivante peut être
+   * préchargé pendant la correction. Une fois la manche corrigée, tous ses paliers sont libres.
+   * Rend { imageId, cols } ou null.
+   */
+  pixAllowed(token, k) {
+    const i = this.rounds.findIndex((r) => r.pix && r.pix.token === token);
+    const r = this.rounds[i];
+    if (!r || !Number.isInteger(k) || k < 0) return null;
+    const imageId = r.image.url.slice('/img/'.length);
+    const live = i === this.roundIndex && ['countdown', 'question'].includes(this.phase);
+    if (i > this.roundIndex || live) {
+      if (k === 0) return i <= this.roundIndex + 1 ? { imageId, cols: PIX_COLS[0] } : null;
+      if (!live) return null;
+      const level = pixLevels(r)[k];
+      const t = this.paused ? this.paused.at : Date.now();
+      return level && level.at - PIX_PREFETCH_MS <= t ? { imageId, cols: level.cols } : null;
+    }
+    const level = pixLevels(r)[k];
+    return level ? { imageId, cols: level.cols } : null;
   }
 
   /** Fichier de son demandé avec ?r=&k= : autorisé seulement s'il fait partie de la partie du salon. */
@@ -955,8 +983,15 @@ export class Room {
         : null,
       reveal: this.phase === 'reveal' ? this.reveal : null,
       // Image de la manche suivante, préchargée pendant la correction : elle sera prête pour tous à l'heure
-      preload: this.phase === 'reveal' ? this.rounds[this.roundIndex + 1]?.image?.url ?? this.rounds[this.roundIndex + 1]?.sound?.url ?? this.rounds[this.roundIndex + 1]?.picture?.url ?? null : null,
+      // (jamais l'image nette : pour les pitchs, emojis et sons, c'est la jaquette de la réponse)
+      preload: this.phase === 'reveal' ? this.preloadUrl(this.rounds[this.roundIndex + 1]) : null,
     };
+  }
+
+  preloadUrl(next) {
+    if (!next) return null;
+    if (next.kind === 'cover') return next.pix ? `/pix/${next.pix.token}/0${next.pix.q}` : null;
+    return next.sound?.url ?? next.picture?.url ?? null;
   }
 
   /** Chaque joueur reçoit une vue personnalisée (sa propre réponse, son id). */
