@@ -211,7 +211,7 @@ Jaquettes pixelisées, captures, sons (« Quel jeu fait ce bruit ? »).
 
 images, loadImage, PIX_COLS, PIX_LAST_AT, pixColumns, drawCover, coverFigure, shotFigure, zoomShot, closeZoom, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
-### public/js/nav.js (109 l.)
+### public/js/nav.js (112 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.
 
 BAR_PHASES, hasBar, appBar, menuBody, sheetView, sheetHtml, OVER, openSheet, closeSheet

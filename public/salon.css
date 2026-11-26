@@ -399,15 +399,15 @@
 .d-cells.prog { gap: 3px; }
 .d-cells.prog i { width: 9px; height: 9px; border-radius: 2px; }
 .rv-top .d-cells.prog { display: flex; justify-content: center; margin: 6px 0 2px; }
-.h-tile.daily .d-go { margin-top: auto; padding-top: 6px; font-weight: 700; font-size: .85rem; color: var(--on-tile); }
+.h-tile.daily .d-go { margin-top: auto; padding-top: 6px; font-weight: 700; font-size: .85rem; color: inherit; }
 .h-tile.daily .soon { background: var(--ink); color: #fff; }
 .h-tile.daily.done .d-cells i:not(.ok):not(.mid):not(.ko) { background: #dfe3e8; }
 .d-sheet { display: flex; flex-direction: column; gap: 12px; }
 .d-sheet h3 { margin: 6px 0 0; font-family: var(--display); font-weight: 700; font-size: 1.2rem; }
 .d-intro { background: var(--surf); color: var(--text); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 16px; box-shadow: none; }
 .d-num { font-family: var(--display); font-weight: 700; font-size: 1.6rem; }
-.d-rules { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--ink-soft); line-height: 1.35; }
-.d-rules b { color: var(--on-tile); }
+.d-rules { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; color: var(--muted); line-height: 1.35; }
+.d-rules b { color: var(--text); }
 .d-streak { display: inline-block; margin-top: 10px; font-weight: 700; }
 .d-result { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 14px 10px; background: var(--card); border-radius: 10px; }
 .d-result small { color: var(--muted); font-size: .9rem; }

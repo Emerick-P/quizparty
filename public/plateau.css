@@ -21,7 +21,7 @@
 :root[data-theme="light"] {
   --bg: #f3f2ee; --bg2: #ebeae5; --card: #ffffff; --card-border: #e2e1db; --surf: #ffffff; --surf-hi: #f7f6f2;
   --deep: #e8e7e2; --btn: #e8e7e2; --line: #d6d5cf; --glow: #f3f2ee; --ink: #18181a; --ink-soft: #85868b; --tint: #e8e7e2;
-  --text: #18181a; --muted: #55565b; --accent: #18181a; --accent-ink: #f3f2ee; --good: #17914f; --bad: #d9363b;
+  --text: #18181a; --muted: #55565b; --accent: #18181a; --accent-ink: #f3f2ee; --good: #127a45; --bad: #d9363b;
   --c0: #f25a36; --c1: #3a78f0; --c2: #f0a90f; --c3: #8f55f2;
   --key-mix: 16%; --on-tile: #18181a; --tile: #ffffff; --shadow: #d4d3cc; --accent-text: #18181a;
   color-scheme: light;
@@ -144,7 +144,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 :root[data-theme="light"] .btn, :root[data-theme="light"] .btn.ghost { color: var(--text); }
 :root[data-theme="light"] .btn.primary { color: var(--accent-ink); }
 :root[data-theme="light"] .choice.picked { outline-color: var(--ink); }
-:root[data-theme="light"] .choice.correct { color: #fff; }
+:root[data-theme="light"] .choice.correct { color: #121214; }
 :root[data-theme="light"] .chip { background: #fff; }
 :root[data-theme="light"] .chip.me .cname { color: var(--ink); text-decoration: underline 2px var(--lime); text-underline-offset: 3px; }
 :root[data-theme="light"] .chip.answered { border-color: var(--ink); }

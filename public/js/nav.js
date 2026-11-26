@@ -29,7 +29,10 @@ function appBar(phase) {
     </span>
   </div></header>`;
 }
-actions.navhome = () => { if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; ui.base = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
+actions.navhome = () => {
+  // Hors salon, le logo ramène à l'accueil normal, même si l'adresse garde un code d'invitation (?code=…)
+  if (!state && urlCode()) { setUrlCode(''); ui.sheet = null; ui.base = null; render(); return; }
+  if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; ui.base = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
 
 /**
  * Menu du profil (touche l'avatar ou le pseudo, en haut à droite) : pages personnelles (profil, stats,
