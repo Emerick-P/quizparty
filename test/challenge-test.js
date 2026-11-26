@@ -188,8 +188,13 @@ try {
   assert.equal(made.challenge.rounds, 5);
   assert.equal(made.challenge.by, 'Alice');
   assert.ok(made.challenge.endsAt - Date.now() > 6.9 * 86400_000, 'ouvert 7 jours');
-  // Mix d'un compte non autorisé : aucun son
+  // Mix d'un compte non autorisé : aucun son, même en demandant explicitement les modes réservés
   assert.ok(!roundsOf(code).some((r) => r.mixPart === 'sounds' || r.kind === 'sound'));
+  for (let i = 0; i < 8; i++) {
+    const m = await A.emit('challenge:create', { mode: 'mix', rounds: 15, duration: 10, mixParts: ['sounds'] });
+    assert.ok(m.ok, m.error);
+    assert.ok(!roundsOf(m.challenge.id).some((r) => r.mixPart === 'sounds' || r.kind === 'sound' || r.sound), 'pas de son dans le Mix d’un joueur');
+  }
 
   // ---- Page du défi avant d'avoir joué : pas de classement
   let info = await B.emit('challenge:info', { code: code.toLowerCase(), device: DEV_H });
@@ -233,9 +238,10 @@ try {
 
   // ---- Mes défis
   const la = await A.emit('challenge:list', { device: DEV_H });
-  assert.equal(la.list.length, 1);
-  assert.equal(la.list[0].mine, true);
-  assert.equal(la.list[0].players, 2);
+  const mineA = la.list.find((x) => x.id === code);
+  assert.equal(la.list.length, 9);
+  assert.equal(mineA.mine, true);
+  assert.equal(mineA.players, 2);
   const lb = await B.emit('challenge:list', { device: 'peu-importe-0123456789' });
   assert.equal(lb.list[0].id, code);
   assert.ok(lb.list[0].played && lb.list[0].rank >= 1);
@@ -244,10 +250,16 @@ try {
 
   // ---- Carla (rôle friend) peut créer un défi de sons ; après redémarrage, mêmes manches
   const oc = await C.emit('challenge:options');
-  if (oc.modes.some((m) => m.id === 'sounds')) {
-    const ms = await C.emit('challenge:create', { mode: 'sounds', rounds: 5 });
-    assert.ok(ms.ok, ms.error);
+  assert.ok(oc.modes.some((m) => m.id === 'sounds'), 'sons proposés à un compte friend');
+  const ms = await C.emit('challenge:create', { mode: 'sounds', rounds: 5 });
+  assert.ok(ms.ok, ms.error);
+  // Son Mix peut contenir des sons (sur 3 défis de 15 questions, au moins un)
+  let withSound = false;
+  for (let i = 0; i < 3 && !withSound; i++) {
+    const m = await C.emit('challenge:create', { mode: 'mix', rounds: 15 });
+    withSound = roundsOf(m.challenge.id).some((r) => r.kind === 'sound');
   }
+  assert.ok(withSound, 'le Mix d’un compte friend inclut les sons');
   await stopServer();
   await startServer();
   const D = client('Daphné');
