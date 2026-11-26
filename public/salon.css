@@ -755,3 +755,36 @@ html { overflow-x: clip; }
   .choices:not(.reveal):not(.n2):not(.compact) .choice { min-height: clamp(64px, 10.5dvh, 96px); }
 }
 :root[data-theme="light"] .ab-logo b, :root[data-theme="light"] .tv-top .logo b { color: var(--lime-ink); background: var(--lime); padding: 0 4px; margin-left: 2px; border-radius: 4px; }
+
+/* ---------------------------------------------------------------- défis entre potes (public/js/challenges.js) */
+.p-new { display: flex; flex-direction: column; gap: 10px; background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px; }
+.p-new .opt-hint { margin: 0; font-size: .82rem; color: var(--muted); line-height: 1.35; }
+.p-new .opt > span { color: var(--muted); font-size: .9rem; }
+.p-new .seg button { min-width: 3.2em; padding: 8px 10px; }
+.p-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.p-modes .mix-part { display: inline-flex; align-items: center; gap: 5px; }
+.p-modes .mix-part .ic { width: 15px; height: 15px; }
+.p-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.p-list li { padding: 0; }
+.p-row { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; background: var(--card); color: var(--text); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 12px; font: inherit; }
+.p-row .grow { display: flex; flex-direction: column; min-width: 0; }
+.p-row small { color: var(--muted); font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-st { flex: none; font-family: var(--mono); font-size: .82rem; color: var(--text); }
+.p-st.go { color: var(--accent-text); }
+.p-st.off { color: var(--muted); }
+.p-count { display: block; margin-top: 10px; color: var(--muted); font-size: .85rem; }
+.d-guest { color: var(--muted); font-size: .72rem; font-weight: 500; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .p-new { display: grid; grid-template-columns: 1fr 1fr; padding: 10px; gap: 7px 12px; }
+  .p-new > :not(.opt) { grid-column: 1 / -1; }
+  .p-new .opt { flex-direction: column; align-items: stretch; gap: 4px; }
+  .p-new .opt > span { font-size: .8rem; }
+  .p-new .seg button { padding: 6px 8px; }
+  .p-new .mix-part { padding: 4px 9px; font-size: .78rem; }
+  .p-new .btn.big { padding-top: 9px; padding-bottom: 9px; }
+  .p-new .opt-hint { display: none; }
+  .p-play { display: grid; grid-template-columns: 1.3fr 1fr; gap: 10px 16px; align-content: start; }
+  .p-play > .p-intro { grid-row: 1 / span 4; }
+  .p-intro .d-rules { gap: 4px; margin-top: 6px; }
+  .p-intro .d-num { font-size: 1.2rem; }
+}

@@ -9,6 +9,12 @@ if (!SCREEN && new URLSearchParams(location.search).has('defi')) {
   history.replaceState(null, '', location.pathname);
   setTimeout(() => { if (!state) openSheet('daily'); }, 0);
 }
+// Lien d'un défi entre potes (…/?c=CODE)
+const potesUrl = !SCREEN && new URLSearchParams(location.search).get('c');
+if (potesUrl) {
+  history.replaceState(null, '', location.pathname);
+  setTimeout(() => { if (!state) actions.defiopen({ dataset: { value: potesUrl.toUpperCase() } }); }, 0);
+}
 socket.connect();
 render();
 requestAnimationFrame(frame);

@@ -22,7 +22,7 @@ const views = {
       </section>
       <div class="h-tiles">
         ${dailyTile()}
-        <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">${ico('swords')}</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
+        ${potesTile()}
       </div>
       <div class="h-extras">
         ${TOUCH ? `<button class="chip-btn" data-action="sheet" data-value="tvinfo">${ico('tv')} Jouer sur la télé</button>` : ''}
@@ -163,7 +163,7 @@ const views = {
     <main class="screen has-side">
       <div class="play">
       <div class="qhead">
-        <span class="pill">${state.daily ? `n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
+        <span class="pill">${state.daily?.number ? `n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
         <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
@@ -316,7 +316,7 @@ const views = {
       </div>
       <div class="rv-side rv-page" ${state.daily && !wide() ? 'hidden' : ''}>
       ${state.daily ? `<section class="card d-side">
-        <h2>Défi n°${state.daily.number}</h2>
+        <h2>${state.daily.challenge ? `Défi de ${esc(state.daily.challenge.by)}` : `Défi n°${state.daily.number}`}</h2>
         <div class="d-result"><b>${fmtPts(state.players.find((p) => p.id === state.you)?.score)} <span>pts</span></b>${cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'big')}<small>${state.daily.correct} trouvée${state.daily.correct > 1 ? 's' : ''} sur ${r.index + 1}</small></div>
       </section>` : `<section class="card">
         <h2>Classement</h2>
@@ -342,7 +342,7 @@ const views = {
   },
 
   end() {
-    if (state.daily) return dailyEnd();
+    if (state.daily) return state.daily.challenge ? potesEnd() : dailyEnd();
     const ranked = sortedByScore();
     const step = (p, place) => (p ? `
       <div class="step p${place}">

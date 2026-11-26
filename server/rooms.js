@@ -3,6 +3,7 @@ import { stats } from './stats.js';
 import { cleanLook, defaultLook, photoOf } from './avatars.js';
 import { Room, cleanName } from './room.js';
 import { Daily, startDaily } from './daily.js';
+import { Challenges, challengeModes, startChallenge, CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DEFAULTS, CHALLENGE_DAYS } from './challenges.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -15,6 +16,7 @@ export class RoomManager {
     this.rooms = new Map();
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
     this.daily = new Daily(); // défi du jour (voir daily.js)
+    this.challenges = new Challenges(); // défis entre potes (voir challenges.js)
     setInterval(() => this.sweep(), 60_000).unref();
   }
 
@@ -180,6 +182,17 @@ export class RoomManager {
       return startDaily(this, socket, n, this.daily);
     });
     on('daily:board', async () => ({ ok: true, leaderboard: await this.daily.board() }));
+
+    // Défis entre potes : réglages proposés, création (compte), page d'un défi, départ, « Mes défis »
+    on('challenge:options', () => ({ ok: true, modes: challengeModes(socket.data.user ?? null), rounds: CHALLENGE_ROUNDS, durations: CHALLENGE_DURATIONS, defaults: CHALLENGE_DEFAULTS, days: CHALLENGE_DAYS }));
+    on('challenge:create', async (settings) => ({ ok: true, challenge: this.challenges.summary(await this.challenges.create(socket.data.user ?? null, settings ?? {})) }));
+    on('challenge:info', ({ code, device }) => this.challenges.info(code, socket.data.user ?? null, device).then((r) => (r.error ? r : { ok: true, ...r })));
+    on('challenge:start', ({ code, name, device }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      return startChallenge(this, socket, n, this.challenges, code, device);
+    });
+    on('challenge:list', async ({ device, codes }) => ({ ok: true, list: await this.challenges.list(socket.data.user ?? null, device, Array.isArray(codes) ? codes.slice(0, 30) : []) }));
 
     // Compte joueur : le navigateur envoie son jeton (à la connexion et à chaque renouvellement).
     // Le serveur le fait vérifier par Supabase ; les droits d'admin ne viennent jamais du navigateur.

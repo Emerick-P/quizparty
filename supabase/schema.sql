@@ -203,3 +203,44 @@ grant select, insert, update, delete on public.daily_challenges, public.daily_re
 
 -- Image de profil choisie dans la page Profil : '' (initiale), 'photo' (photo Discord/Google), 'e:<emoji>:<couleur>' (galerie)
 alter table public.profiles add column if not exists avatar_look text;
+
+-- Défis entre potes (server/challenges.js) : un joueur fige une série de questions et partage un lien.
+-- challenges : le défi (manches figées), ouvert 7 jours. Plus tard, des ligues pourront regrouper des défis.
+create table if not exists public.challenges (
+  id          text primary key,         -- code du lien (/?c=CODE), 6 caractères
+  created_at  timestamptz not null default now(),
+  owner_id    uuid references auth.users (id) on delete set null,
+  owner_name  text,
+  mode        text not null,
+  settings    jsonb not null default '{}'::jsonb,  -- { mode, rounds, duration }
+  rounds      jsonb not null,           -- manches figées (énoncés, choix, réponses)
+  ends_at     timestamptz not null
+);
+create index if not exists challenges_owner_idx on public.challenges (owner_id, created_at desc);
+alter table public.challenges enable row level security;
+-- challenge_results : une ligne par joueur et par défi (une seule tentative), créée dès le départ.
+-- player_key : 'u:<user_id>' (compte) ou 'g:<empreinte de l'appareil>' (invité).
+create table if not exists public.challenge_results (
+  id            text primary key,       -- '<code>:<player_key>'
+  challenge_id  text not null references public.challenges (id) on delete cascade,
+  player_key    text not null,
+  user_id       uuid references auth.users (id) on delete cascade,
+  name          text,
+  avatar_url    text,
+  score         int not null default 0,
+  grid          text,
+  correct       int not null default 0,
+  rounds        int not null default 0,
+  finished      boolean not null default false,
+  started_at    timestamptz not null default now(),
+  finished_at   timestamptz
+);
+create index if not exists challenge_results_board_idx on public.challenge_results (challenge_id, score desc);
+create index if not exists challenge_results_player_idx on public.challenge_results (player_key, started_at desc);
+alter table public.challenge_results enable row level security;
+grant select, insert, update, delete on public.challenges, public.challenge_results to service_role;
+-- Les réponses des défis comptent dans les stats (source 'challenge')
+alter table public.game_results drop constraint if exists game_results_source_check;
+alter table public.game_results add constraint game_results_source_check check (source in ('party', 'daily', 'challenge'));
+alter table public.answers drop constraint if exists answers_source_check;
+alter table public.answers add constraint answers_source_check check (source in ('party', 'daily', 'challenge'));

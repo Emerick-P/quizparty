@@ -62,7 +62,7 @@ function dailyBoard(list, meId, max = 5) {
   const shown = list.slice(0, max).map((x, i) => [x, i]);
   if (myIdx >= max) shown.push([list[myIdx], myIdx]);
   return `<ol class="list d-board">${shown.map(([x, i]) => `
-    <li class="${i === myIdx ? 'me' : ''}"><span class="pos">${i + 1}</span>${avatar(x.name || '?')}<span class="grow">${esc(x.name)}${cellsHtml(gridCells(x.grid), 'xs')}</span><span class="pts">${fmtPts(x.score)}</span></li>`).join('')}
+    <li class="${i === myIdx ? 'me' : ''}"><span class="pos">${i + 1}</span>${avatar(x.name || '?')}<span class="grow">${esc(x.name)}${x.guest ? ' <small class="d-guest">invité</small>' : ''}${cellsHtml(gridCells(x.grid), 'xs')}</span><span class="pts">${fmtPts(x.score)}</span></li>`).join('')}
   </ol>${list.length > shown.length ? `<p class="muted d-more">${list.length} joueurs aujourd’hui</p>` : ''}`;
 }
 function dailyTile() {

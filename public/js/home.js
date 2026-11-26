@@ -106,6 +106,8 @@ const SHEETS = {
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
   daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
+  defis: { phase: 'home', page: true, render: () => ({ title: 'Défis entre potes', body: potesBody() }) },
+  defi: { phase: 'home', page: true, render: () => ({ title: 'Défi entre potes', body: poteBody() }) },
   getapp: { phase: 'home', render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
   tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
     <ol class="sh-steps">

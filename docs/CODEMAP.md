@@ -1,6 +1,6 @@
 # Plan du code (généré par `npm run codemap`, ne pas modifier à la main)
 
-Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → nav → daily → views → render → main.
+Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → nav → daily → challenges → views → render → main.
 
 ### server/auth.js (175 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
@@ -11,6 +11,11 @@ PROVIDERS, CACHE_MS, clip, profileOf, createAuth
 Images de profil : galerie maison (un emoji sur une couleur), la photo du compte Discord/Google, ou l'initiale.
 
 AVATAR_EMOJIS, AVATAR_HUES, cleanLook, photoOf, defaultLook, lookView
+
+### server/challenges.js (268 l.)
+Défis entre potes : un joueur connecté fige une série de questions et partage un lien (/?c=CODE).
+
+CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DAYS, CHALLENGE_DEFAULTS, EXCLUDED, ALPHABET, CODE_LEN, newCode, cleanCode, playerKey, ctxOf, challengeModes, publicResult, Challenges, ChallengeRoom, startChallenge
 
 ### server/content-sync.js (45 l.)
 Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour que le client puisse
@@ -49,7 +54,7 @@ esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (291 l.)
+### server/rooms.js (304 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
@@ -161,6 +166,13 @@ getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
 actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, zoom, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
+### public/js/challenges.js (196 l.)
+Défis entre potes.
+
+DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, potesSettings, loadPotes, loadPote, potesTile, potesBody, poteBody, potesEnd
+
+actions : defis, defiset, deficreate, defiopen, defiplay, defishare, defihome
+
 ### public/js/core.js (127 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
@@ -189,17 +201,19 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations, bouton Retour.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, installCard, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase, guardBack
 
-### public/js/home.js (225 l.)
+### public/js/home.js (227 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
 
 actions : pickHue, pickLook
 
-SHEETS : name, create, join, daily, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, more
+SHEETS : name, create, join, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, more
 
-### public/js/main.js (20 l.)
+### public/js/main.js (26 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
+
+potesUrl
 
 ### public/js/media.js (254 l.)
 Jaquettes pixelisées, captures, sons (« Quel jeu fait ce bruit ? »).
