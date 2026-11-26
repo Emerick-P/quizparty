@@ -8,7 +8,7 @@
 create table if not exists public.submissions (
   id          uuid primary key default gen_random_uuid(),
   created_at  timestamptz not null default now(),
-  mode        text not null,           -- quiz, vraifaux, estimation, covers, pitch, emoji, hud, loading, sounds
+  mode        text not null,           -- quiz, vraifaux, estimation, covers, pitch, emoji, sounds (hud et loading : modes supprimés)
   author      text,                    -- pseudo (facultatif)
   game        text,                    -- jeu concerné
   prompt      text,                    -- question, affirmation, pitch ou emojis
@@ -49,7 +49,7 @@ on conflict (id) do nothing;
 -- Modifier une ligne ici ne change PAS le jeu.
 create table if not exists public.content (
   id         text primary key,         -- ex. quiz:12, pitch:super-mario-64:0
-  mode       text not null,            -- quiz, vraifaux, estimation, covers, pitch, emoji, hud, loading, sounds, crossword
+  mode       text not null,            -- quiz, vraifaux, estimation, covers, pitch, emoji, sounds, crossword (hud et loading : modes supprimés)
   game       text,
   prompt     text,                     -- question, affirmation, pitch, emojis, description du son…
   answer     text,
@@ -90,7 +90,7 @@ grant select, insert, update, delete on public.profiles to service_role;
 -- Pseudo choisi dans la page Profil (le même sur tous les appareils)
 alter table public.profiles add column if not exists nickname text;
 -- Rôle du joueur : modifiable seulement ici, dans Supabase (Table Editor → profiles).
---   player (par défaut) ; friend = ouvre les modes réservés (sons, HUD, écrans de chargement) au salon dont il est
+--   player (par défaut) ; friend = ouvre les modes réservés (sons) au salon dont il est
 --   l'hôte ; admin = friend + modération. Donner l'accès à un ami (après sa première connexion sur le site) :
 --   update public.profiles set role = 'friend' where name = 'Pseudo Discord ou Google';
 alter table public.profiles add column if not exists role text not null default 'player';

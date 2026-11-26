@@ -2,7 +2,6 @@ import crypto from 'node:crypto';
 import { MODES, KINDS, modeList, MIX_PARTS, MIX_INPUTS, allowed } from './games/index.js';
 import { emptyProgress, gridAt, VALIDATE_AT } from './games/crossword.js';
 import { covers } from './images/index.js';
-import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
 import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
 import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
@@ -58,7 +57,7 @@ export class Room {
     this.timers = new Set();
     this.paused = null; // { at, by } : partie figée par l'hôte (bouton ⚑ Signaler)
     this.used = new Set(); // questions déjà posées dans ce salon (pas de répétition d'une partie à l'autre)
-    // Sons et captures (/sfx, /shot) : servis seulement pour les fichiers de la partie de ce salon, avec sa clé (voir protectMedia)
+    // Sons (/sfx) : servis seulement pour les fichiers de la partie de ce salon, avec sa clé (voir protectMedia)
     this.mediaKey = crypto.randomBytes(12).toString('hex');
     this.media = new Set();
     // Score global : cumul des parties terminées dans ce salon, jusqu'à remise à zéro par l'hôte
@@ -211,7 +210,7 @@ export class Room {
   // ------------------------------------------------------------------ contenus réservés
 
   /**
-   * Modes réservés (sons, HUD, écrans de chargement : voir RESERVED_MODES) : ouverts si l'HÔTE a un compte
+   * Modes réservés (sons : voir RESERVED_MODES) : ouverts si l'HÔTE a un compte
    * autorisé (rôle 'friend' ou 'admin'), et alors pour tout le salon, invités compris.
    * Sans comptes (PC, tests) : ouverts, comme les autres droits qui reviennent alors à l'hôte.
    */
@@ -229,7 +228,7 @@ export class Room {
   }
 
   /**
-   * Adresses des sons et captures de la partie : on y ajoute le code du salon et sa clé, et seuls ces
+   * Adresses des sons de la partie : on y ajoute le code du salon et sa clé, et seuls ces
    * fichiers-là sont servis (index.js, mediaFile). Personne ne peut parcourir la bibliothèque par URL.
    */
   protectMedia() {
@@ -238,7 +237,7 @@ export class Room {
     const walk = (o) => {
       if (!o || typeof o !== 'object') return;
       for (const [k, v] of Object.entries(o)) {
-        const m = typeof v === 'string' && /^\/(shot|sfx)\/([\w.-]+)$/.exec(v);
+        const m = typeof v === 'string' && /^\/(sfx)\/([\w.-]+)$/.exec(v);
         if (m) {
           this.media.add(`${m[1]}/${m[2]}`);
           o[k] = v + q;
@@ -248,7 +247,7 @@ export class Room {
     walk(this.rounds);
   }
 
-  /** Fichier de son/capture demandé avec ?r=&k= : autorisé seulement s'il fait partie de la partie du salon. */
+  /** Fichier de son demandé avec ?r=&k= : autorisé seulement s'il fait partie de la partie du salon. */
   mediaAllowed(kind, file, key) {
     return typeof key === 'string' && key === this.mediaKey && this.media.has(`${kind}/${file}`);
   }
@@ -729,17 +728,10 @@ export class Room {
   /** Hôte : retirer définitivement le jeu de la manche en cours (jaquette inadaptée, erreur…). */
   banCover() {
     const r = this.round;
-    if (!r || !['cover', 'screen', 'sound'].includes(r.kind) || !['question', 'reveal'].includes(this.phase)) throw new Error('Pas d\'image à retirer');
+    if (!r || !['cover', 'sound'].includes(r.kind) || !['question', 'reveal'].includes(this.phase)) throw new Error('Pas d\'image à retirer');
     if (r.kind === 'sound') {
       // Un son retiré ne retire pas le jeu : il reste jouable dans les autres modes
       sounds.ban(r.soundId);
-      r.banned = true;
-      this.broadcast();
-      return;
-    }
-    if (r.kind === 'screen') {
-      // Une capture retirée ne retire pas le jeu : il reste jouable en Jaquette et Pitch
-      screens.ban(r.screenId);
       r.banned = true;
       this.broadcast();
       return;

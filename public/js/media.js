@@ -1,4 +1,4 @@
-// QuizParty — Jaquettes pixelisées, captures, sons (« Quel jeu fait ce bruit ? »).
+// QuizParty — Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 // Script classique (pas un module) : les fichiers de public/js partagent leurs déclarations, voir CLAUDE.md.
 'use strict';
 
@@ -74,25 +74,6 @@ function coverFigure(image, { from, until, clear, input } = {}) {
   </figure>`;
 }
 
-/** Capture d'écran (HUD, chargement) : affichée telle quelle, touche pour l'agrandir. */
-function shotFigure(image) {
-  return `<figure class="shot-wrap">
-    <img class="shot" src="${esc(image.url)}" alt="" data-action="zoom" draggable="false">
-    <span class="shot-zoom" aria-hidden="true">⤢</span>
-  </figure>`;
-}
-function zoomShot(url) {
-  let el = $('#zoom');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'zoom';
-    el.addEventListener('click', () => { el.hidden = true; });
-    document.body.appendChild(el);
-  }
-  el.innerHTML = `<img src="${esc(url)}" alt="">`;
-  el.hidden = false;
-}
-const closeZoom = () => { const el = $('#zoom'); if (el) el.hidden = true; };
 
 // =====================================================================  sons (Quel jeu fait ce bruit ?)
 /**

@@ -20,7 +20,6 @@ let contentIndex = null;
 function contentIdOf(r, mode) {
   if (r.slug && r.kind === 'cover') return `covers:${r.slug}`;
   if (r.soundId != null) return `sounds:${r.soundId}`;
-  if (r.screenId != null) return `${mode}:${r.screenId}`;
   if (!contentIndex) {
     contentIndex = new Map();
     try {

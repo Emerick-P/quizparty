@@ -123,7 +123,6 @@ const views = {
     let media = '';
     if (GUESS_KINDS.includes(r.kind)) {
       media = r.kind === 'cover' ? coverFigure(r.image, { until: r.endsAt, from: r.startsAt, input: r.input })
-        : r.kind === 'screen' ? shotFigure(r.image)
         : r.kind === 'sound' ? soundFigure(r)
         : r.kind === 'emoji' ? emojiLine(r.emojis)
         : `<blockquote class="pitch">${r.pitch ? esc(r.pitch) : '<span class="muted">Le serveur n’est pas à jour : relance-le pour voir le pitch.</span>'}</blockquote>`;
@@ -232,22 +231,6 @@ const views = {
           <p class="muted cw-legend"><span class="sw ok"></span> trouvé par toi <span class="sw miss"></span> pas trouvé</p>
           ${cwClues(sol, { found: mine, solution: true })}
         </div>` : ''}`;
-    } else if (r.kind === 'screen') {
-      const img = rv.image;
-      detail = `
-        ${img ? shotFigure(img) : ''}
-        <div class="shot-meta">
-          <div class="val">${esc(rv.correctText)}</div>
-          <div class="muted">${rv.year ?? ''}${img ? `${rv.year ? ' · ' : ''}${esc(img.source)}` : ''}</div>
-        </div>
-        ${r.input === 'choice' ? `
-        <div class="choices reveal n${r.choices.length}">
-          ${r.choices.map((c, i) => `
-            <div class="choice c${i} ${i === rv.correctIndex ? 'correct' : 'wrong'}">
-              <span>${esc(c)}${me && me.answer === i ? '<span class="mine">toi</span>' : ''}</span>
-              <span class="count">${rv.counts[i]}</span>
-            </div>`).join('')}
-        </div>` : resultList()}`;
     } else if (GUESS_KINDS.includes(r.kind)) {
       const img = rv.image;
       detail = `
@@ -330,7 +313,7 @@ const views = {
             </li>`).join('')}
         </ul>
       </section>`}
-      ${state.admin && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
+      ${state.admin && ['cover', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${r.kind === 'sound' ? 'Son retiré' : 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${r.kind === 'sound' ? 'ce son' : 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
       </div>
       </div>
       ${swipe ? `<div class="rv-dots" role="tablist" aria-label="Pages de la correction">

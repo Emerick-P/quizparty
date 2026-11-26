@@ -27,7 +27,6 @@ export function contentRows() {
   COVER_GAMES.forEach((g) => add({ id: `covers:${g.slug}`, mode: 'covers', game: g.title, answer: g.title, extra: { slug: g.slug, year: g.year, ...(g.aliases ? { aliases: g.aliases } : {}), ...(g.short ? { short: g.short } : {}) } }));
   PITCHES.forEach((p, i) => add({ id: `pitch:${i}`, mode: 'pitch', game: game(p), prompt: p.pitch, answer: game(p), level: p.level ?? null }));
   EMOJI_PUZZLES.forEach((e, i) => add({ id: `emoji:${i}`, mode: 'emoji', game: game(e), prompt: e.emojis, answer: game(e), level: e.level ?? null, info: e.why ?? null }));
-  readJson('data/screens/screens.json', 'screens').forEach((s) => add({ id: `${s.type}:${s.id}`, mode: s.type, game: s.title, answer: s.title, extra: { year: s.year, credit: s.credit } }));
   readJson('data/sounds/sounds.json', 'sounds').forEach((s) => add({ id: `sounds:${s.id}`, mode: 'sounds', game: game(s), prompt: s.what ?? null, answer: game(s), extra: { source: s.source?.site ?? null, seriesWide: !!s.seriesWide } }));
   CROSSWORD_WORDS.forEach((w, i) => add({ id: `crossword:${i}`, mode: 'crossword', prompt: w.clue, answer: w.word, level: w.level ?? null }));
   return rows;

@@ -4,7 +4,6 @@ import estimation from './estimation.js';
 import cover from './cover.js';
 import pitch from './pitch.js';
 import typed from './typed.js';
-import screen from './screen.js';
 import emoji from './emoji.js';
 import sound from './sound.js';
 import crossword, { makeGrid } from './crossword.js';
@@ -16,11 +15,10 @@ import { EMOJI_PUZZLES } from '../data/emojis.js';
 import { seriesOf } from '../data/series.js';
 import { COVER_GAMES } from '../data/cover-games.js';
 import { covers } from '../images/index.js';
-import { screens, SCREEN_TYPES } from '../images/screens.js';
 import { sounds } from '../images/sounds.js';
 
 /** Types de manche : la logique de validation / score / correction. */
-export const KINDS = { qcm, estimation, cover, pitch, typed, screen, emoji, sound, crossword };
+export const KINDS = { qcm, estimation, cover, pitch, typed, emoji, sound, crossword };
 
 function shuffle(arr) {
   const a = [...arr];
@@ -279,74 +277,8 @@ function buildEmojis(input, n, used, level = 'easy', avoid = null) {
   }));
 }
 
-// ---- Captures d'écran (HUD, écran de chargement)
-
+/** Clé de titre d'un jeu (anti-doublon dans une partie). */
 const titleKey = (g) => normalize(g.title);
-
-/**
- * Tire n captures d'un type, un seul exemplaire par jeu dans la partie, en évitant celles déjà vues
- * dans le salon. Les fausses propositions viennent de la liste des jaquettes et des jeux des captures.
- */
-function buildScreens(type, input, n, used, avoid = null) {
-  const pool = screens.ready(type);
-  if (!pool.length) throw new Error(screensUnavailable(type)());
-  const prefix = `s:${type}:`;
-  const allowed = pool.filter((s) => !avoid?.has(gameKey(s.game)));
-  let fresh = allowed.filter((s) => !used.has(prefix + s.id));
-  if (!fresh.length) {
-    for (const s of pool) used.delete(prefix + s.id);
-    fresh = allowed;
-  }
-  const chosen = [];
-  const seen = new Set();
-  for (const s of shuffle(fresh)) {
-    if (chosen.length >= n) break;
-    if (seen.has(titleKey(s.game))) continue;
-    seen.add(titleKey(s.game));
-    chosen.push(s);
-  }
-  // Tous les jeux connus, sans doublon de titre, pour les fausses propositions
-  const others = new Map();
-  for (const g of [...COVER_GAMES, ...screens.games()]) if (!others.has(titleKey(g))) others.set(titleKey(g), { game: g });
-  const decoys = [...others.values()].filter((x) => x.game.year);
-  const rounds = chosen.map((s) => {
-    used.add(prefix + s.id);
-    const game = s.game;
-    const round = {
-      kind: 'screen',
-      screen: type,
-      screenId: s.id,
-      input,
-      prompt: 'Quel est ce jeu ?',
-      slug: game.slug,
-      title: game.title,
-      base: game.base, // titre du jeu de base (Isaac : Rebirth → The Binding of Isaac)
-      year: game.year,
-      image: screens.publicImage(s, 'easy'),
-      full: screens.publicImage(s, 'full'),
-    };
-    if (input === 'choice' && PLATFORMS[s.platform]) {
-      const rivals = PLATFORMS[s.platform].filter((t) => normalize(t) !== normalize(game.title));
-      const choices = shuffle([game.title, ...shuffle(rivals).slice(0, 3)]);
-      round.choices = choices;
-      round.correctIndex = choices.indexOf(game.title);
-    } else if (input === 'choice') {
-      const rivals = decoys.filter((x) => titleKey(x.game) !== titleKey(game));
-      const choices = shuffle([game.title, ...distractors({ ...game, year: game.year ?? 2010 }, rivals)]);
-      round.choices = choices;
-      round.correctIndex = choices.indexOf(game.title);
-    } else {
-      round.accepted = acceptedAnswers(game, {});
-    }
-    return round;
-  });
-  return remember(avoid, rounds);
-}
-
-const screensUnavailable = (type) => () => {
-  if (screens.ready(type).length) return null;
-  return `Pas encore d'images : dépose des captures dans ${SCREEN_TYPES[type].dir}/`;
-};
 
 // ---- Quel jeu fait ce bruit ?
 
@@ -458,13 +390,13 @@ function buildCrosswords(used, level = 'easy') {
 // ---- Mix
 
 /**
- * Le Mix pioche dans tous les modes jouables : un mode grisé (pas de jaquettes, pas de captures) est sauté.
+ * Le Mix pioche dans tous les modes jouables : un mode grisé (pas de jaquettes, pas de sons) est sauté.
  * Les manches sont réparties à parts égales entre les modes (le reste au hasard), puis mélangées en évitant
  * deux manches du même mode d'affilée. Les réglages du salon s'appliquent quand le mode les connaît :
  * Réponse (4 choix / tapée) pour le Quiz et les modes « Quel est ce jeu ? », Niveau pour le Pitch et les emojis.
  * Chaque manche garde son propre fonctionnement (essais, 5 s de plus pour taper, dépixelisation…).
  */
-export const MIX_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds', 'bande'];
+export const MIX_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji', 'sounds', 'bande'];
 const QUIZ_PARTS = ['quiz', 'vraifaux', 'estimation'];
 
 /** Manches « Quel est ce jeu ? » : jamais deux fois le même jeu dans la partie (avoid). */
@@ -472,8 +404,6 @@ const GUESS_BUILD = {
   covers: (k, used, s, avoid) => buildCovers(s.input, k, used, avoid),
   pitch: (k, used, s, avoid) => buildPitches(s.input, k, used, s.level, avoid),
   emoji: (k, used, s, avoid) => buildEmojis(s.input, k, used, s.level, avoid),
-  hud: (k, used, s, avoid) => buildScreens('hud', s.input, k, used, avoid),
-  loading: (k, used, s, avoid) => buildScreens('loading', s.input, k, used, avoid),
   sounds: (k, used, s, avoid) => buildSounds(s.input, k, used, avoid),
   // Ta bande : toujours à choix ou estimation, quel que soit le réglage Réponse
   bande: (k, used, s) => buildBande(k, used, s.ctx),
@@ -562,7 +492,7 @@ function buildMix(n, used, settings = {}, ctx = null) {
     return rounds.length;
   };
   for (const id of parts) if (GUESS_BUILD[id] && counts.get(id)) guess(id, counts.get(id));
-  // Banque trop petite (peu de captures, captures déjà toutes vues) : les manches manquantes vont aux
+  // Banque trop petite (peu de sons, sons déjà tous entendus) : les manches manquantes vont aux
   // modes qui en ont le moins, pour garder l'équilibre
   const exhausted = new Set(parts.filter((id) => GUESS_BUILD[id] && got.get(id) < counts.get(id)));
   const load = (id) => (GUESS_BUILD[id] ? got.get(id) : counts.get(id)); // manches prévues pour ce mode
@@ -642,22 +572,6 @@ export const MODES = {
     inputs: true,
     build: (n, used, s) => buildEmojis(s.input, n, used, s.level),
   },
-  hud: {
-    name: 'HUD',
-    reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
-    description: 'Reconnais le jeu à son interface seule : le décor et les personnages sont masqués.',
-    unavailable: screensUnavailable('hud'),
-    inputs: true,
-    build: (n, used, s) => buildScreens('hud', s.input, n, used),
-  },
-  loading: {
-    name: 'Écran de chargement',
-    reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
-    description: 'Reconnais le jeu à son écran de chargement, titre et logo masqués.',
-    unavailable: screensUnavailable('loading'),
-    inputs: true,
-    build: (n, used, s) => buildScreens('loading', s.input, n, used),
-  },
   sounds: {
     name: 'Quel jeu fait ce bruit ?',
     reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
@@ -675,7 +589,7 @@ export const MODES = {
   },
   mix: {
     name: 'Mix',
-    description: (ctx) => `Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, ${ctx?.reserved ? 'HUD, chargements, sons, ' : ''}ta bande.`,
+    description: (ctx) => `Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, ${ctx?.reserved ? 'sons, ' : ''}ta bande.`,
     levels: true,
     inputs: true,
     mix: true, // réglages propres : jeux cochés (mixParts) et réponse au hasard (mixInput)
@@ -690,7 +604,7 @@ export const MODES = {
 };
 
 /**
- * Modes réservés (sons extraits des jeux, captures HUD / écrans de chargement : droits non acquis).
+ * Modes réservés (sons extraits des jeux : droits non acquis).
  * Ils n'existent que pour les salons dont l'HÔTE a un compte autorisé (profiles.role 'friend' ou 'admin') :
  * ctx.reserved, calculé par room.js. Ailleurs, ils sont absents de la liste, du Mix et du Défi du jour,
  * et refusés par le serveur. Sans ctx (défi du jour), jamais.

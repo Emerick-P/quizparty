@@ -10,18 +10,17 @@ const nf = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 3 });
 const hue = (s) => [...String(s)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 const SHAPES = ['A', 'B', 'C', 'D'];
 const KIND_LABEL = { qcm: 'Question', estimation: 'Estimation', cover: 'Jaquette', pitch: 'Pitch mal expliqué', emoji: 'Le jeu en emojis', sound: 'Quel jeu fait ce bruit ?', typed: 'Question', crossword: 'Mots croisés' };
-const SCREEN_LABEL = { hud: 'HUD', loading: 'Écran de chargement' };
-const kindLabel = (r) => (r.kind === 'screen' ? SCREEN_LABEL[r.screen] : r.kind === 'qcm' && r.choices?.length === 2 ? 'Vrai ou faux' : KIND_LABEL[r.kind]) || '';
+const kindLabel = (r) => (r.kind === 'qcm' && r.choices?.length === 2 ? 'Vrai ou faux' : KIND_LABEL[r.kind]) || '';
 const LEVEL_LABEL = { easy: 'Facile', hard: 'Difficile' };
 const INPUT_LABEL = { choice: '4 choix', text: 'Réponse tapée' };
 const MIX_INPUT_LABEL = { mixed: 'Au hasard', choice: '4 choix', text: 'Réponse tapée' };
-const GUESS_KINDS = ['cover', 'pitch', 'emoji', 'screen', 'sound']; // manches « Quel est ce jeu ? » (4 choix ou saisie du titre)
-const TYPED_KINDS = ['cover', 'pitch', 'emoji', 'typed', 'screen', 'sound']; // manches où l'on peut taper sa réponse, avec plusieurs essais
+const GUESS_KINDS = ['cover', 'pitch', 'emoji', 'sound']; // manches « Quel est ce jeu ? » (4 choix ou saisie du titre)
+const TYPED_KINDS = ['cover', 'pitch', 'emoji', 'typed', 'sound']; // manches où l'on peut taper sa réponse, avec plusieurs essais
 
 /** Salon : jeux regroupés par genre, avec une vignette (emoji + couleur). Un mode absent d'ici va dans « Autres ». */
 const MODE_GROUPS = [
   { name: 'Culture jeu vidéo', ids: ['quiz', 'vraifaux', 'estimation'] },
-  { name: 'Devine le jeu', ids: ['covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds'] },
+  { name: 'Devine le jeu', ids: ['covers', 'pitch', 'emoji', 'sounds'] },
   { name: 'Lettres et mélange', ids: ['crossword', 'mix'] },
   { name: 'Entre amis', ids: ['bande'] },
 ];
@@ -62,7 +61,6 @@ const ICONS = {
   image: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>',
   chat: '<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/>',
   smile: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>',
-  hourglass: '<path d="M5 22h14M5 2h14M17 22v-4.2a2 2 0 0 0-.6-1.4L12 12l-4.4 4.4a2 2 0 0 0-.6 1.4V22M7 2v4.2a2 2 0 0 0 .6 1.4L12 12l4.4-4.4a2 2 0 0 0 .6-1.4V2"/>',
   music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
   grid: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>',
   shuffle: '<path d="m18 14 4 4-4 4M18 2l4 4-4 4M2 18h1.4a4 4 0 0 0 3.3-1.7l6.6-9.6A4 4 0 0 1 16.6 5H22M2 6h1.4a4 4 0 0 1 3.3 1.7l1 1.4M22 18h-5.4a4 4 0 0 1-3.3-1.7l-.9-1.3"/>',
@@ -71,8 +69,8 @@ const ico = (name) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${
 /** Vignette de chaque jeu : icône et couleur (sur les tons des touches de réponse). */
 const MODE_ART = {
   quiz: ['help', '#a46bff'], vraifaux: ['scale', '#4f8cff'], estimation: ['target', '#ff6a47'],
-  covers: ['image', '#ff6a47'], pitch: ['chat', '#4f8cff'], emoji: ['smile', '#ffbe2e'], hud: ['gamepad', '#a46bff'],
-  loading: ['hourglass', '#4f8cff'], sounds: ['music', '#ffbe2e'], crossword: ['grid', '#d6f45b'], mix: ['shuffle', '#d6f45b'],
+  covers: ['image', '#ff6a47'], pitch: ['chat', '#4f8cff'], emoji: ['smile', '#ffbe2e'],
+  sounds: ['music', '#ffbe2e'], crossword: ['grid', '#d6f45b'], mix: ['shuffle', '#d6f45b'],
   bande: ['users', '#ff6a47'],
 };
 const modeArt = (id) => { const [name, color] = MODE_ART[id] || ['gamepad', '#a46bff']; return [ico(name), color]; };

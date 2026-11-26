@@ -13,18 +13,16 @@ import assert from 'node:assert/strict';
 import { io } from 'socket.io-client';
 import { MODES, MIX_PARTS, gameKey } from '../server/games/index.js';
 import { covers } from '../server/images/index.js';
-import { screens } from '../server/images/screens.js';
 import { normalize } from '../server/games/fuzzy.js';
 import { seriesOf } from '../server/data/series.js';
 import { COVER_GAMES } from '../server/data/cover-games.js';
 import { PITCHES } from '../server/data/pitches.js';
 import { EMOJI_PUZZLES } from '../server/data/emojis.js';
-// Salon dont l'hôte a accès aux modes réservés (sons, HUD, chargements) : voir RESERVED_MODES
+// Salon dont l'hôte a accès aux modes réservés (sons) : voir RESERVED_MODES
 const FRIEND = { reserved: true };
-assert.ok(MODES.mix.build(20, new Set(), { level: 'easy' }).every((r) => !['hud', 'loading', 'sounds'].includes(r.mixPart)), 'sans accès : pas de modes réservés dans le Mix');
+assert.ok(MODES.mix.build(20, new Set(), { level: 'easy' }).every((r) => r.mixPart !== 'sounds'), 'sans accès : pas de modes réservés dans le Mix');
 
 // ------------------------------------------------------------------ construction des parties
-screens.load();
 // Jaquettes simulées : toute la liste est « en cache » (le vrai IGDB n'est pas joignable ici)
 const fakeCovers = COVER_GAMES.map((game) => ({ game, entry: { id: `id-${game.slug}`, source: 'IGDB' } }));
 const real = { ready: covers.ready, status: covers.status, publicImage: covers.publicImage };
@@ -34,7 +32,7 @@ const withCovers = (on) => {
   covers.publicImage = (e) => ({ url: `/img/${e.id}`, source: 'IGDB' });
 };
 
-const GUESS = new Set(['covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds']);
+const GUESS = new Set(['covers', 'pitch', 'emoji', 'sounds']);
 const pitchLevel = new Map(PITCHES.map((p) => [p.pitch, p.level]));
 const emojiLevel = new Map(EMOJI_PUZZLES.map((p) => [p.emojis, p.level]));
 
@@ -46,10 +44,8 @@ function checkGame(rounds, n, s, parts) {
     assert.ok(parts.includes(r.mixPart), `mode inattendu dans le Mix : ${r.mixPart}`);
     counts.set(r.mixPart, counts.get(r.mixPart) + 1);
   }
-  // Seules les captures (petite banque, déjà vues dans les parties précédentes) peuvent manquer
   const c = [...counts.values()];
-  const full = [...counts].filter(([id]) => !['hud', 'loading'].includes(id)).map(([, k]) => k);
-  assert.ok(Math.max(...c) - Math.min(...full) <= 1, `répartition déséquilibrée : ${JSON.stringify(Object.fromEntries(counts))}`);
+  assert.ok(Math.max(...c) - Math.min(...c) <= 1, `répartition déséquilibrée : ${JSON.stringify(Object.fromEntries(counts))}`);
   // Pas deux manches du même mode d'affilée (toujours possible avec 7-8 modes)
   for (let i = 1; i < rounds.length; i++) assert.notEqual(rounds[i].mixPart, rounds[i - 1].mixPart, 'deux manches du même mode d\'affilée');
 
@@ -98,7 +94,6 @@ for (const coversOn of [true, false]) {
   withCovers(coversOn);
   const parts = MIX_PARTS.filter((id) => !MODES[id].unavailable?.());
   assert.equal(parts.includes('covers'), coversOn, 'Jaquettes sautées quand elles sont indisponibles');
-  if (screens.ready('hud').length) assert.ok(parts.includes('hud'));
   for (const input of ['choice', 'text']) {
     for (const level of ['easy', 'hard']) {
       const s = { input, level };
@@ -145,8 +140,7 @@ withCovers(true);
 {
   const inputOf = (r) => (r.kind === 'typed' ? 'text' : r.kind === 'qcm' ? 'choice' : r.input);
   for (let g = 0; g < 50; g++) {
-    // (HUD et chargements seuls n'ont pas assez d'images pour 10 manches : le Mix complète avec des questions)
-    const only = [...MIX_PARTS.filter((x) => !['hud', 'loading', 'bande'].includes(x))].sort(() => Math.random() - 0.5).slice(0, 1 + (g % 4));
+    const only = [...MIX_PARTS.filter((x) => x !== 'bande')].sort(() => Math.random() - 0.5).slice(0, 1 + (g % 4));
     const rounds = MODES.mix.build(10, new Set(), { mixInput: 'mixed', mixParts: only, level: 'easy' }, FRIEND);
     assert.equal(rounds.length, 10);
     for (const r of rounds) assert.ok(only.includes(r.mixPart), `${r.mixPart} pas coché (${only.join(', ')})`);
@@ -254,12 +248,12 @@ try {
     for (let i = 0; i < 10; i++) {
       const s = await A.waitFor((x) => x.phase === 'question' && x.round?.index === i);
       const r = s.round;
-      kinds.add(r.kind === 'screen' ? r.screen : r.kind);
+      kinds.add(r.kind);
       assert.equal(JSON.stringify(r).includes('"title"'), false, 'le titre du jeu ne part pas chez les joueurs');
       const answer = r.kind === 'estimation' ? 1 : r.choices ? 0 : 'Pas ça';
       if (r.kind === 'estimation' || r.choices) assert.equal(r.tries, 1);
       else assert.equal(r.tries, 3);
-      if (['cover', 'pitch', 'emoji', 'screen'].includes(r.kind)) assert.equal(r.input, input);
+      if (['cover', 'pitch', 'emoji'].includes(r.kind)) assert.equal(r.input, input);
       const bonus = r.choices ? 0 : 5000; // estimation et réponse tapée : 5 s de plus pour taper
       assert.equal(r.durationMs, 10000 + bonus, 'chrono du salon (+5 s pour taper)');
       await A.emit('game:answer', { roundId: r.id, answer });
@@ -275,7 +269,7 @@ try {
       assert.ok(rv.correctText !== undefined || rv.correctIndex !== undefined || rv.answer !== undefined, 'correction affichée');
     }
     await A.waitFor((x) => x.phase === 'end', 20000);
-    assert.ok(kinds.size >= 6, `partie variée : ${[...kinds].join(', ')}`);
+    assert.ok(kinds.size >= 5, `partie variée : ${[...kinds].join(', ')}`);
     console.log(`✓ partie Mix (${input === 'choice' ? '4 choix' : 'tapé'}) jouée jusqu'au podium : ${[...kinds].join(', ')}`);
   }
   console.log('✅ Tests Mix OK');

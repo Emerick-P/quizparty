@@ -205,8 +205,6 @@
   .play .emojis { margin: 0; padding: 10px; font-size: 2.2rem; }
   .play .sound-wrap { margin: 0; flex-direction: row; justify-content: center; gap: 14px; }
   .play .sound-btn { width: 96px; height: 96px; }
-  .play .shot-wrap { max-height: 58vh; overflow: hidden; }
-  .play .shot-wrap img { max-height: 58vh; }
   .play .about-line { margin: 0; font-size: .85rem; }
   .screen.has-side > .roster { margin-top: 0; }
   .screen.has-side > .roster ul { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -296,9 +294,6 @@
   .reveal-screen .rv-main .prompt.small { font-size: .95rem; padding: 6px 12px; }
   .reveal-screen .choices.reveal { gap: 6px; }
   .reveal-screen .choices.reveal .choice { padding: 6px 12px; font-size: .88rem; }
-  .reveal-screen .shot-wrap img { max-height: 52vh; }
-  .reveal-screen .shot-meta { margin: 0; }
-  .reveal-screen .shot-meta .val { font-size: 1.15rem; }
   .reveal-screen .emoji-why .emojis.small { font-size: 1.2rem; }
   .reveal-screen .emoji-why p { font-size: .85rem; margin: 2px 0 0; }
   .reveal-screen .cover-reveal .cover-wrap { height: 130px; }
@@ -308,7 +303,6 @@
   .reveal-screen .rv-dot { padding: 4px 8px; font-size: .8rem; }
   .reveal-screen .rv-host { position: absolute; bottom: max(8px, env(safe-area-inset-bottom)); right: 16px; }
   .reveal-screen .rv-host .btn { padding: 5px 10px; }
-  .reveal-screen .shot-wrap img { max-height: 38vh; }
 }
 
 /* ---------- « L'app sur ton téléphone » */
@@ -329,9 +323,6 @@
   .reveal-screen .result small { font-size: .85rem; }
   .reveal-screen .cover-reveal .cover-wrap { height: 120px; }
   .reveal-screen .cover-meta .val { font-size: 1.3rem; }
-  .reveal-screen .shot-wrap img { max-height: 24vh; }
-  .reveal-screen .shot-meta { margin: 2px 0 4px; }
-  .reveal-screen .shot-meta .val { font-size: 1.25rem; }
   .reveal-screen .emoji-why { padding: 8px 12px; }
   .reveal-screen .emoji-why .emojis.small { font-size: 1.3rem; }
   .reveal-screen .emoji-why p { margin: 4px 0 0; font-size: .88rem; }

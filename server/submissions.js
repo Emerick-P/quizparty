@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { store as defaultStore } from './store.js';
 import { COVER_GAMES } from './data/cover-games.js';
 import { EMOJI_PUZZLES } from './data/emojis.js';
+import { RESERVED_MODES } from './games/index.js';
 
 /**
  * Formulaire « Proposer » : les amis soumettent du contenu pour tous les modes (sauf mots croisés,
@@ -10,19 +11,17 @@ import { EMOJI_PUZZLES } from './data/emojis.js';
  * intègre ce qui est juste dans server/data/… puis passe la soumission en accepted / rejected / doubt.
  *
  * Champs communs : mode, author (pseudo), game (jeu concerné), prompt (question, pitch, emojis…),
- * answer (bonne réponse), extra (champs propres au mode), source (facultative), fichier (image ou son).
+ * answer (bonne réponse), extra (champs propres au mode), source (facultative), fichier son.
  */
 
 const clip = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').trim().slice(0, n) : '');
 
-const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const AUDIO_TYPES = { 'audio/mpeg': 'mp3', 'audio/mp3': 'mp3', 'audio/ogg': 'ogg', 'audio/wav': 'wav', 'audio/x-wav': 'wav', 'audio/wave': 'wav', 'audio/mp4': 'm4a', 'audio/x-m4a': 'm4a', 'audio/aac': 'aac', 'audio/webm': 'webm' };
-export const MAX_IMAGE = 8 * 1024 * 1024;
 export const MAX_AUDIO = 3 * 1024 * 1024;
 
 /**
  * Description de chaque mode pour le formulaire (le client construit les champs à partir d'ici).
- * need : champs obligatoires. file : 'image' | 'audio'.
+ * need : champs obligatoires. file : 'audio'.
  */
 export const SUBMIT_MODES = {
   quiz: { name: 'Quiz classique', hint: 'Une question à 4 choix sur le contenu d’un jeu (personnages, lieux, mécaniques…).', need: ['prompt', 'answer'], wrong: true },
@@ -31,8 +30,6 @@ export const SUBMIT_MODES = {
   covers: { name: 'Jaquette pixelisée', hint: 'Un jeu dont la jaquette mériterait d’être devinée.', need: ['game'] },
   pitch: { name: 'Pitch mal expliqué', hint: 'Le jeu résumé de travers, absurde mais vrai, sans le nommer.', need: ['prompt', 'game'] },
   emoji: { name: 'Le jeu en emojis', hint: 'Le jeu raconté en quelques emojis.', need: ['prompt', 'game'] },
-  hud: { name: 'HUD', hint: 'Une capture en jeu avec l’interface bien visible (vie, carte, munitions…).', need: ['file', 'game'], file: 'image' },
-  loading: { name: 'Écran de chargement', hint: 'Une capture d’un écran de chargement du jeu.', need: ['file', 'game'], file: 'image' },
   sounds: { name: 'Quel jeu fait ce bruit ?', hint: 'Un son culte, court (quelques secondes), qui ne dit pas le nom du jeu.', need: ['file', 'game'], file: 'audio' },
 };
 
@@ -44,15 +41,14 @@ export function knownGames() {
   return [...set].sort((a, b) => a.localeCompare(b, 'fr'));
 }
 
-function decodeFile(dataUrl, kind) {
+function decodeFile(dataUrl) {
   const m = /^data:([a-z0-9.+/-]+);base64,([A-Za-z0-9+/=\s]+)$/i.exec(dataUrl || '');
   if (!m) throw new Error('Fichier illisible, réessaie avec un autre.');
   const type = m[1].toLowerCase();
-  const ext = (kind === 'image' ? IMAGE_TYPES : AUDIO_TYPES)[type];
-  if (!ext) throw new Error(kind === 'image' ? 'Image JPG, PNG ou WebP seulement.' : 'Son MP3, OGG, WAV ou M4A seulement.');
+  const ext = AUDIO_TYPES[type];
+  if (!ext) throw new Error('Son MP3, OGG, WAV ou M4A seulement.');
   const buf = Buffer.from(m[2], 'base64');
-  const max = kind === 'image' ? MAX_IMAGE : MAX_AUDIO;
-  if (buf.length > max) throw new Error(`Fichier trop lourd (${Math.ceil(max / 1048576)} Mo maximum).`);
+  if (buf.length > MAX_AUDIO) throw new Error(`Fichier trop lourd (${Math.ceil(MAX_AUDIO / 1048576)} Mo maximum).`);
   if (buf.length < 200) throw new Error('Fichier vide ou trop petit.');
   return { buf, type: type === 'audio/mp3' ? 'audio/mpeg' : type, ext };
 }
@@ -89,14 +85,14 @@ export function parseSubmission(body) {
   const info = clip(body.info, 400);
   if (info) row.extra.info = info;
   // Pour les modes « trouve le jeu », la réponse est le jeu
-  if (['covers', 'pitch', 'emoji', 'hud', 'loading', 'sounds'].includes(mode)) row.answer = row.game;
+  if (['covers', 'pitch', 'emoji', 'sounds'].includes(mode)) row.answer = row.game;
   for (const f of def.need) {
-    if (f === 'file') { if (!body.file) throw new Error(def.file === 'image' ? 'Ajoute une image.' : 'Ajoute un son.'); continue; }
+    if (f === 'file') { if (!body.file) throw new Error('Ajoute un son.'); continue; }
     if (f === 'truth' || f === 'number') continue;
     if (!row[f]) throw new Error({ prompt: mode === 'emoji' ? 'Écris les emojis.' : mode === 'pitch' ? 'Écris le pitch.' : 'Écris la question.', answer: 'Écris la bonne réponse.', game: 'Indique le jeu.' }[f]);
   }
   if (mode === 'quiz' && row.extra.wrong?.some((w) => w.toLowerCase() === row.answer.toLowerCase())) throw new Error('Une mauvaise réponse est identique à la bonne.');
-  const file = def.file && body.file ? decodeFile(body.file, def.file) : null;
+  const file = def.file && body.file ? decodeFile(body.file) : null;
   return { row, file };
 }
 
@@ -114,13 +110,30 @@ function limiter(max = 40, windowMs = 3600_000) {
   };
 }
 
-export function installSubmissions(app, { store = defaultStore } = {}) {
+/**
+ * Modes réservés (sons : droits non acquis, voir RESERVED_MODES) : proposables
+ * seulement par un compte au rôle friend/admin (jeton Supabase dans l'en-tête Authorization).
+ * Sans comptes (local, tests sans Supabase), ouverts comme en jeu.
+ */
+async function reservedOk(req, auth) {
+  if (!auth?.enabled) return true;
+  const token = /^Bearer (.+)$/.exec(req.get('authorization') || '')?.[1];
+  return !!(token && (await auth.verify(token).catch(() => null))?.reserved);
+}
+
+export function installSubmissions(app, { store = defaultStore, auth = null } = {}) {
   const allow = limiter();
-  app.get('/api/submit/options', (_req, res) => {
-    res.json({ modes: SUBMIT_MODES, games: knownGames(), maxImage: MAX_IMAGE, maxAudio: MAX_AUDIO });
+  app.get('/api/submit/options', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const ok = await reservedOk(req, auth);
+    const modes = Object.fromEntries(Object.entries(SUBMIT_MODES).filter(([id]) => ok || !RESERVED_MODES.includes(id)));
+    res.json({ modes, games: knownGames(), maxAudio: MAX_AUDIO });
   });
   app.post('/api/submissions', express.json({ limit: '12mb' }), async (req, res) => {
     if (!allow(req.ip)) return res.status(429).json({ error: 'Beaucoup de propositions d’un coup ! Réessaie dans un moment.' });
+    if (RESERVED_MODES.includes(req.body?.mode) && !(await reservedOk(req, auth))) {
+      return res.status(403).json({ error: 'Ce mode n’est pas ouvert aux propositions avec ce compte.' });
+    }
     let parsed;
     try {
       parsed = parseSubmission(req.body);

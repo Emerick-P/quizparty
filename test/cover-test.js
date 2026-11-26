@@ -80,9 +80,7 @@ ko('rdr', ...full('Red Dead Redemption 2'));
 
 // Anti-collision : aucune écriture acceptée ne doit désigner deux jeux différents de la banque
 {
-  const screensFile = 'data/screens/screens.json';
-  const extra = fs.existsSync(screensFile) ? JSON.parse(fs.readFileSync(screensFile, 'utf8')).screens.filter((s) => !s.slug && s.title) : [];
-  const games = [...COVER_GAMES, ...extra];
+  const games = COVER_GAMES;
   const identity = (g) => normalize(g.base ?? baseTitles(g.title).at(-1) ?? g.title); // une édition ou un remake = le même jeu
   const owner = new Map();
   for (const g of games) {

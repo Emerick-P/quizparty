@@ -80,7 +80,6 @@ function render() {
     if (nameVal && $('#name')) $('#name').value = nameVal;
     if (codeVal && $('#code')) $('#code').value = codeVal;
   }
-  if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;
   buzzOnPhase(phase);
   guardBack();

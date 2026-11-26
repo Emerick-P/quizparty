@@ -121,7 +121,7 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 1.3rem; letter-sp
 .or::before, .or::after { background: var(--line); }
 
 /* Textes mis en avant (réponse, mot en cours…) : citron en sombre, encre en clair */
-.big-count, .sent-box b, .truth .val, .cover-meta .val, .shot-meta .val, .cw-current b, .cw-clues li b { color: var(--accent-text); }
+.big-count, .sent-box b, .truth .val, .cover-meta .val, .cw-current b, .cw-clues li b { color: var(--accent-text); }
 .big-count, .truth .val { font-weight: 600; font-family: var(--mono); }
 .logo b { display: inline; }
 /* Vrai / Faux : deux grandes touches, sans lettre */

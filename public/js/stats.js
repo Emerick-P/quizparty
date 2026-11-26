@@ -87,7 +87,7 @@ function statsBody() {
     ${(s.best || []).length ? `<ol class="st-games">${s.best.map(gameRow).join('')}</ol>` : '<p class="sh-note">Pas encore de jeu trouvé.</p>'}</div>
     <div class="st-col st-worst-col"><h3 class="st-h">${me ? 'Ceux qui te résistent' : 'Ceux qui lui résistent'}</h3>
     ${(s.worst || []).length ? `<ol class="st-games st-worst">${s.worst.map(gameRow).join('')}</ol>` : '<p class="sh-note">Aucun pour l’instant.</p>'}
-    <p class="sh-note small">Jaquettes, pitchs, emojis, sons, HUD et écrans de chargement. Un carré par fois où le jeu est tombé.</p></div>`;
+    <p class="sh-note small">Jaquettes, pitchs, emojis et sons. Un carré par fois où le jeu est tombé.</p></div>`;
   setTimeout(() => showStatsTab(false), 0);
   return `
     <div class="st-tabs" role="tablist">${STATS_TABS.map((t, i) => `<button role="tab" class="${i === statsUi.tab ? 'on' : ''}" data-action="stab" data-value="${i}">${t}</button>`).join('')}</div>
