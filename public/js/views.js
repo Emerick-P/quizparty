@@ -46,12 +46,14 @@ const views = {
       const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
       return `
     <main class="screen lobby lobby-m">
-      <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
-      <div class="lm-chips">
-        <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? `${ico('check')} Code copié` : `${ico('copy')} Copier le code`}</button>
-        ${host && !state.tv && TOUCH ? `<button class="chip-btn tv-chip" data-action="tvsheet">${ico('tv')} Sur la télé</button>` : ''}
-        <button class="chip-btn" data-action="sheet" data-value="note">${ico('lock')} Entre potes</button>
-      </div>
+      <section class="lm-code">
+        <button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}<small>Code du salon</small></button>
+        <div class="lm-chips">
+          <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? `${ico('check')} Code copié` : `${ico('copy')} Copier le code`}</button>
+          ${host && !state.tv && TOUCH ? `<button class="chip-btn tv-chip" data-action="tvsheet">${ico('tv')} Sur la télé</button>` : ''}
+          <button class="chip-btn" data-action="sheet" data-value="note">${ico('lock')} Entre potes</button>
+        </div>
+      </section>
       ${state.tv ? tvCard() : ''}
       <button class="lm-players" data-action="sheet" data-value="players" aria-label="Voir les joueurs (${count})">
         ${state.players.map((p) => `<span class="lm-pl ${p.connected ? '' : 'off'}" data-key="${p.id}">${avatar(p.name)}${p.id === state.hostId ? '<i>hôte</i>' : ''}<small>${esc(p.name)}</small></span>`).join('')}

@@ -252,7 +252,7 @@ Mode télé : vues de l’écran télé et du téléphone en manette.
 
 TOUCH, tvCard, tvSheet, tvPairView, tvLobbyView, tvQuestion, tvCrossword, padQuestion
 
-### public/js/views.js (376 l.)
+### public/js/views.js (378 l.)
 Écrans de jeu par phase (views[phase]) : salon, décompte, question, correction, podium…
 
 views
