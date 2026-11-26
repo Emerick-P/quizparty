@@ -89,11 +89,13 @@ alter table public.profiles enable row level security;
 grant select, insert, update, delete on public.profiles to service_role;
 -- Pseudo choisi dans la page Profil (le même sur tous les appareils)
 alter table public.profiles add column if not exists nickname text;
--- Rôle du joueur (player par défaut, admin) : modifiable seulement ici, dans Supabase (Table Editor → profiles).
+-- Rôle du joueur : modifiable seulement ici, dans Supabase (Table Editor → profiles).
+--   player (par défaut) ; friend = ouvre les modes réservés (sons, HUD, écrans de chargement) au salon dont il est
+--   l'hôte ; admin = friend + modération. Donner l'accès à un ami (après sa première connexion sur le site) :
+--   update public.profiles set role = 'friend' where name = 'Pseudo Discord ou Google';
 alter table public.profiles add column if not exists role text not null default 'player';
-do $$ begin
-  alter table public.profiles add constraint profiles_role_check check (role in ('player', 'admin'));
-exception when duplicate_object then null; end $$;
+alter table public.profiles drop constraint if exists profiles_role_check;
+alter table public.profiles add constraint profiles_role_check check (role in ('player', 'friend', 'admin'));
 
 -- Stats des joueurs connectés (et défi du jour) : une ligne par partie finie et par joueur…
 create table if not exists public.game_results (

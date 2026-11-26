@@ -92,7 +92,7 @@ const server = spawn(process.execPath, ['server/index.js'], {
     PORT: String(PORT),
     SUPABASE_URL: base,
     SUPABASE_SECRET_KEY: 'sb_secret_test',
-    ACCESS_CODE: '',
+
     COUNTDOWN_MS: '100',
     REVEAL_MS: '250',
     TWITCH_CLIENT_ID: '',

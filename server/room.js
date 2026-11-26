@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { MODES, KINDS, modeList, MIX_PARTS, MIX_INPUTS } from './games/index.js';
+import { MODES, KINDS, modeList, MIX_PARTS, MIX_INPUTS, allowed } from './games/index.js';
 import { emptyProgress, gridAt, VALIDATE_AT } from './games/crossword.js';
 import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
@@ -58,6 +58,9 @@ export class Room {
     this.timers = new Set();
     this.paused = null; // { at, by } : partie figée par l'hôte (bouton ⚑ Signaler)
     this.used = new Set(); // questions déjà posées dans ce salon (pas de répétition d'une partie à l'autre)
+    // Sons et captures (/sfx, /shot) : servis seulement pour les fichiers de la partie de ce salon, avec sa clé (voir protectMedia)
+    this.mediaKey = crypto.randomBytes(12).toString('hex');
+    this.media = new Set();
     // Score global : cumul des parties terminées dans ce salon, jusqu'à remise à zéro par l'hôte
     this.gamesPlayed = 0;
     this.archive = new Map(); // pseudo (minuscules) → { total, wins } des joueurs partis, rendu s'ils reviennent
@@ -202,6 +205,52 @@ export class Room {
     const next = candidates.find((p) => p.connected) ?? (this.players.has(this.hostId) ? null : candidates[0]);
     if (next) this.hostId = next.id;
     else if (!this.players.has(this.hostId)) this.hostId = null;
+    this.dropReserved();
+  }
+
+  // ------------------------------------------------------------------ contenus réservés
+
+  /**
+   * Modes réservés (sons, HUD, écrans de chargement : voir RESERVED_MODES) : ouverts si l'HÔTE a un compte
+   * autorisé (rôle 'friend' ou 'admin'), et alors pour tout le salon, invités compris.
+   * Sans comptes (PC, tests) : ouverts, comme les autres droits qui reviennent alors à l'hôte.
+   */
+  reservedOk() {
+    if (!Room.accounts) return true;
+    return !!this.players.get(this.hostId)?.user?.reserved;
+  }
+
+  /** L'hôte n'a plus l'accès (déconnexion du compte, passage de main) : le salon revient à un mode ouvert. */
+  dropReserved() {
+    if (!['lobby', 'end'].includes(this.phase)) return; // la partie en cours se termine telle quelle
+    const ctx = { reserved: this.reservedOk() };
+    if (!allowed(this.settings.mode, ctx)) this.settings.mode = 'quiz';
+    if (!this.settings.mixParts.some((id) => allowed(id, ctx))) this.settings.mixParts = [...MIX_PARTS];
+  }
+
+  /**
+   * Adresses des sons et captures de la partie : on y ajoute le code du salon et sa clé, et seuls ces
+   * fichiers-là sont servis (index.js, mediaFile). Personne ne peut parcourir la bibliothèque par URL.
+   */
+  protectMedia() {
+    this.media = new Set();
+    const q = `?r=${this.code}&k=${this.mediaKey}`;
+    const walk = (o) => {
+      if (!o || typeof o !== 'object') return;
+      for (const [k, v] of Object.entries(o)) {
+        const m = typeof v === 'string' && /^\/(shot|sfx)\/([\w.-]+)$/.exec(v);
+        if (m) {
+          this.media.add(`${m[1]}/${m[2]}`);
+          o[k] = v + q;
+        } else if (typeof v === 'object') walk(v);
+      }
+    };
+    walk(this.rounds);
+  }
+
+  /** Fichier de son/capture demandé avec ?r=&k= : autorisé seulement s'il fait partie de la partie du salon. */
+  mediaAllowed(kind, file, key) {
+    return typeof key === 'string' && key === this.mediaKey && this.media.has(`${kind}/${file}`);
   }
 
   connectedPlayers() {
@@ -212,7 +261,7 @@ export class Room {
 
   /** Ce qui dépend du salon pour les modes : les joueurs et leur profil Steam. */
   ctx() {
-    return { players: [...this.players.values()].map((p) => ({ id: p.id, name: p.name, steam: p.steam })) };
+    return { reserved: this.reservedOk(), players: [...this.players.values()].map((p) => ({ id: p.id, name: p.name, steam: p.steam })) };
   }
 
   /**
@@ -299,7 +348,7 @@ export class Room {
   updateSettings(s = {}) {
     if (!['lobby', 'end'].includes(this.phase)) throw new Error('Partie en cours');
     if (s.mode !== undefined) {
-      if (!MODES[s.mode]) throw new Error('Mode inconnu');
+      if (!allowed(s.mode, this.ctx())) throw new Error('Mode inconnu');
       const why = MODES[s.mode].unavailable?.(this.ctx());
       if (why) throw new Error(why);
       this.settings.mode = s.mode;
@@ -322,10 +371,11 @@ export class Room {
     }
     if (s.mixPart !== undefined) {
       // Coche ou décoche un jeu du Mix ; le dernier jeu coché ne peut pas être retiré
-      if (!OPTIONS.mixParts.includes(s.mixPart)) throw new Error('Jeu inconnu');
+      const ctx = this.ctx();
+      if (!OPTIONS.mixParts.includes(s.mixPart) || !allowed(s.mixPart, ctx)) throw new Error('Jeu inconnu');
       const on = new Set(this.settings.mixParts);
       if (on.has(s.mixPart)) {
-        if (on.size === 1) throw new Error('Garde au moins un jeu dans le Mix');
+        if ([...on].filter((id) => allowed(id, ctx)).length === 1) throw new Error('Garde au moins un jeu dans le Mix');
         on.delete(s.mixPart);
       } else on.add(s.mixPart);
       this.settings.mixParts = OPTIONS.mixParts.filter((id) => on.has(id));
@@ -355,10 +405,12 @@ export class Room {
   start() {
     if (!['lobby', 'end'].includes(this.phase)) throw new Error('Partie déjà en cours');
     const mode = MODES[this.settings.mode];
+    if (!allowed(this.settings.mode, this.ctx())) throw new Error('Mode inconnu');
     const why = mode.unavailable?.(this.ctx());
     if (why) throw new Error(why);
     this.rounds = mode.build(this.settings.rounds, this.used, this.settings, this.ctx());
     if (!this.rounds.length) throw new Error('Aucune question disponible');
+    this.protectMedia();
     for (const p of this.players.values()) {
       p.score = 0;
       p.lastPoints = 0;
@@ -457,6 +509,7 @@ export class Room {
     if (!p) return;
     p.user = user ?? null;
     if (look != null) p.look = look;
+    if (playerId === this.hostId) this.dropReserved();
     this.broadcast();
   }
 
@@ -825,6 +878,7 @@ export class Room {
 
   view(pid) {
     const r = this.round;
+    const ctx = this.ctx();
     const inRound = r && ['countdown', 'question', 'reveal'].includes(this.phase);
     const mine = inRound ? r.answers.get(pid) : undefined;
     const kind = inRound ? KINDS[r.kind] : null;
@@ -852,8 +906,9 @@ export class Room {
       admin: pid != null && this.canModerate(pid),
       serverNow: Date.now(),
       tv: this.tvOn, // un écran télé affiche la partie : les téléphones passent en manette
-      settings: this.settings,
-      options: { modes: modeList(this.ctx()), ...OPTIONS },
+      // Modes réservés : absents des réglages, de la liste et du Mix chez les salons sans accès
+      settings: { ...this.settings, mixParts: this.settings.mixParts.filter((id) => allowed(id, ctx)) },
+      options: { modes: modeList(ctx), ...OPTIONS, mixParts: OPTIONS.mixParts.filter((id) => allowed(id, ctx)) },
       phaseStartedAt: this.phaseStartedAt,
       phaseEndsAt: this.phaseEndsAt,
       gamesPlayed: this.gamesPlayed,

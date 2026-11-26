@@ -19,6 +19,9 @@ import { seriesOf } from '../server/data/series.js';
 import { COVER_GAMES } from '../server/data/cover-games.js';
 import { PITCHES } from '../server/data/pitches.js';
 import { EMOJI_PUZZLES } from '../server/data/emojis.js';
+// Salon dont l'hôte a accès aux modes réservés (sons, HUD, chargements) : voir RESERVED_MODES
+const FRIEND = { reserved: true };
+assert.ok(MODES.mix.build(20, new Set(), { level: 'easy' }).every((r) => !['hud', 'loading', 'sounds'].includes(r.mixPart)), 'sans accès : pas de modes réservés dans le Mix');
 
 // ------------------------------------------------------------------ construction des parties
 screens.load();
@@ -104,7 +107,7 @@ for (const coversOn of [true, false]) {
       const seenQuestions = new Set();
       for (let g = 0; g < 4; g++) {
         for (const n of [10, 20]) {
-          const rounds = MODES.mix.build(n, used, s);
+          const rounds = MODES.mix.build(n, used, s, FRIEND);
           checkGame(rounds, n, s, parts);
           built++;
           // Pas de répétition d'une partie à l'autre (les banques pitch / emojis / jaquettes sont assez grandes)
@@ -126,14 +129,14 @@ for (const coversOn of [true, false]) {
 // Peu de manches : 5 modes différents tirés au hasard parmi les disponibles
 withCovers(true);
 {
-  const r = MODES.mix.build(5, new Set(), { input: 'choice', level: 'easy' });
+  const r = MODES.mix.build(5, new Set(), { input: 'choice', level: 'easy' }, FRIEND);
   assert.equal(new Set(r.map((x) => x.mixPart)).size, 5, '5 manches = 5 modes différents');
 }
 // Sur beaucoup de parties de 10, chaque mode sort à peu près aussi souvent
 {
   const tally = new Map();
   const used = new Set();
-  for (let g = 0; g < 200; g++) for (const r of MODES.mix.build(10, used, { input: 'choice', level: 'hard' })) tally.set(r.mixPart, (tally.get(r.mixPart) ?? 0) + 1);
+  for (let g = 0; g < 200; g++) for (const r of MODES.mix.build(10, used, { input: 'choice', level: 'hard' }, FRIEND)) tally.set(r.mixPart, (tally.get(r.mixPart) ?? 0) + 1);
   const v = [...tally.values()];
   assert.ok(Math.min(...v) / Math.max(...v) > 0.8, `répartition sur 200 parties : ${JSON.stringify(Object.fromEntries(tally))}`);
   console.log(`✓ répartition sur 200 parties : ${[...tally].map(([k, n]) => `${k} ${n}`).join(', ')}`);
@@ -144,18 +147,18 @@ withCovers(true);
   for (let g = 0; g < 50; g++) {
     // (HUD et chargements seuls n'ont pas assez d'images pour 10 manches : le Mix complète avec des questions)
     const only = [...MIX_PARTS.filter((x) => !['hud', 'loading', 'bande'].includes(x))].sort(() => Math.random() - 0.5).slice(0, 1 + (g % 4));
-    const rounds = MODES.mix.build(10, new Set(), { mixInput: 'mixed', mixParts: only, level: 'easy' });
+    const rounds = MODES.mix.build(10, new Set(), { mixInput: 'mixed', mixParts: only, level: 'easy' }, FRIEND);
     assert.equal(rounds.length, 10);
     for (const r of rounds) assert.ok(only.includes(r.mixPart), `${r.mixPart} pas coché (${only.join(', ')})`);
     const flex = rounds.filter((r) => !['vraifaux', 'estimation'].includes(r.mixPart)).map(inputOf);
     if (flex.length >= 2) assert.deepEqual(new Set(flex), new Set(['choice', 'text']), `4 choix et tapé mélangés : ${flex.join(', ')}`);
   }
   for (const mixInput of ['choice', 'text']) {
-    const rounds = MODES.mix.build(10, new Set(), { mixInput, level: 'easy' });
+    const rounds = MODES.mix.build(10, new Set(), { mixInput, level: 'easy' }, FRIEND);
     for (const r of rounds) if (!['vraifaux', 'estimation'].includes(r.mixPart)) assert.equal(inputOf(r), mixInput);
   }
   // Liste vide ou inconnue : tous les jeux
-  assert.ok(new Set(MODES.mix.build(20, new Set(), { mixParts: [], level: 'easy' }).map((r) => r.mixPart)).size >= 6);
+  assert.ok(new Set(MODES.mix.build(20, new Set(), { mixParts: [], level: 'easy' }, FRIEND).map((r) => r.mixPart)).size >= 6);
   console.log('✓ jeux cochés respectés, 4 choix et réponse tapée mélangés au hasard');
 }
 Object.assign(covers, real);

@@ -526,7 +526,7 @@ function buildMix(n, used, settings = {}, ctx = null) {
   const mixInput = MIX_INPUTS.includes(settings.mixInput) ? settings.mixInput : settings.input === 'text' ? 'text' : 'choice';
   const level = settings.level === 'hard' ? 'hard' : 'easy';
   const s = { input: mixInput === 'text' ? 'text' : 'choice', level, ctx };
-  const parts = mixPartsOf(settings).filter((id) => !MODES[id].unavailable?.(ctx));
+  const parts = mixPartsOf(settings).filter((id) => allowed(id, ctx) && !MODES[id].unavailable?.(ctx));
   if (!parts.length) throw new Error('Aucun des jeux cochés pour le Mix n\'est disponible');
   // Réponse au hasard : chaque manche à réponse réglable est tirée en 4 choix ou en réponse tapée,
   // avec au moins une de chaque dès qu'il y a deux manches de ce genre (tirage préparé dans draws)
@@ -644,6 +644,7 @@ export const MODES = {
   },
   hud: {
     name: 'HUD',
+    reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
     description: 'Reconnais le jeu à son interface seule : le décor et les personnages sont masqués.',
     unavailable: screensUnavailable('hud'),
     inputs: true,
@@ -651,6 +652,7 @@ export const MODES = {
   },
   loading: {
     name: 'Écran de chargement',
+    reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
     description: 'Reconnais le jeu à son écran de chargement, titre et logo masqués.',
     unavailable: screensUnavailable('loading'),
     inputs: true,
@@ -658,6 +660,7 @@ export const MODES = {
   },
   sounds: {
     name: 'Quel jeu fait ce bruit ?',
+    reserved: true, // contenus aux droits problématiques : voir RESERVED_MODES
     description: 'Un son culte (pièce, cri, réplique…), à toi de trouver le jeu. Plus tu trouves tôt, plus tu marques.',
     unavailable: soundsUnavailable,
     inputs: true,
@@ -672,7 +675,7 @@ export const MODES = {
   },
   mix: {
     name: 'Mix',
-    description: 'Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, HUD, chargements, sons, ta bande.',
+    description: (ctx) => `Les jeux de ton choix mélangés : quiz, vrai ou faux, estimation, jaquettes, pitchs, emojis, ${ctx?.reserved ? 'HUD, chargements, sons, ' : ''}ta bande.`,
     levels: true,
     inputs: true,
     mix: true, // réglages propres : jeux cochés (mixParts) et réponse au hasard (mixInput)
@@ -686,7 +689,18 @@ export const MODES = {
   },
 };
 
+/**
+ * Modes réservés (sons extraits des jeux, captures HUD / écrans de chargement : droits non acquis).
+ * Ils n'existent que pour les salons dont l'HÔTE a un compte autorisé (profiles.role 'friend' ou 'admin') :
+ * ctx.reserved, calculé par room.js. Ailleurs, ils sont absents de la liste, du Mix et du Défi du jour,
+ * et refusés par le serveur. Sans ctx (défi du jour), jamais.
+ */
+export const RESERVED_MODES = Object.keys(MODES).filter((id) => MODES[id].reserved);
+export const allowed = (id, ctx = null) => !!MODES[id] && (!MODES[id].reserved || !!ctx?.reserved);
+
 /** Liste envoyée aux clients. `unavailable` : raison pour laquelle le mode est grisé, sinon null. */
-/** ctx : ce qui dépend du salon (joueurs ayant lié leur profil Steam, pour « Ta bande »). */
+/** ctx : ce qui dépend du salon (joueurs ayant lié leur profil Steam pour « Ta bande », accès aux modes réservés). */
 export const modeList = (ctx = null) =>
-  Object.entries(MODES).map(([id, m]) => ({ id, name: m.name, description: m.description, levels: !!m.levels, inputs: !!m.inputs, grids: !!m.grids, mix: !!m.mix, unavailable: m.unavailable?.(ctx) ?? null }));
+  Object.entries(MODES)
+    .filter(([id]) => allowed(id, ctx))
+    .map(([id, m]) => ({ id, name: m.name, description: typeof m.description === 'function' ? m.description(ctx) : m.description, levels: !!m.levels, inputs: !!m.inputs, grids: !!m.grids, mix: !!m.mix, unavailable: m.unavailable?.(ctx) ?? null }));

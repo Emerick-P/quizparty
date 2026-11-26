@@ -54,7 +54,7 @@ L'état des parties est gardé en mémoire : il faut **une seule instance** du s
 
 **Site permanent : Render (choix actuel)**
 
-Le fichier `render.yaml` décrit le service : Render → **New → Blueprint** → choisir le dépôt GitHub, puis remplir `ACCESS_CODE`, `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET`. Chaque `git push` sur la branche principale redéploie le site (ce qui coupe les parties en cours).
+Le fichier `render.yaml` décrit le service : Render → **New → Blueprint** → choisir le dépôt GitHub, puis remplir `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET`. Chaque `git push` sur la branche principale redéploie le site (ce qui coupe les parties en cours).
 
 - Formule gratuite (512 Mo) : le serveur s'endort après 15 minutes sans visite ni message temps réel ; le premier visiteur voit la page d'attente de Render environ une minute. 750 heures gratuites par mois, assez pour un service allumé en continu.
 - Disque non conservé : à chaque réveil, les jaquettes sont retéléchargées depuis IGDB (les modes Jaquette sont grisés quelques instants) et `data/feedback.jsonl` repart de zéro.
@@ -65,13 +65,13 @@ Le fichier `render.yaml` décrit le service : Render → **New → Blueprint** �
 Ubuntu + Node + Caddy (HTTPS automatique, WebSocket compris). Node n'écoute que sur la machine (`HOST=127.0.0.1`), Caddy est la seule porte d'entrée.
 
 1. Sur la VM, cloner le dépôt GitHub (privé, clé de déploiement en lecture seule) dans `~/quizparty`.
-2. `sudo bash deploy/install.sh [domaine]` : installe Node 22 et Caddy, ouvre les ports 80/443 dans le pare-feu de la VM, demande le code d'accès et les clés Twitch pour créer `.env`, crée le service `quizparty` (démarrage auto, redémarrage en cas de plantage). Sans domaine, le site répond sur `https://<ip-avec-tirets>.sslip.io`. Le script peut être relancé (par exemple avec le vrai domaine).
+2. `sudo bash deploy/install.sh [domaine]` : installe Node 22 et Caddy, ouvre les ports 80/443 dans le pare-feu de la VM, demande les clés Twitch pour créer `.env`, crée le service `quizparty` (démarrage auto, redémarrage en cas de plantage). Sans domaine, le site répond sur `https://<ip-avec-tirets>.sslip.io`. Le script peut être relancé (par exemple avec le vrai domaine).
 3. Mise à jour après un `git push` : `bash ~/quizparty/deploy/update.sh` (coupe les parties en cours).
 4. Côté Oracle, la « Security List » du réseau doit aussi autoriser les ports 80 et 443 en entrée.
 
 Commandes utiles sur la VM : `sudo journalctl -u quizparty -f` (logs du jeu), `sudo journalctl -u caddy -n 50` (HTTPS), `sudo systemctl restart quizparty`.
 
-**Code d'accès « entre amis »** : si `ACCESS_CODE` est défini dans `.env`, une page `/entree` demande ce code une fois par appareil (cookie de 6 mois, casse ignorée, 10 essais ratés max par IP et par 10 min). Les pages, images, sons et le temps réel sont refusés sans ce cookie ; `/health` reste ouvert pour la surveillance. Changer le code puis redémarrer déconnecte tout le monde. Sans `ACCESS_CODE`, le site est ouvert.
+**Contenus réservés** (sons, captures HUD / écrans de chargement, droits non acquis) : le site est ouvert à tous, mais ces modes n'apparaissent que dans les salons dont l'hôte a un compte au rôle `friend` ou `admin` (table `profiles`, colonne `role`, dans Supabase). Leurs fichiers ne sont jamais servis en accès direct : seulement ceux de la partie en cours d'un salon, avec la clé de ce salon.
 
 **Depuis ton PC, en une commande (tunnel Cloudflare)**
 1. Une seule fois : `winget install --id Cloudflare.cloudflared` (gratuit, sans compte).
@@ -174,7 +174,7 @@ Une partie = une seule manche au chrono fixe (5, 10, 15 ou 20 min : le réglage 
 
 ## Propositions des amis et Supabase
 
-Page **/proposer** (lien sur l'accueil), derrière le même code d'accès : tous les modes sauf les mots croisés.
+Page **/proposer** (lien dans le salon) : tous les modes sauf les mots croisés.
 Chaque proposition arrive avec le statut `pending` ; elle est vérifiée puis intégrée dans `server/data/…`
 (ou refusée), et son statut passe à `accepted`, `rejected` ou `doubt` (question à trancher par le client).
 
@@ -201,7 +201,6 @@ démarrage et une fois par jour, et `.github/workflows/keepalive.yml` réveille 
 ```
 server/
   index.js        serveur HTTP + Socket.IO
-  access.js       code d'accès « entre amis » (ACCESS_CODE)
   rooms.js        création / accès aux salons, routage des événements
   room.js         moteur de partie (phases, chrono, réponses, scores)
   games/          logique de chaque type de manche (cover.js = jaquettes, fuzzy.js = comparaison des titres tapés)

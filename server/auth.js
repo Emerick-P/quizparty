@@ -8,8 +8,9 @@ import { store } from './store.js';
  *   d'accès (1 h) et un jeton de renouvellement. Le navigateur ne parle à Supabase que pour cette redirection.
  * - Le serveur vérifie le jeton en demandant à Supabase à qui il appartient (/auth/v1/user), avec sa clé
  *   secrète : aucune clé n'est donnée au navigateur, et ça marche quelle que soit la méthode de signature.
- * - Rôles : colonne « role » de la table profiles (player par défaut, admin), modifiable seulement dans
+ * - Rôles : colonne « role » de la table profiles (player par défaut, friend, admin), modifiable seulement dans
  *   Supabase. Un admin seul peut accepter une réponse, supprimer une question ou retirer un jeu/une image/un son.
+ *   friend et admin ouvrent les modes réservés (sons, HUD, écrans de chargement) au salon dont ils sont l'hôte.
  *   ADMIN_USER_IDS (identifiants séparés par des virgules) reste possible en secours.
  * - Sans SUPABASE_URL / SUPABASE_SECRET_KEY (PC, tests) : pas de comptes, l'hôte garde ces droits.
  */
@@ -83,7 +84,7 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       return { enabled: settings.providers.length > 0, url, providers: settings.providers };
     },
 
-    /** Jeton d'accès → { id, name, avatar, provider, admin } ou null s'il est invalide/expiré. */
+    /** Jeton d'accès → { id, name, avatar, provider, role, admin, reserved } ou null s'il est invalide/expiré. */
     async verify(token) {
       if (!enabled || typeof token !== 'string' || token.length < 20 || token.length > 4096) return null;
       const h = crypto.createHash('sha256').update(token).digest('hex');
@@ -101,6 +102,8 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
         if (row?.role) user.role = row.role;
       }
       user.admin = user.role === 'admin' || admins.has(user.id); // ADMIN_USER_IDS : secours facultatif
+      // Contenus réservés (sons, HUD, écrans de chargement) pour le salon dont il est l'hôte : rôle 'friend' ou admin
+      user.reserved = user.admin || user.role === 'friend';
       if (cache.size > 2000) cache.clear();
       cache.set(h, { user, until: Date.now() + CACHE_MS });
       saveProfile(user);

@@ -161,10 +161,9 @@ try {
   const loading = modes.find((m) => m.id === 'loading');
   assert.ok(loading.inputs && !loading.levels, 'Chargement : format de réponse, pas de niveau');
 
-  // Fichiers : servis seulement s'ils sont connus et pas retirés
+  // Contenu réservé : jamais servi en accès direct (seulement les fichiers d'une partie, avec la clé du salon)
   const first = MANIFEST.screens[0].files.easy;
-  assert.equal((await get(`/shot/${first}`)).body, `RIFF-${first}`);
-  assert.equal((await get(`/shot/${MANIFEST.screens.find((s) => s.id === 'hud-ban').files.easy}`)).status, 404, 'image retirée non servie');
+  assert.equal((await get(`/shot/${first}`)).status, 404, 'pas d\'accès direct par URL');
   assert.equal((await get('/shot/..%2F..%2Fpackage.json')).status, 404);
   assert.equal((await get('/shot/inconnu123.webp')).status, 404);
 
@@ -183,8 +182,9 @@ try {
     assert.deepEqual(rB.image, r.image, 'même image pour tous');
     assert.equal(rB.startsAt, r.startsAt, 'même départ du chrono');
     for (const k of ['title', 'slug', 'screenId', 'full', 'correctIndex', 'accepted']) assert.equal(r[k], undefined, `${k} ne fuit pas`);
-    const f = byFile.get(r.image.url.replace('/shot/', ''));
+    const f = byFile.get(r.image.url.replace(/^\/shot\/|\?.*$/g, ''));
     assert.ok(f && f.k === 'easy', 'version question (pas l\'originale)');
+    assert.equal((await get(r.image.url)).body, `RIFF-${r.image.url.replace(/^\/shot\/|\?.*$/g, '')}`, 'servie au salon');
     assert.notEqual(f.s.id, 'hud-ban', 'image retirée jamais proposée');
     const title = titleOf(f.s.id);
     assert.ok(!seenGames.has(title), 'pas deux fois le même jeu');
@@ -197,7 +197,8 @@ try {
     const rv = (await C.waitFor((x) => x.phase === 'reveal' && x.round.index === i)).reveal;
     assert.equal(rv.correctText, title);
     assert.equal(rv.correctIndex, right);
-    assert.equal(byFile.get(rv.image.url.replace('/shot/', '')).k, 'full', 'capture d\'origine à la correction');
+    assert.equal(byFile.get(rv.image.url.replace(/^\/shot\/|\?.*$/g, '')).k, 'full', 'capture d\'origine à la correction');
+    assert.equal((await get(rv.image.url)).status, 200, 'capture d\'origine servie au salon');
     assert.equal(rv.image.source, 'Capture personnelle');
     assert.ok(rv.results.find((x) => x.name === 'Alice').points > 900);
     assert.equal(rv.results.find((x) => x.name === 'Bob').points, 0);
@@ -213,7 +214,7 @@ try {
   assert.equal(r.screen, 'loading');
   assert.equal(r.tries, 3);
   assert.equal(r.choices, undefined);
-  const f = byFile.get(r.image.url.replace('/shot/', ''));
+  const f = byFile.get(r.image.url.replace(/^\/shot\/|\?.*$/g, ''));
   const title = titleOf(f.s.id);
   assert.deepEqual(await D.emit('game:answer', { roundId: r.id, answer: title.split(' ')[0] }), { wrong: true, triesLeft: 2 }, 'réponse partielle refusée');
   assert.equal((await C.emit('game:answer', { roundId: r.id, answer: title.toLowerCase() })).correct, true);

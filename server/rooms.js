@@ -9,9 +9,8 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 
 export class RoomManager {
-  constructor(io, { access, auth } = {}) {
+  constructor(io, { auth } = {}) {
     this.io = io;
-    this.access = access;
     this.auth = auth; // comptes joueurs (facultatifs) : voir auth.js
     this.rooms = new Map();
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
@@ -72,7 +71,7 @@ export class RoomManager {
     return socket.data.screenOf ? this.rooms.get(socket.data.screenOf) : undefined;
   }
 
-  /** Événements d'un écran télé (les seuls permis à un écran pas encore entré avec le code d'accès). */
+  /** Événements d'un écran télé (appairage avec un salon). */
   screenEvents(socket, on) {
     on('screen:hello', () => {
       this.screenRoom(socket)?.detachScreen(socket);
@@ -136,10 +135,6 @@ export class RoomManager {
       if (socket.data.pin) this.pins.delete(socket.data.pin);
       this.screenRoom(socket)?.detachScreen(socket);
     };
-    if (socket.data.limited) {
-      socket.on('disconnect', dropScreen);
-      return; // écran télé pas encore entré : rien d'autre
-    }
 
     on('room:create', ({ name, look }) => {
       if (socket.data.look == null) socket.data.look = cleanLook(look) ?? '';
@@ -233,18 +228,17 @@ export class RoomManager {
     });
 
     on('room:settings', hostOnly((room, s) => room.updateSettings(s)));
-    // Mode télé : l'hôte tape le code affiché par l'écran (ou caste, qui passe par screen:grant)
+    // Mode télé : l'hôte tape le code affiché par l'écran (ou caste, qui passe par room:screen-grant)
     on('room:screen', hostOnly((room, { pin }) => {
       const tv = this.pins.get(String(pin || '').replace(/\D/g, ''));
       if (!tv || !tv.connected) throw new Error("Code d'écran introuvable : vérifie les chiffres affichés sur la télé");
       this.pins.delete(tv.data.pin);
       tv.data.pin = null;
-      const grant = tv.data.limited ? this.access?.grant?.() ?? null : null;
-      tv.emit('screen:paired', { code: room.code, token: room.screenToken, grant });
-      if (!grant) room.attachScreen(tv);
+      tv.emit('screen:paired', { code: room.code, token: room.screenToken });
+      room.attachScreen(tv);
       return { ok: true };
     }));
-    on('room:screen-grant', hostOnly((room) => ({ ok: true, code: room.code, token: room.screenToken, grant: this.access?.grant?.() ?? null })));
+    on('room:screen-grant', hostOnly((room) => ({ ok: true, code: room.code, token: room.screenToken })));
     on('room:screen-off', hostOnly((room) => room.dropScreens()));
     on('room:kick', hostOnly((room, { playerId }) => {
       if (playerId === socket.data.playerId) throw new Error('Tu ne peux pas te retirer toi-même');

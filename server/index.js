@@ -10,7 +10,6 @@ import { RoomManager } from './rooms.js';
 import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
-import { createAccess } from './access.js';
 import { installSubmissions } from './submissions.js';
 import { store } from './store.js';
 import { syncContent } from './content-sync.js';
@@ -35,18 +34,13 @@ const PUBLIC = path.join(__dirname, '..', 'public');
 // et le protocole (cookie « secure »). TRUST_PROXY=1 dans le .env du serveur.
 if (process.env.TRUST_PROXY) app.set('trust proxy', Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
 
-// Code d'accès « entre amis » (ACCESS_CODE dans .env) ; sans lui, le site est ouvert
-const access = createAccess();
-access.install(app);
-io.use(access.socketGuard);
-
 // Comptes joueurs facultatifs (Discord, Google via Supabase Auth) et pages légales (ouvertes à tous)
 const auth = createAuth();
 Room.accounts = auth.enabled;
 auth.install(app, express);
 installLegal(app);
 
-// Formulaire « Proposer » (/proposer) : soumissions des amis, derrière le même code d'accès
+// Formulaire « Proposer » (/proposer) : soumissions des joueurs
 installSubmissions(app);
 
 // Page d'accueil : les liens vers les scripts (public/js) et les feuilles de style portent une version tirée des fichiers
@@ -112,25 +106,23 @@ app.get('/img/:id', (req, res) => {
   res.sendFile(f.path);
 });
 
-// Captures des modes HUD / Écran de chargement (data/screens/), sous un nom de fichier aléatoire
-app.get('/shot/:file', (req, res) => {
-  const f = screens.file(req.params.file);
-  if (!f) return res.sendStatus(404);
-  res.type('image/webp');
-  res.set('Cache-Control', 'public, max-age=31536000, immutable');
-  res.sendFile(f);
-});
+// Captures HUD / Écran de chargement (data/screens/) et sons (data/sounds/) : contenus réservés (droits non acquis).
+// Jamais en accès libre : seulement les fichiers de la partie en cours d'un salon, avec sa clé (?r=CODE&k=CLÉ,
+// ajoutés par Room.protectMedia). Pas de cache partagé (proxy, CDN).
+function mediaRoute(kind, lib, type) {
+  app.get(`/${kind}/:file`, (req, res) => {
+    const room = rooms.rooms.get(String(req.query.r || ''));
+    const f = room?.mediaAllowed(kind, req.params.file, req.query.k) ? lib.file(req.params.file) : null;
+    if (!f) return res.sendStatus(404);
+    res.type(type);
+    res.set('Cache-Control', 'private, max-age=86400');
+    res.sendFile(f);
+  });
+}
+mediaRoute('shot', screens, 'image/webp');
+mediaRoute('sfx', sounds, 'audio/mpeg');
 
-// Sons du mode « Quel jeu fait ce bruit ? » (data/sounds/), sous un nom de fichier aléatoire
-app.get('/sfx/:file', (req, res) => {
-  const f = sounds.file(req.params.file);
-  if (!f) return res.sendStatus(404);
-  res.type('audio/mpeg');
-  res.set('Cache-Control', 'public, max-age=31536000, immutable');
-  res.sendFile(f);
-});
-
-const rooms = new RoomManager(io, { access, auth });
+const rooms = new RoomManager(io, { auth });
 io.on('connection', (socket) => rooms.handleConnection(socket));
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -155,5 +147,5 @@ if (store.name === 'supabase') {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
+  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
 });

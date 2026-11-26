@@ -44,7 +44,7 @@ console.log('✓ validation des champs');
 
 // ---- 2. Serveur réel avec stockage local
 const server = spawn(process.execPath, ['server/index.js'], {
-  env: { ...process.env, PORT: String(PORT), SUPABASE_URL: '', SUBMISSIONS_DIR: tmp, TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', IMAGE_CACHE_DIR: path.join(tmp, 'cache'), ACCESS_CODE: '' },
+  env: { ...process.env, PORT: String(PORT), SUPABASE_URL: '', SUBMISSIONS_DIR: tmp, TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', IMAGE_CACHE_DIR: path.join(tmp, 'cache') },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 await new Promise((resolve) => server.stdout.on('data', (d) => d.toString().includes('prêt') && resolve()));

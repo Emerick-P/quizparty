@@ -88,7 +88,7 @@ async function startServer() {
       SUPABASE_URL: base,
       SUPABASE_SECRET_KEY: 'sb_secret_test',
       ADMIN_USER_IDS: '',
-      ACCESS_CODE: '',
+
       COUNTDOWN_MS: '150',
       REVEAL_MS: '60000', // on passe la correction à la main (« Suivant »)
       TWITCH_CLIENT_ID: '',

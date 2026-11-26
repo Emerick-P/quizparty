@@ -57,14 +57,12 @@ sudo -u "$APP_USER" bash -c "cd '$APP_DIR' && npm ci --omit=dev --no-audit --no-
 step "Fichier .env (secrets, jamais dans Git)"
 ENV_FILE="$APP_DIR/.env"
 if [ ! -f "$ENV_FILE" ]; then
-  read -r -p "Code d'accès pour tes amis (vide = site ouvert à tous) : " ACCESS_CODE </dev/tty
   read -r -p "TWITCH_CLIENT_ID (vide = modes Jaquette grisés) : " TW_ID </dev/tty
   read -r -s -p "TWITCH_CLIENT_SECRET : " TW_SECRET </dev/tty; echo
   cat > "$ENV_FILE" <<EOF
 PORT=$PORT
 HOST=127.0.0.1
 TRUST_PROXY=1
-ACCESS_CODE=$ACCESS_CODE
 TWITCH_CLIENT_ID=$TW_ID
 TWITCH_CLIENT_SECRET=$TW_SECRET
 EOF

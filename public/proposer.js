@@ -153,7 +153,6 @@
     try {
       const res = await fetch('/api/submissions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const out = await res.json().catch(() => ({}));
-      if (res.status === 401) return (location.href = `/entree?next=${encodeURIComponent('/proposer')}`);
       if (!res.ok) throw new Error(out.error || 'Envoi impossible, réessaie.');
       $('form').hidden = true;
       $('done').hidden = false;
@@ -183,10 +182,7 @@
   });
 
   fetch('/api/submit/options')
-    .then((r) => {
-      if (r.status === 401) location.href = `/entree?next=${encodeURIComponent('/proposer')}`;
-      return r.json();
-    })
+    .then((r) => r.json())
     .then((o) => {
       opts = o;
       $('games').innerHTML = o.games.map((g) => `<option value="${esc(g)}">`).join('');

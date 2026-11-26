@@ -2,12 +2,7 @@
 
 Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → nav → daily → views → render → main.
 
-### server/access.js (162 l.)
-Accès « entre amis » : si la variable d'environnement ACCESS_CODE est définie, le site
-
-COOKIE, MAX_AGE_S, OPEN_PATHS, GRANT_TTL_MS, MAX_TRIES, TRIES_WINDOW_MS, createAccess, esc, page
-
-### server/auth.js (172 l.)
+### server/auth.js (175 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
 
 PROVIDERS, CACHE_MS, clip, profileOf, createAuth
@@ -22,7 +17,7 @@ Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour qu
 
 ROOT, readJson, contentRows, syncContent
 
-### server/daily.js (366 l.)
+### server/daily.js (368 l.)
 Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
 
 DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, EPOCH, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, dayNumber, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, refreshImages, Daily, publicResult, DailyRoom, startDaily, openDaily
@@ -39,22 +34,22 @@ FEEDBACK_TYPES : accept, wrong, remove, other
 
 feedback : file, add, list
 
-### server/index.js (160 l.)
+### server/index.js (152 l.)
 
 
-__dirname, app, server, io, PUBLIC, access, auth, version, sendIndex, siteOrigin, MANIFEST, rooms, PORT, HOST
+__dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
 
 ### server/legal.js (140 l.)
-Pages légales, ouvertes à tous (même avec le code d'accès) : Google les lit avant d'autoriser
+Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/room.js (937 l.)
+### server/room.js (992 l.)
 ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (297 l.)
+### server/rooms.js (291 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
@@ -109,10 +104,10 @@ Comparaison d'un titre tapé par un joueur avec les réponses acceptées.
 
 LEADING_ARTICLES, AND, ROMAN, tokensOf, normalize, keys, matches, EDITION, baseTitles, SHORTCUTS, NUMBERED_SUBTITLE, shortTitles, answersFor
 
-### server/games/index.js (693 l.)
+### server/games/index.js (707 l.)
 
 
-KINDS, shuffle, pick, makeQcm, makeTf, LEADING, makeTyped, TYPED, makeEstimation, acceptedAnswers, distractors, gameKey, avoidSkip, remember, buildCovers, coverUnavailable, GAME_BY_SLUG, buildPitches, emojiGame, emojiKey, EMOJI_ITEMS, EMOJI_SERIES_TITLES, EMOJI_SERIES_COUNT, emojiAnswers, buildEmojis, titleKey, buildScreens, screensUnavailable, soundAnswers, PLATFORMS, SOUND_PROMPT, buildSounds, soundsUnavailable, buildCrosswords, MIX_PARTS, QUIZ_PARTS, GUESS_BUILD, FIXED_INPUT, QUIZ_BUILD, spoilers, mentions, spread, MIX_INPUTS, mixPartsOf, buildMix, MODES, modeList
+KINDS, shuffle, pick, makeQcm, makeTf, LEADING, makeTyped, TYPED, makeEstimation, acceptedAnswers, distractors, gameKey, avoidSkip, remember, buildCovers, coverUnavailable, GAME_BY_SLUG, buildPitches, emojiGame, emojiKey, EMOJI_ITEMS, EMOJI_SERIES_TITLES, EMOJI_SERIES_COUNT, emojiAnswers, buildEmojis, titleKey, buildScreens, screensUnavailable, soundAnswers, PLATFORMS, SOUND_PROMPT, buildSounds, soundsUnavailable, buildCrosswords, MIX_PARTS, QUIZ_PARTS, GUESS_BUILD, FIXED_INPUT, QUIZ_BUILD, spoilers, mentions, spread, MIX_INPUTS, mixPartsOf, buildMix, MODES, RESERVED_MODES, allowed, modeList
 
 PLATFORMS : console, store, brand
 
@@ -235,7 +230,7 @@ Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
 
-### public/js/session.js (181 l.)
+### public/js/session.js (175 l.)
 Compte (Discord/Google), écran télé, événements du serveur, reprise de session, phase affichée.
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase
@@ -289,5 +284,5 @@ ROOT, PORT, LOCAL, children, findCloudflared, serverIsUp, waitForServer, stopAll
 ### scripts/submissions.js (45 l.)
 Propositions des amis : npm run submissions [-- options]
 
-### public/proposer.js (199 l.)
+### public/proposer.js (195 l.)
 Page « Proposer » : formulaire de soumission des amis (aucune dépendance).

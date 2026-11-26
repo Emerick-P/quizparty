@@ -1,4 +1,4 @@
-// Pages légales, ouvertes à tous (même avec le code d'accès) : Google les lit avant d'autoriser
+// Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 // la connexion « avec Google ». Adresse de contact : variable CONTACT_EMAIL (jamais écrite dans le code).
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));

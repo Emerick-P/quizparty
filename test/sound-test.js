@@ -13,6 +13,8 @@ import { SoundLibrary } from '../server/images/sounds.js';
 import { MODES, gameKey, soundAnswers } from '../server/games/index.js';
 import { matches, normalize } from '../server/games/fuzzy.js';
 import { seriesOf } from '../server/data/series.js';
+// Salon dont l'hôte a accès aux modes réservés (sons, HUD, chargements) : voir RESERVED_MODES
+const FRIEND = { reserved: true };
 
 // ------------------------------------------------------------------ contenu réel (data/sounds)
 const lib = new SoundLibrary({ dir: path.join('data', 'sounds'), blacklistFile: path.join(os.tmpdir(), 'qp-no-blacklist.json') });
@@ -82,7 +84,7 @@ for (let t = 0; t < 30; t++) {
     assert.equal(r.choices[r.correctIndex], r.title);
     const series = r.choices.map((c) => seriesOf(c)).filter(Boolean);
     assert.equal(new Set(series).size, series.length, `deux jeux d'une même série : ${r.choices.join(' / ')}`);
-    assert.match(r.sound.url, /^\/sfx\/[A-Za-z0-9]{16}\.mp3$/);
+    assert.match(r.sound.url, /^\/sfx\/[A-Za-z0-9]{16}\.mp3$/); // adresse de la banque ; le salon y ajoute ?r=&k=
   }
 }
 // Tout entendre avant de réentendre : 110 sons, 11 parties de 10 sans répétition
@@ -114,7 +116,7 @@ for (let t = 0; t < 30; t++) {
   }
   if (platforms.size) assert.ok(seen > 0, 'les sons de consoles sortent');
 }
-const mix = MODES.mix.build(27, new Set(), { input: 'choice', level: 'easy' });
+const mix = MODES.mix.build(27, new Set(), { input: 'choice', level: 'easy' }, FRIEND);
 assert.ok(mix.some((r) => r.kind === 'sound' && r.mixPart === 'sounds'), 'le Mix contient des sons');
 console.log('✓ manches : propositions sans doublon de série, pas de répétition, consoles à part, présent dans le Mix');
 
@@ -151,7 +153,7 @@ function client(label) {
   return c;
 }
 const byFile = new Map(lib.items.map((s) => [s.file, s]));
-const soundOf = (r) => byFile.get(r.sound.url.split('/').pop());
+const soundOf = (r) => byFile.get(r.sound.url.split('?')[0].split('/').pop());
 
 let failed = false;
 const A = client('A'), B = client('B');
@@ -163,15 +165,14 @@ try {
   const mode = A.state.options.modes.find((m) => m.id === 'sounds');
   assert.ok(mode && !mode.unavailable && mode.inputs, 'mode proposé, avec 4 choix / réponse tapée');
 
-  // Fichier servi, retiré = 404, inconnu = 404
+  // Contenu réservé : jamais servi en accès direct, même connu
   const one = lib.items.find((s) => s.id === 'mario-coin');
-  const res = await fetch(`${URL}/sfx/${one.file}`);
-  assert.equal(res.status, 200);
-  assert.equal(res.headers.get('content-type'), 'audio/mpeg');
-  assert.equal((await fetch(`${URL}/sfx/${lib.items.find((s) => s.id === 'sonic-ring').file}`)).status, 404, 'son retiré non servi');
+  assert.equal((await fetch(`${URL}/sfx/${one.file}`)).status, 404, 'pas d\'accès direct par URL');
   assert.equal((await fetch(`${URL}/sfx/..%2Fsounds.json`)).status, 404);
 
   // 4 choix
+  const played = new Set();
+  let lastUrl = '';
   assert.equal((await A.emit('room:settings', { mode: 'sounds', input: 'choice', rounds: 5, duration: 10 })).ok, true);
   assert.equal((await A.emit('game:start')).ok, true);
   for (let i = 0; i < 5; i++) {
@@ -184,6 +185,15 @@ try {
     const json = JSON.stringify(r);
     const snd = soundOf(r);
     assert.ok(snd, 'son connu');
+    if (i === 0) {
+      // Fichier de la partie : servi avec le code et la clé du salon, pas sans, ni ailleurs
+      const res = await fetch(`${URL}${r.sound.url}`);
+      assert.equal(res.status, 200);
+      assert.equal(res.headers.get('content-type'), 'audio/mpeg');
+      assert.equal((await fetch(`${URL}${r.sound.url.replace(/k=\w+/, 'k=0')}`)).status, 404, 'mauvaise clé');
+    }
+    played.add(snd.file);
+    lastUrl = r.sound.url;
     assert.ok(snd.id !== 'sonic-ring', 'son retiré jamais proposé');
     for (const leak of [snd.id, snd.what, snd.source.url ?? snd.source.name]) assert.ok(!json.includes(leak), `fuite avant la correction : ${leak}`);
     const right = r.choices.indexOf(snd.game.title);
@@ -199,6 +209,8 @@ try {
     assert.equal(rv.results.find((x) => x.name === 'Bob').correct, false);
   }
   await A.waitFor((x) => x.phase === 'end', 10000);
+  const other = lib.items.find((x) => !played.has(x.file) && x.id !== 'sonic-ring');
+  assert.equal((await fetch(`${URL}/sfx/${other.file}${lastUrl.slice(lastUrl.indexOf('?'))}`)).status, 404, 'fichier hors de la partie refusé');
   console.log('✓ 4 choix : même son à la même heure pour tous, rien ne fuit avant la correction');
 
   // Réponse tapée + retrait par l'hôte

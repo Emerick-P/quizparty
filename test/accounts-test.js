@@ -59,7 +59,7 @@ const server = spawn(process.execPath, ['server/index.js'], {
     SUPABASE_URL: base,
     SUPABASE_SECRET_KEY: 'sb_secret_test',
     ADMIN_USER_IDS: '',
-    ACCESS_CODE: '',
+
     CONTACT_EMAIL: 'contact@example.com',
     COUNTDOWN_MS: '200',
     REVEAL_MS: '60000',

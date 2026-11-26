@@ -17,8 +17,6 @@ services:
         value: "22"
       - key: TRUST_PROXY
         value: "1"
-      - key: ACCESS_CODE
-        sync: false
       - key: TWITCH_CLIENT_ID
         sync: false
       - key: TWITCH_CLIENT_SECRET

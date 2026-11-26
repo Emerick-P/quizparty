@@ -94,10 +94,8 @@ async function tvConnect() {
   tv.pin = r.pin || null;
   render();
 }
-socket.on('screen:paired', ({ code, token, grant }) => {
+socket.on('screen:paired', ({ code, token }) => {
   store.set(TV_KEY, { code, token });
-  // Site à code d'accès : le laissez-passer pose le cookie, puis la page revient sur /tv et reprend le salon
-  if (grant) location.href = `/tv/entree?g=${encodeURIComponent(grant)}`;
 });
 socket.on('screen:closed', () => {
   store.del(TV_KEY);
@@ -105,10 +103,6 @@ socket.on('screen:closed', () => {
   tvConnect();
 });
 socket.on('disconnect', () => { $('#conn').hidden = false; });
-// Site protégé par un code d'accès (cookie absent ou périmé) : retour à la page d'entrée
-socket.on('connect_error', (err) => {
-  if (err?.data?.access) location.href = `/entree?next=${encodeURIComponent(location.pathname + location.search)}`;
-});
 socket.on('state', (s) => {
   state = s;
   // Les images sont chargées pendant le « 3, 2, 1 » (et dès la correction précédente) pour être prêtes à l'heure

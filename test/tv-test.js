@@ -8,7 +8,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function startServer(port, env = {}) {
   const server = spawn(process.execPath, ['server/index.js'], {
-    env: { ...process.env, PORT: String(port), SUPABASE_URL: '', ACCESS_CODE: '', COUNTDOWN_MS: '300', REVEAL_MS: '300', HOST_HANDOFF_MS: '300',
+    env: { ...process.env, PORT: String(port), SUPABASE_URL: '', COUNTDOWN_MS: '300', REVEAL_MS: '300', HOST_HANDOFF_MS: '300',
       TWITCH_CLIENT_ID: '', TWITCH_CLIENT_SECRET: '', ...env },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
@@ -59,7 +59,6 @@ try {
   assert.equal((await H.emit('room:screen', { pin: hello.pin })).ok, true);
   const info = await paired;
   assert.equal(info.code, code);
-  assert.equal(info.grant, null, 'pas de laissez-passer sans code d’accès');
   const tvLobby = await TV.waitFor((s) => s.screen === true && s.code === code);
   assert.equal(tvLobby.you, null, "la télé n'est pas un joueur");
   assert.equal(tvLobby.players.length, 2, 'la télé ne compte pas comme joueur');
@@ -116,45 +115,22 @@ try {
     S2.socket.close();
   }
 
-  // ---------------------------------------------------------------- avec code d'accès
-  const URL2 = 'http://localhost:3993';
-  servers.push(await startServer(3993, { ACCESS_CODE: 'Mario64' }));
-  const r = await fetch(URL2 + '/entree', { method: 'POST', redirect: 'manual',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code: 'Mario64', next: '/' }) });
-  const cookie = r.headers.get('set-cookie').split(';')[0];
-  assert.equal((await fetch(URL2 + '/tv', { redirect: 'manual' })).status, 200, 'la page télé est ouverte');
-  assert.equal((await fetch(URL2 + '/sfx/x.mp3', { redirect: 'manual' })).status, 401, 'images et sons restent protégés');
+  // ---------------------------------------------------------------- cast : l'hôte donne le salon au récepteur
+  {
+    const H2 = client(URL, 'hôte cast');
+    await H2.connected;
+    const { code: code2 } = await H2.emit('room:create', { name: 'Hôte' });
+    const cast = await H2.emit('room:screen-grant');
+    assert.equal(cast.code, code2);
+    assert.ok(cast.token);
+    const T2 = client(URL, 'récepteur');
+    await T2.connected;
+    assert.equal((await T2.emit('screen:resume', { code: code2, token: cast.token })).ok, true);
+    await H2.waitFor((s) => s.tv === true);
+    for (const c of [H2, T2]) c.socket.close();
+  }
 
-  // Sans cookie et sans être un écran : refusé ; écran : appairage seulement
-  const T = client(URL2, 'télé limitée', { auth: { screen: true } });
-  await T.connected;
-  const noRoom = await Promise.race([T.emit('room:create', { name: 'pirate' }), sleep(400).then(() => 'ignoré')]);
-  assert.equal(noRoom, 'ignoré', 'un écran non entré ne peut pas créer de salon');
-  const pin = (await T.emit('screen:hello')).pin;
-  const H2 = client(URL2, 'hôte 2', { extraHeaders: { cookie } });
-  await H2.connected;
-  const { code: code2 } = await H2.emit('room:create', { name: 'Hôte' });
-  const got = T.once('screen:paired');
-  await H2.emit('room:screen', { pin });
-  const { grant, token } = await got;
-  assert.match(grant, /^[0-9a-f]{36}$/, "laissez-passer pour l'écran");
-  let g = await fetch(`${URL2}/tv/entree?g=${grant}`, { redirect: 'manual' });
-  assert.equal(g.status, 303);
-  const tvCookie = g.headers.get('set-cookie').split(';')[0];
-  assert.equal((await fetch(URL2 + '/', { headers: { cookie: tvCookie }, redirect: 'manual' })).status, 200, 'la télé a maintenant accès aux images et sons');
-  g = await fetch(`${URL2}/tv/entree?g=${grant}`, { redirect: 'manual' });
-  assert.equal(g.headers.get('set-cookie'), null, 'laissez-passer à usage unique');
-  const T2 = client(URL2, 'télé entrée', { extraHeaders: { cookie: tvCookie } });
-  await T2.connected;
-  assert.equal((await T2.emit('screen:resume', { code: code2, token })).ok, true);
-  await H2.waitFor((s) => s.tv === true);
-  // Cast : l'hôte demande directement un laissez-passer pour le récepteur
-  const cast = await H2.emit('room:screen-grant');
-  assert.equal(cast.code, code2);
-  assert.ok(cast.grant && cast.token);
-  for (const c of [T, H2, T2]) c.socket.close();
-
-  console.log('✓ tv-test : mode télé (appairage, vue télé, manettes, laissez-passer) OK');
+  console.log('✓ tv-test : mode télé (appairage, vue télé, manettes, cast) OK');
 } finally {
   for (const s of servers) s.kill();
 }

@@ -5,7 +5,7 @@
 
 // =====================================================================  socket & horloge
 
-const socket = io({ autoConnect: false, transports: ['websocket', 'polling'], ...(SCREEN ? { auth: { screen: true } } : {}) });
+const socket = io({ autoConnect: false, transports: ['websocket', 'polling'] });
 
 /**
  * Synchronisation d'horloge (principe de NTP) :
