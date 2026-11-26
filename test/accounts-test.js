@@ -114,7 +114,7 @@ try {
   // Jeton invalide : refusé, pas de compte
   assert.ok((await B.emit('auth:set', { token: 'tok-faux-ccccccccccccccccccccccccc' })).error);
   const login = await B.emit('auth:set', { token: 'tok-admin-aaaaaaaaaaaaaaaaaaaaaaaa' });
-  assert.deepEqual(login.user, { name: 'Liargo', avatar: 'https://cdn.discordapp.com/avatars/1/a.png', provider: 'discord', admin: true, nickname: 'Liar', look: null });
+  assert.deepEqual(login.user, { name: 'Liargo', avatar: 'https://cdn.discordapp.com/avatars/1/a.png', photos: { discord: 'https://cdn.discordapp.com/avatars/1/a.png' }, provider: 'discord', admin: true, nickname: 'Liar', look: null });
   const bob = await C.emit('auth:set', { token: 'tok-player-bbbbbbbbbbbbbbbbbbbbbbb' });
   assert.equal(bob.user.name, 'Bob Martin');
   assert.equal(bob.user.admin, false);

@@ -22,8 +22,18 @@ const clip = (v, n) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, ''
 export function profileOf(user) {
   const m = user?.user_metadata ?? {};
   const name = clip(m.custom_claims?.global_name || m.full_name || m.name || m.user_name || m.preferred_username || (user?.email ?? '').split('@')[0], 40);
-  const avatar = /^https:\/\//.test(m.avatar_url || m.picture || '') ? m.avatar_url || m.picture : null;
-  return { name: name || 'Joueur', avatar, provider: user?.app_metadata?.provider ?? null };
+  const https = (u) => (typeof u === 'string' && /^https:\/\//.test(u) ? u : null);
+  const provider = user?.app_metadata?.provider ?? null;
+  // Un compte peut être relié à Discord ET à Google (même e-mail) : user_metadata ne garde que la photo du
+  // dernier service utilisé, alors on lit chaque identité pour garder les deux photos.
+  const photos = {};
+  for (const id of user?.identities ?? []) {
+    const url = https(id?.identity_data?.avatar_url) || https(id?.identity_data?.picture);
+    if (PROVIDERS.includes(id?.provider) && url) photos[id.provider] = url;
+  }
+  const avatar = https(m.avatar_url) || https(m.picture);
+  if (avatar && provider && PROVIDERS.includes(provider) && !photos[provider]) photos[provider] = avatar;
+  return { name: name || 'Joueur', avatar: photos[provider] ?? avatar, photos, provider };
 }
 
 export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = {}) {

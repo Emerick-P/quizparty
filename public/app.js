@@ -1471,14 +1471,20 @@ function steamCard() {
 const LOOK_KEY = 'quizparty:look'; // choix de l'appareil (invité), repris du compte une fois connecté
 const looks = { emojis: [], hues: [] };
 fetch('/api/avatars').then((r) => r.json()).then((x) => { Object.assign(looks, x); render(); }).catch(() => {});
-/** Chaîne enregistrée ('', 'photo', 'e:i:j') → { emoji, hue } | { photo } | null. */
+/** Photo choisie ('photo:discord', 'photo:google' ; 'photo' = ancien format, photo de la connexion en cours). */
+function photoOf(look, u = account.user) {
+  if (!u || !/^photo(:|$)/.test(look || '')) return null;
+  const p = look.split(':')[1];
+  return p ? u.photos?.[p] ?? null : u.avatar ?? null;
+}
+/** Chaîne enregistrée ('', 'photo:discord', 'e:i:j'…) → { emoji, hue } | { photo } | null. */
 function lookView(look) {
-  if (look === 'photo') return account.user?.avatar ? { photo: account.user.avatar } : null;
+  if (/^photo(:|$)/.test(look || '')) { const url = photoOf(look); return url ? { photo: url } : null; }
   const m = /^e:(\d+):(\d+)$/.exec(look || '');
   return m && looks.emojis[m[1]] ? { emoji: looks.emojis[m[1]], hue: looks.hues[m[2]] } : null;
 }
 /** Mon image : choix enregistré, sinon la photo du compte s'il y en a une. */
-const myLookRaw = () => store.get(LOOK_KEY) ?? (account.user?.avatar ? 'photo' : '');
+const myLookRaw = () => store.get(LOOK_KEY) ?? (account.user?.avatar && account.user.provider ? `photo:${account.user.provider}` : '');
 const myLook = () => lookView(myLookRaw());
 const lookOfName = (name) => state?.players?.find((p) => p.name === name)?.look ?? null;
 const avatar = (name, look = lookOfName(name)) => (look?.photo
@@ -1863,7 +1869,8 @@ const SHEETS = {
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
-  look: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: 'Image de profil', body: lookBody() }) },
+  // Fenêtre au-dessus du Profil (pas une page) : « Valider » ou ✕ ramène au Profil
+  look: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Image de profil', body: lookBody() }) },
   menu: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Menu', body: menuBody() }) },
   stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
@@ -1880,7 +1887,8 @@ const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">$
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
 const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
 
-/** Page « Image de profil » : galerie maison (emoji + couleur), photo du compte, initiale. */
+/** Fenêtre « Image de profil » : galerie maison (emoji + couleur), photos des comptes reliés, initiale.
+ *  Chaque choix est enregistré tout de suite ; « Valider » referme la fenêtre. */
 const lookUi = { hue: null };
 function lookBody() {
   const raw = myLookRaw();
@@ -1896,10 +1904,11 @@ function lookBody() {
   <h3 class="lk-h">Avatar</h3>
   <div class="lk-grid">
     ${opt('', avatar(name || '?', null), 'Initiale de mon pseudo')}
-    ${u?.avatar ? opt('photo', avatar(name, { photo: u.avatar }), 'Ma photo ' + (PROVIDER_LABEL[u.provider] || '')) : ''}
+    ${Object.entries(u?.photos ?? {}).map(([p, url]) => opt(`photo:${p}`, `${avatar(name, { photo: url })}<em class="lk-src">${providerIcon(p)}</em>`, 'Ma photo ' + (PROVIDER_LABEL[p] || p))).join('')}
     ${looks.emojis.map((e, i) => opt(`e:${i}:${h}`, `<span class="avatar emo" style="--h:${looks.hues[h]}">${e}</span>`, `Avatar ${e}`)).join('')}
   </div>
-  ${u ? '' : '<p class="sh-note small">Retenue sur cet appareil. Connecte-toi pour la garder partout (et utiliser ta photo Discord ou Google).</p>'}`;
+  ${u ? '' : '<p class="sh-note small">Retenue sur cet appareil. Connecte-toi pour la garder partout (et utiliser ta photo Discord ou Google).</p>'}
+  <button class="btn primary" data-action="sheetclose">Valider</button>`;
 }
 actions.pickHue = (btn) => {
   lookUi.hue = Number(btn.dataset.value);
@@ -2106,7 +2115,7 @@ function sheetView() {
   // Menu ouvert depuis une page (stats, profil…) : la page reste dessous
   // Toujours dans le même ordre (fond, page, menu) : à la fermeture du menu, la page reste la même
   // dans le DOM (rien n'est recréé, donc pas de clignotement de l'accueil ou du salon)
-  const base = ui.sheet === 'menu' && ui.base && ok(ui.base) ? sheetHtml(ui.base, true) : '';
+  const base = OVER.includes(ui.sheet) && ui.base && ok(ui.base) ? sheetHtml(ui.base, true) : '';
   return `<div class="sh-bg" data-action="sheetclose"></div>` + base + sheetHtml(ui.sheet, false);
 }
 function sheetHtml(name, under) {
@@ -2119,15 +2128,16 @@ function sheetHtml(name, under) {
     <div class="sh-body">${body}</div>
   </section>`;
 }
+const OVER = ['menu', 'look']; // fenêtres ouvertes par-dessus une page : à la fermeture, on revient à la page
 function openSheet(name) {
-  ui.base = name === 'menu' && ui.sheet && SHEETS[ui.sheet]?.page ? ui.sheet : null;
+  ui.base = OVER.includes(name) && ui.sheet && SHEETS[ui.sheet]?.page ? ui.sheet : null;
   ui.sheet = name;
   if (name === 'daily') loadDaily(); // résultat et classement à jour
   render();
   if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
-const closeSheet = () => { ui.sheet = ui.sheet === 'menu' ? ui.base ?? null : null; ui.base = null; render(); };
+const closeSheet = () => { ui.sheet = OVER.includes(ui.sheet) ? ui.base ?? null : null; ui.base = null; render(); };
 actions.sheet = (btn) => {
   // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
   if (btn.dataset.value === 'menu') {

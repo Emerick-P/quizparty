@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { stats } from './stats.js';
-import { cleanLook } from './avatars.js';
+import { cleanLook, defaultLook, photoOf } from './avatars.js';
 import { Room, cleanName } from './room.js';
 import { Daily, startDaily } from './daily.js';
 
@@ -195,10 +195,10 @@ export class RoomManager {
       // Image de profil enregistrée sur le compte : elle suit le joueur sur tous ses appareils
       // (sans choix enregistré : la photo Discord/Google, sauf si l'invité avait déjà choisi une image)
       if (user?.look != null) socket.data.look = user.look;
-      else if (user?.avatar && !socket.data.look) socket.data.look = 'photo';
+      else if (user?.avatar && !socket.data.look) socket.data.look = defaultLook(user);
       this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user, user ? socket.data.look ?? null : null);
       if (!user) return { error: 'Session expirée, reconnecte-toi' };
-      return { ok: true, user: { name: user.name, avatar: user.avatar, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null } };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, photos: user.photos ?? {}, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null } };
     });
     // Page Profil : nouveau pseudo. Gardé sur le compte (si connecté) ; appliqué tout de suite dans le salon
     // tant que la partie n'a pas commencé (pendant une partie, il servira au prochain salon).
@@ -221,7 +221,7 @@ export class RoomManager {
     on('profile:avatar', async ({ look }) => {
       const l = cleanLook(look);
       if (l == null) throw new Error('Image inconnue');
-      if (l === 'photo' && !socket.data.user?.avatar) throw new Error('Connecte-toi avec Discord ou Google pour utiliser ta photo');
+      if (l.startsWith('photo') && !photoOf(l, socket.data.user)) throw new Error('Connecte-toi avec Discord ou Google pour utiliser ta photo');
       socket.data.look = l;
       if (socket.data.user) await this.auth.setLook(socket.data.user, l);
       this.roomOf(socket)?.setLook(socket.data.playerId, l);

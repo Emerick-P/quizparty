@@ -13,6 +13,13 @@ import { cleanLook, lookView, AVATAR_EMOJIS, AVATAR_HUES } from '../server/avata
 
 assert.equal(cleanLook(''), '');
 assert.equal(cleanLook('photo'), 'photo');
+assert.equal(cleanLook('photo:discord'), 'photo:discord');
+assert.equal(cleanLook('photo:steam'), null);
+// Compte relié à Discord ET Google : la photo choisie reste la même, quel que soit le service de connexion
+const both = { avatar: 'https://g/x.png', provider: 'google', photos: { discord: 'https://d/x.png', google: 'https://g/x.png' } };
+assert.deepEqual(lookView('photo:discord', both), { photo: 'https://d/x.png' });
+assert.deepEqual(lookView('photo:discord', { ...both, provider: 'discord', avatar: 'https://d/x.png' }), { photo: 'https://d/x.png' });
+assert.equal(lookView('photo:discord', { avatar: 'https://g/x.png', provider: 'google', photos: { google: 'https://g/x.png' } }), null);
 assert.equal(cleanLook('e:3:2'), 'e:3:2');
 assert.equal(cleanLook('e:99:0'), null);
 assert.equal(cleanLook('e:1:9'), null);
@@ -28,6 +35,12 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'qp-avatar-'));
 // ---- Faux Supabase : auth + tables game_results / answers + fonction player_stats
 const USERS = {
   'tok-alice-aaaaaaaaaaaaaaaaaaaaaaaa': { id: '11111111-1111-4111-8111-111111111111', app_metadata: { provider: 'discord' }, user_metadata: { full_name: 'Alice', avatar_url: 'https://cdn.discordapp.com/avatars/1/a.png' } },
+  // Même compte relié aux deux services, connecté ici avec Google (user_metadata = dernier service utilisé)
+  'tok-dora-dddddddddddddddddddddddddd': { id: '44444444-4444-4444-8444-444444444444', app_metadata: { provider: 'google' }, user_metadata: { name: 'Dora', picture: 'https://lh3.googleusercontent.com/d', avatar_url: 'https://lh3.googleusercontent.com/d' },
+    identities: [
+      { provider: 'discord', identity_data: { avatar_url: 'https://cdn.discordapp.com/avatars/4/d.png' } },
+      { provider: 'google', identity_data: { picture: 'https://lh3.googleusercontent.com/d' } },
+    ] },
   'tok-chloe-ccccccccccccccccccccccccc': { id: '33333333-3333-4333-8333-333333333333', app_metadata: { provider: 'google' }, user_metadata: { name: 'Chloé' } },
 };
 const db = { game_results: [], answers: [] };
@@ -133,6 +146,30 @@ try {
   assert.equal((await B.emit('profile:avatar', { look: '' })).ok, true);
   s = await A.waitFor((x) => x.players.find((p) => p.name === 'Bob').look === null);
   console.log('✓ images de profil (galerie, photo du compte, initiale, refus)');
+
+  // Compte Discord + Google : choisir la photo Discord, puis se reconnecter avec Google → toujours la photo Discord
+  const D = client('Dora (Discord + Google)');
+  try {
+    await D.connected;
+    const r = await D.emit('auth:set', { token: 'tok-dora-dddddddddddddddddddddddddd' });
+    assert.deepEqual(r.user.photos, { discord: 'https://cdn.discordapp.com/avatars/4/d.png', google: 'https://lh3.googleusercontent.com/d' }, 'les deux photos proposées');
+    await D.emit('room:join', { code, name: 'Dora' });
+    s = await A.waitFor((x) => x.players.some((p) => p.name === 'Dora'));
+    assert.deepEqual(by(s).Dora, { photo: 'https://lh3.googleusercontent.com/d' }, 'sans choix : photo du service de connexion');
+    assert.equal((await D.emit('profile:avatar', { look: 'photo:discord' })).ok, true);
+    s = await A.waitFor((x) => x.players.find((p) => p.name === 'Dora').look?.photo?.includes('discord'));
+    await wait(100);
+    D.socket.close();
+    const D2 = client('Dora (reconnectée)');
+    await D2.connected;
+    const r2 = await D2.emit('auth:set', { token: 'tok-dora-dddddddddddddddddddddddddd' });
+    assert.equal(r2.user.look, 'photo:discord', 'choix gardé sur le compte');
+    await D2.emit('room:join', { code, name: 'Dora2' });
+    s = await A.waitFor((x) => x.players.some((p) => p.name === 'Dora2'));
+    assert.deepEqual(by(s).Dora2, { photo: 'https://cdn.discordapp.com/avatars/4/d.png' }, 'photo Discord gardée en se connectant avec Google');
+    D2.socket.close();
+    console.log('✓ photo choisie gardée quel que soit le service de connexion');
+  } finally { D.socket.close(); }
 } catch (err) {
   failed = true;
   console.error('✗', err);
