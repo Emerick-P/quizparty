@@ -199,10 +199,10 @@ function leaveOverlay() {
   const playing = ['countdown', 'question', 'reveal'].includes(state.phase);
   const title = d ? 'Abandonner le défi ?' : 'Quitter le salon ?';
   const text = d ? 'Ta tentative compte avec les points déjà faits : tu ne pourras pas la rejouer.'
-    : `${playing ? 'La partie continue sans toi. ' : ''}Tu pourras revenir avec le code <b>${esc(state.code)}</b>.`;
+    : playing ? 'La partie continue sans toi.' : '';
   return `<div class="pause-overlay leave-ask" data-action="leavecancel" data-key="leave"><div class="pause-card card" role="alertdialog" aria-modal="true" aria-labelledby="leave-t" data-action="noop">
     <h2 id="leave-t">${title}</h2>
-    <p class="muted">${text}</p>
+    ${text ? `<p class="muted">${text}</p>` : ''}
     <div class="leave-row">
       <button class="btn ghost" data-action="leaveok">${d ? 'Abandonner' : 'Quitter'}</button>
       <button class="btn primary" data-action="leavecancel">${d ? 'Continuer' : 'Rester'}</button>
