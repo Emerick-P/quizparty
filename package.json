@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node test/questions-test.js && node test/access-test.js && node test/sync-test.js && node test/cover-test.js && node test/pitch-test.js && node test/emoji-test.js && node test/quiz-text-test.js && node test/score-test.js && node test/roster-test.js && node test/screen-test.js && node test/mix-test.js && node test/sound-test.js && node test/crossword-test.js && node test/pause-test.js && node test/submit-test.js && node test/bande-test.js && node test/tv-test.js",
+    "test": "node scripts/codemap.js --check && node test/questions-test.js && node test/access-test.js && node test/sync-test.js && node test/cover-test.js && node test/pitch-test.js && node test/emoji-test.js && node test/quiz-text-test.js && node test/score-test.js && node test/roster-test.js && node test/screen-test.js && node test/mix-test.js && node test/sound-test.js && node test/crossword-test.js && node test/pause-test.js && node test/submit-test.js && node test/bande-test.js && node test/tv-test.js && node test/accounts-test.js && node test/stats-test.js && node test/avatar-test.js && node test/daily-test.js",
+    "codemap": "node scripts/codemap.js",
     "covers": "node scripts/covers.js",
     "share": "node scripts/share.js",
     "feedback": "node scripts/feedback.js",

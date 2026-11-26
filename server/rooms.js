@@ -1,16 +1,21 @@
 import crypto from 'node:crypto';
+import { stats } from './stats.js';
+import { cleanLook, defaultLook, photoOf } from './avatars.js';
 import { Room, cleanName } from './room.js';
+import { Daily, startDaily } from './daily.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
 
 export class RoomManager {
-  constructor(io, { access } = {}) {
+  constructor(io, { access, auth } = {}) {
     this.io = io;
     this.access = access;
+    this.auth = auth; // comptes joueurs (facultatifs) : voir auth.js
     this.rooms = new Map();
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
+    this.daily = new Daily(); // défi du jour (voir daily.js)
     setInterval(() => this.sweep(), 60_000).unref();
   }
 
@@ -43,7 +48,7 @@ export class RoomManager {
     if (!room) return;
     room.removePlayer(socket.data.playerId);
     socket.leave(room.channel);
-    socket.data = {};
+    socket.data = { user: socket.data.user ?? null }; // le compte reste connecté hors du salon
     if (room.players.size === 0) {
       room.destroy();
       this.rooms.delete(room.code);
@@ -115,6 +120,12 @@ export class RoomManager {
       return fn(room, payload);
     };
 
+    const inRoom = (fn) => (payload) => {
+      const room = this.roomOf(socket);
+      if (!room) throw new Error("Tu n'es dans aucun salon");
+      return fn(room, payload);
+    };
+
     // Synchronisation d'horloge : le client mesure l'aller-retour et en déduit son décalage
     socket.on('time:ping', (_payload, ack) => {
       if (typeof ack === 'function') ack(Date.now());
@@ -130,7 +141,8 @@ export class RoomManager {
       return; // écran télé pas encore entré : rien d'autre
     }
 
-    on('room:create', ({ name }) => {
+    on('room:create', ({ name, look }) => {
+      if (socket.data.look == null) socket.data.look = cleanLook(look) ?? '';
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       this.leave(socket);
@@ -140,11 +152,12 @@ export class RoomManager {
       return { ok: true, code: room.code, token: p.token, playerId: p.id };
     });
 
-    on('room:join', ({ code, name }) => {
+    on('room:join', ({ code, name, look }) => {
+      if (socket.data.look == null) socket.data.look = cleanLook(look) ?? '';
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       const room = this.rooms.get(String(code || '').trim().toUpperCase());
-      if (!room) throw new Error('Salon introuvable');
+      if (!room || room.isDaily) throw new Error('Salon introuvable');
       this.leave(socket);
       const p = room.addPlayer(n, socket);
       return { ok: true, code: room.code, token: p.token, playerId: p.id };
@@ -162,6 +175,61 @@ export class RoomManager {
 
     on('room:leave', () => {
       this.leave(socket);
+    });
+
+    // Défi du jour : infos de l'accueil (numéro, série, mon résultat), départ d'une partie solo, classement
+    on('daily:info', async () => ({ ok: true, ...(await this.daily.info(socket.data.user ?? null)) }));
+    on('daily:start', ({ name }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      return startDaily(this, socket, n, this.daily);
+    });
+    on('daily:board', async () => ({ ok: true, leaderboard: await this.daily.board() }));
+
+    // Compte joueur : le navigateur envoie son jeton (à la connexion et à chaque renouvellement).
+    // Le serveur le fait vérifier par Supabase ; les droits d'admin ne viennent jamais du navigateur.
+    on('auth:set', async ({ token }) => {
+      const user = await this.auth?.verify(token).catch(() => null);
+      if (!socket.connected) return { ok: false };
+      socket.data.user = user ?? null;
+      // Image de profil enregistrée sur le compte : elle suit le joueur sur tous ses appareils
+      // (sans choix enregistré : la photo Discord/Google, sauf si l'invité avait déjà choisi une image)
+      if (user?.look != null) socket.data.look = user.look;
+      else if (user?.avatar && !socket.data.look) socket.data.look = defaultLook(user);
+      this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user, user ? socket.data.look ?? null : null);
+      if (!user) return { error: 'Session expirée, reconnecte-toi' };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, photos: user.photos ?? {}, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null } };
+    });
+    // Page Profil : nouveau pseudo. Gardé sur le compte (si connecté) ; appliqué tout de suite dans le salon
+    // tant que la partie n'a pas commencé (pendant une partie, il servira au prochain salon).
+    on('profile:name', async ({ name }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      if (socket.data.user) await this.auth.setNickname(socket.data.user, n);
+      const room = this.roomOf(socket);
+      const renamed = room ? room.renamePlayer(socket.data.playerId, n) : null;
+      return { ok: true, name: n, renamed };
+    });
+    // Stats : les miennes (page Profil), ou celles d'un joueur connecté du même salon (en le touchant)
+    on('stats:me', async () => {
+      const user = socket.data.user;
+      if (!user) throw new Error('Connecte-toi pour avoir tes stats');
+      return { ok: true, stats: await stats.statsOf(user.id) };
+    });
+    on('stats:player', inRoom((room, { playerId }) => room.playerStats(String(playerId || ''))));
+    // Page Profil : image de profil (galerie, photo du compte, initiale). Invité : retenue sur l'appareil.
+    on('profile:avatar', async ({ look }) => {
+      const l = cleanLook(look);
+      if (l == null) throw new Error('Image inconnue');
+      if (l.startsWith('photo') && !photoOf(l, socket.data.user)) throw new Error('Connecte-toi avec Discord ou Google pour utiliser ta photo');
+      socket.data.look = l;
+      if (socket.data.user) await this.auth.setLook(socket.data.user, l);
+      this.roomOf(socket)?.setLook(socket.data.playerId, l);
+      return { ok: true, look: l };
+    });
+    on('auth:clear', () => {
+      socket.data.user = null;
+      this.roomOf(socket)?.setUser(socket.data.playerId, null);
     });
 
     on('room:settings', hostOnly((room, s) => room.updateSettings(s)));
@@ -186,10 +254,15 @@ export class RoomManager {
     on('game:skip', hostOnly((room) => room.skip()));
     on('game:stop', hostOnly((room) => room.stop()));
     on('room:reset-totals', hostOnly((room) => room.resetTotals()));
-    on('game:ban-cover', hostOnly((room) => room.banCover()));
+    // Retirer un jeu, une image, un son : réservé à l'admin (avec les comptes) ; sans comptes (PC), à l'hôte
+    on('game:ban-cover', inRoom((room) => {
+      if (!room.canModerate(socket.data.playerId)) throw new Error("Réservé à l'admin");
+      return room.banCover();
+    }));
     on('game:pause', hostOnly((room) => room.pause()));
     on('game:resume', hostOnly((room) => room.resume()));
-    on('game:report', hostOnly((room, payload) => room.report(socket.data.playerId, payload)));
+    // ⚑ Signaler : ouvert à tous les joueurs (seul l'hôte met la partie en pause)
+    on('game:report', inRoom((room, payload) => room.report(socket.data.playerId, payload)));
 
     on('steam:link', ({ profile }) => {
       const room = this.roomOf(socket);

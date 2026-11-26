@@ -96,13 +96,13 @@ Environ 260 QCM, 160 Vrai/Faux et 80 estimations (dont moins d'un quart sur des 
 ## Ajouter un nouveau jeu
 
 - **Nouveau mode** construit sur les types existants : ajoute une entrée dans `MODES` (`server/games/index.js`). `inputs: true` affiche le réglage « Réponse » (4 choix / réponse tapée, reçu dans `settings.input`), `levels: true` le réglage « Niveau ».
-- **Nouveau type de manche** (par exemple : remettre dans l'ordre, buzzer, dessin) : crée un module dans `server/games/` qui exporte `publicRound`, `validate`, `answerText`, `score` et `reveal`, sur le modèle de `qcm.js`. Enregistre-le dans `KINDS`, puis ajoute son affichage dans `public/app.js` (vues `question` et `reveal`).
+- **Nouveau type de manche** (par exemple : remettre dans l'ordre, buzzer, dessin) : crée un module dans `server/games/` qui exporte `publicRound`, `validate`, `answerText`, `score` et `reveal`, sur le modèle de `qcm.js`. Enregistre-le dans `KINDS`, puis ajoute son affichage dans `public/js/views.js` (vues `question` et `reveal`).
 
 Le moteur (salon, chrono, synchro, reconnexion, classement) ne change pas.
 
 ## Jaquette pixelisée
 
-L'image se précise par paliers, de 4 colonnes de pixels au départ jusqu'à 48 ou 64 en fin de chrono. Elle devient reconnaissable par la plupart des joueurs quand il reste environ 30 % du temps (un peu plus tôt en saisie libre, pour laisser le temps de taper). Réglage : `PIX_LAST_AT` dans `public/app.js`. Le palier est calculé par chaque navigateur depuis l'horloge serveur : tout le monde voit le même niveau de détail au même instant. Elle n'est nette qu'à la correction. L'image est envoyée pendant le « 3, 2, 1 » et celle de la manche suivante pendant la correction, pour être chargée à temps partout.
+L'image se précise par paliers, de 4 colonnes de pixels au départ jusqu'à 48 ou 64 en fin de chrono. Elle devient reconnaissable par la plupart des joueurs quand il reste environ 30 % du temps (un peu plus tôt en saisie libre, pour laisser le temps de taper). Réglage : `PIX_LAST_AT` dans `public/js/media.js`. Le palier est calculé par chaque navigateur depuis l'horloge serveur : tout le monde voit le même niveau de détail au même instant. Elle n'est nette qu'à la correction. L'image est envoyée pendant le « 3, 2, 1 » et celle de la manche suivante pendant la correction, pour être chargée à temps partout.
 
 Points : 1000 pour une réponse immédiate, 200 au buzzer. En saisie libre : 5 s de plus, 3 essais. Pas de faute de frappe ni de réponse partielle, mais on ignore la casse, les accents, la ponctuation, les espaces, « The » (partout dans le titre) et l'écriture des numéros (« GTA V » = « GTA 5 »). Sont aussi acceptés : les sigles des jeux connus par leur sigle (GTA, WoW, LoL…, alias dans `server/data/cover-games.js`) ; le titre sans mention d'édition ni « Remake » (« Final Fantasy VII » pour « Final Fantasy VII Remake », « Mario Kart 8 » pour « Mario Kart 8 Deluxe ») ; le titre du jeu de base pour une extension (champ `base`) ; et les raccourcis usuels des séries iconiques (« Zelda Breath of the Wild », « Isaac », « Skyrim », « Witcher 3 », « Sekiro »…, liste dans `server/games/fuzzy.js`). Ce qui est facultatif reste accepté si on le tape. Un test vérifie qu'aucune de ces écritures ne désigne deux jeux différents de la banque.
 
@@ -211,8 +211,8 @@ data/blacklist.json  jeux et images retirés
 data/screens/    captures retouchées des modes HUD et Écran de chargement
 .cache/images/   jaquettes téléchargées (non versionné)
 public/
-  index.html, style.css
-  app.js          client : synchro d'horloge, rendu des écrans
+  index.html, *.css  page unique et habillages (ordre des CSS : voir CLAUDE.md)
+  js/             client en 17 petits scripts (synchro d'horloge, rendu des écrans…) ; plan : docs/CODEMAP.md
 test/             tests bout-en-bout multi-joueurs (sync-test.js, cover-test.js, pitch-test.js, emoji-test.js…) quiz-text-test.js et vérification de la banque (questions-test.js)
 scripts/covers.js  rapport des jaquettes (npm run covers)
 deploy/           installation et mise à jour sur une VM (install.sh, update.sh)

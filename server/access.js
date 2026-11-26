@@ -9,8 +9,9 @@ import express from 'express';
 
 const COOKIE = 'qp_access';
 const MAX_AGE_S = 180 * 24 * 3600; // 6 mois
-const OPEN_PATHS = new Set(['/entree', '/health', '/tv', '/tv.html', '/tv.css', '/plateau.css', '/theme.css', '/style.css', '/manette.css', '/salon.css', '/app.js', // écran télé pas encore entré (code sans contenu)
-   '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png', '/apple-touch-icon.png', '/favicon.png', '/sw.js']);
+const OPEN_PATHS = new Set(['/entree', '/health', '/tv', '/tv.html', '/tv.css', '/plateau.css', '/theme.css', '/style.css', '/manette.css', '/salon.css', // écran télé pas encore entré (code sans contenu)
+   '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/icon-maskable.png', '/apple-touch-icon.png', '/favicon.png', '/sw.js',
+   '/confidentialite', '/conditions']); // pages légales : lues par Google avant toute connexion
 const GRANT_TTL_MS = 3 * 60 * 1000; // laissez-passer d'un écran télé appairé par l'hôte
 const MAX_TRIES = 10; // essais ratés par adresse IP…
 const TRIES_WINDOW_MS = 10 * 60 * 1000; // …par tranche de 10 minutes
@@ -93,7 +94,7 @@ export function createAccess(code = process.env.ACCESS_CODE) {
     });
     // Tout le reste passe par la vérification du cookie
     app.use((req, res, next) => {
-      if (OPEN_PATHS.has(req.path) || allowed(req.headers.cookie)) return next();
+      if (OPEN_PATHS.has(req.path) || req.path.startsWith('/js/') || allowed(req.headers.cookie)) return next();
       // Une page (« / », « /index.html »…) renvoie vers l'entrée ; un fichier (script, image, son) est refusé
       if (req.method === 'GET' && (!/\.[a-z0-9]+$/i.test(req.path) || req.path.endsWith('.html'))) {
         return res.redirect(302, `/entree?next=${encodeURIComponent(req.originalUrl)}`);

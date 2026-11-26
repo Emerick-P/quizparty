@@ -41,6 +41,7 @@ const SESSION_KEY = 'quizparty:session';
 const NAME_KEY = 'quizparty:name';
 const THEME_KEY = 'quizparty:theme';
 const STEAM_KEY = 'quizparty:steam'; // adresse du profil Steam, retenue sur l'appareil
+const AUTH_KEY = 'quizparty:auth'; // compte connecté : jetons Supabase + nom/avatar affichés
 
 /** Thème clair / sombre (sombre par défaut), mémorisé sur l'appareil. Appliqué dès le <head> par index.html. */
 const currentTheme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
@@ -75,7 +76,7 @@ function urlCode() {
   return c ? c.toUpperCase().slice(0, 4) : '';
 }
 function setUrlCode(code) {
-  const url = code ? `${location.pathname}?code=${code}` : location.pathname;
+  const url = code && code.length === 4 ? `${location.pathname}?code=${code}` : location.pathname; // pas d'adresse pour le défi du jour
   history.replaceState(null, '', url);
 }
 
@@ -252,8 +253,91 @@ socket.on('connect', async () => {
   $('#conn').hidden = true;
   await syncClock(state ? 3 : 5);
   if (SCREEN) await tvConnect();
-  else await resume();
+  else {
+    await accountSync();
+    await resume();
+    loadDaily();
+  }
 });
+
+// =====================================================================  compte (facultatif)
+// Connexion Discord / Google via Supabase : le site part chez Supabase, qui revient ici avec les jetons
+// dans l'adresse (#access_token=…). On les garde sur l'appareil, on les passe au serveur, qui les fait
+// vérifier par Supabase. Les droits d'admin sont décidés par le serveur, jamais par le navigateur.
+const account = { cfg: null, user: store.get(AUTH_KEY)?.user ?? null, timer: null, busy: false };
+const PROVIDER_LABEL = { discord: 'Discord', google: 'Google' };
+(function readAuthRedirect() {
+  if (SCREEN || !/[#&](access_token|error)=/.test(location.hash)) return;
+  const h = new URLSearchParams(location.hash.slice(1));
+  history.replaceState(null, '', location.pathname + location.search);
+  if (h.get('access_token')) {
+    const exp = Number(h.get('expires_at')) || Math.floor(Date.now() / 1000) + (Number(h.get('expires_in')) || 3600);
+    store.set(AUTH_KEY, { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: exp, user: null });
+    account.justIn = true;
+  } else {
+    account.failed = h.get('error_description') || h.get('error');
+  }
+})();
+async function accountConfig() {
+  if (account.cfg) return account.cfg;
+  try {
+    const r = await fetch('/api/auth/config', { cache: 'no-store' });
+    if (r.ok) account.cfg = await r.json();
+  } catch { /* hors ligne : pas de bouton de connexion pour l'instant */ }
+  return account.cfg;
+}
+if (!SCREEN) accountConfig().then(() => { if (account.cfg?.enabled) render(); });
+async function accountRefresh(s) {
+  try {
+    const r = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: s.refresh_token }) });
+    if (r.status === 401) return null; // session révoquée : il faut se reconnecter
+    if (!r.ok) return s; // serveur ou réseau indisponible : on garde la session et on réessaiera
+    return { ...s, ...(await r.json()) };
+  } catch { return s; }
+}
+/** Passe le jeton au serveur (à chaque connexion), en le renouvelant s'il expire bientôt. */
+async function accountSync() {
+  if (account.failed) { toast(`Connexion annulée${account.failed === 'access_denied' ? '' : ` : ${account.failed}`}`); account.failed = null; }
+  let s = store.get(AUTH_KEY);
+  clearTimeout(account.timer);
+  if (!s?.access_token) { account.user = null; return; }
+  if (s.expires_at * 1000 - Date.now() < 5 * 60_000 && s.refresh_token) {
+    s = await accountRefresh(s);
+    if (!s) return accountLost();
+    store.set(AUTH_KEY, s);
+  }
+  const r = await send('auth:set', { token: s.access_token });
+  if (r.user) {
+    account.user = r.user;
+    if (r.user.look != null) store.set(LOOK_KEY, r.user.look); // l'image du compte suit le joueur partout
+    store.set(AUTH_KEY, { ...s, user: r.user });
+    // Pseudo : celui du compte s'il en a un ; sinon celui de l'appareil, enregistré sur le compte
+    if (r.user.nickname) store.set(NAME_KEY, r.user.nickname);
+    else {
+      if (!store.get(NAME_KEY)) store.set(NAME_KEY, [...r.user.name].slice(0, 16).join('').trim());
+      send('profile:name', { name: store.get(NAME_KEY) });
+    }
+    if (account.justIn) { account.justIn = false; toast(`Connecté avec ${PROVIDER_LABEL[r.user.provider] || 'ton compte'} : ${r.user.name}`); }
+  } else if (r.error && !/serveur/.test(r.error)) {
+    // Jeton refusé : une tentative de renouvellement, sinon on repasse en invité
+    const again = s.refresh_token ? await accountRefresh({ ...s, expires_at: 0 }) : null;
+    if (!again || again.access_token === s.access_token) return accountLost();
+    store.set(AUTH_KEY, again);
+    return accountSync();
+  }
+  // Renouvellement automatique 5 min avant l'expiration (le jeton dure 1 h)
+  const wait = Math.max(30_000, (store.get(AUTH_KEY)?.expires_at ?? 0) * 1000 - Date.now() - 4 * 60_000);
+  account.timer = setTimeout(() => { if (socket.connected) accountSync().then(render); }, wait);
+  render();
+}
+function accountLost() {
+  store.del(AUTH_KEY);
+  account.user = null;
+  send('auth:clear');
+  toast('Session expirée : reconnecte-toi pour retrouver ton compte');
+  render();
+}
+
 
 /** Écran télé : reprend son salon (après un rechargement), sinon affiche un code d'appairage. */
 async function tvConnect() {
@@ -292,6 +376,7 @@ socket.on('state', (s) => {
   if (s.round?.picture) loadImage(s.round.picture.url);
   if (pending && (!s.round || s.round.id !== pending.roundId || s.round.yourAnswer !== null)) pending = null;
   autoLinkSteam();
+  if (s.daily) rememberDaily(s);
   render();
 });
 
@@ -432,7 +517,7 @@ const actions = {
   theme(btn) { setTheme(btn.dataset.value === 'light' ? 'light' : 'dark'); render(); },
   async create() {
     const name = getName(); if (!name) return;
-    const res = await send('room:create', { name });
+    const res = await send('room:create', { name, look: store.get(LOOK_KEY) ?? undefined });
     if (res.error) return toast(res.error);
     enterRoom(res);
   },
@@ -440,7 +525,7 @@ const actions = {
     const name = getName(); if (!name) return;
     const code = ($('#code')?.value || '').trim().toUpperCase();
     if (code.length !== 4) return toast('Le code fait 4 lettres');
-    const res = await send('room:join', { code, name });
+    const res = await send('room:join', { code, name, look: store.get(LOOK_KEY) ?? undefined });
     if (res.error) return toast(res.error);
     enterRoom(res);
   },
@@ -524,6 +609,58 @@ const actions = {
   },
   replay() { replaySound(); },
   async pause() { const r = await send('game:pause'); if (r.error) toast(r.error); },
+  async login(btn) {
+    const cfg = await accountConfig();
+    if (!cfg?.enabled || !cfg.providers.includes(btn.dataset.value)) return toast('Connexion indisponible pour le moment');
+    // Retour sur la même page (garde ?code=… d'une invitation)
+    const back = location.origin + location.pathname + location.search;
+    location.href = `${cfg.url}/auth/v1/authorize?provider=${encodeURIComponent(btn.dataset.value)}&redirect_to=${encodeURIComponent(back)}`;
+  },
+  async logout() {
+    clearTimeout(account.timer);
+    store.del(AUTH_KEY);
+    account.user = null;
+    await send('auth:clear');
+    ui.sheet = null;
+    toast('Déconnecté : tu joues en invité');
+    render();
+  },
+  async saveName() {
+    const name = getName(); if (!name) return;
+    if (account.user || state) {
+      const r = await send('profile:name', { name });
+      if (r.error) return toast(r.error);
+      if (r.renamed && r.renamed !== name) toast(`Pseudo déjà pris dans le salon : tu es « ${r.renamed} »`);
+      else toast('Pseudo enregistré');
+    }
+    closeSheet();
+  },
+  async deleteAccount(btn) {
+    if (btn.dataset.confirm !== 'yes') {
+      btn.dataset.confirm = 'yes';
+      btn.textContent = 'Confirmer la suppression définitive';
+      return;
+    }
+    btn.disabled = true;
+    const del = (s) => fetch('/api/auth/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ access_token: s.access_token }) }).catch(() => null);
+    let s = store.get(AUTH_KEY);
+    let r = s ? await del(s) : null;
+    if (r?.status === 401 && s?.refresh_token) {
+      const again = await accountRefresh({ ...s, expires_at: 0 });
+      if (again && again.access_token !== s.access_token) { store.set(AUTH_KEY, again); s = again; r = await del(s); }
+    }
+    btn.disabled = false;
+    if (!r?.ok) return toast((await r?.json().catch(() => null))?.error || 'Suppression impossible pour le moment, réessaie plus tard');
+    clearTimeout(account.timer);
+    store.del(AUTH_KEY);
+    account.user = null;
+    await send('auth:clear');
+    ui.sheet = null;
+    toast('Ton compte a été supprimé. Tu joues en invité.');
+    render();
+  },
+  flag() { report.open = true; report.type = null; report.roundId = state.round?.id ?? null; render(); },
+  flagclose() { report.open = false; render(); },
   async resume() { const r = await send('game:resume'); if (r.error) toast(r.error); },
   reportType(btn) { report.type = btn.dataset.value; render(); },
   reportPick(btn) {
@@ -537,10 +674,11 @@ const actions = {
     if (report.type === 'accept' && !accept) return toast('Écris la réponse à accepter');
     if (report.type === 'other' && !comment) return toast('Décris le souci en quelques mots');
     btn.disabled = true;
-    const r = await send('game:report', { type: report.type, accept, comment, resume: btn.dataset.resume === 'yes' });
+    const r = await send('game:report', { type: report.type, accept, comment, roundId: state.round?.id, resume: btn.dataset.resume === 'yes' });
     btn.disabled = false;
     if (r.error) return toast(r.error);
     report.type = null;
+    report.open = false;
     for (const el of ['#report-accept', '#report-comment']) if ($(el)) $(el).value = '';
     toast('Retour enregistré, merci !');
     render();
@@ -609,7 +747,7 @@ document.addEventListener('submit', (e) => {
     rememberGuess(guess);
     answer(guess);
   } else if (e.target.matches('[data-form="name"]')) {
-    if (getName()) closeSheet();
+    actions.saveName();
   } else if (e.target.matches('[data-form="create"]')) {
     actions.create();
   } else if (e.target.matches('[data-form="join"]')) {
@@ -1168,18 +1306,26 @@ const isHost = () => state && state.hostId === state.you;
 // =====================================================================  pause et retours de l'hôte
 // L'hôte peut figer la partie (⚑ Signaler) pour noter un souci sur la question : réponse à accepter en plus,
 // bonne réponse fausse, question à supprimer… Les retours sont enregistrés par le serveur (data/feedback.jsonl).
-const report = { type: null, pausedAt: null };
+// Tout joueur peut signaler une erreur (sans pause : la partie continue). Accepter une réponse ou supprimer
+// une question est réservé à l'admin (state.admin, décidé par le serveur).
+const report = { type: null, pausedAt: null, open: false, roundId: null };
 const REPORT_TYPES = [
-  ['accept', 'Accepter une autre réponse'],
-  ['wrong', 'La bonne réponse est fausse'],
-  ['remove', 'Question à supprimer'],
-  ['other', 'Autre'],
+  ['accept', 'Accepter une autre réponse', true],
+  ['wrong', 'La bonne réponse est fausse', true],
+  ['remove', 'Question à supprimer', true],
+  ['other', 'Autre', true],
+];
+const PLAYER_TYPES = [
+  ['wrong', 'Erreur dans la question ou la réponse'],
+  ['other', 'Autre souci'],
 ];
 
 function reportButton() {
   const n = state.round?.reported || 0;
   return `<button class="btn small ghost report-btn" data-action="pause" title="Mettre en pause et signaler un souci sur cette question">⚑ Signaler${n ? ` <span class="count">${n}</span>` : ''}</button>`;
 }
+/** Correction, joueur qui n'est pas l'hôte : son bouton ⚑ (sans pause). Pas pendant la question : pas de place perdue. */
+const playerBar = (extra = '') => (state.phase === 'end' ? '' : `<div class="host-bar player-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button></div>`);
 
 /** Manche à réponse tapée : on peut demander d'accepter une autre écriture. */
 function typedRound(r) {
@@ -1209,11 +1355,24 @@ function pauseOverlay() {
       <p class="muted">${esc(p.by || "L'hôte")} signale un souci sur cette question. Le chrono reprendra au même endroit pour tout le monde.</p>
     </div></div>`;
   }
-  const types = REPORT_TYPES.filter(([id]) => id !== 'accept' || typedRound(r));
+  return reportForm(r, true);
+}
+
+/** Joueur (ou hôte sans pause) : panneau ⚑ par-dessus le jeu, la partie continue pour les autres. */
+function flagOverlay() {
+  const r = state?.round;
+  if (!report.open) return '';
+  if (!r || r.id !== report.roundId || !['countdown', 'question', 'reveal'].includes(state.phase) || state.paused) { report.open = false; return ''; }
+  return reportForm(r, false);
+}
+
+function reportForm(r, paused) {
+  const types = state.admin ? REPORT_TYPES.filter(([id]) => id !== 'accept' || typedRound(r)) : PLAYER_TYPES;
+  if (report.type && !types.some(([id]) => id === report.type)) report.type = null;
   const picks = report.type === 'accept' ? missedAnswers() : [];
-  return `<div class="pause-overlay"><form class="pause-card card report" onsubmit="return false">
-    <h2>⏸ Partie en pause</h2>
-    <p class="muted small">Le chrono est figé pour tout le monde. Qu'est-ce qui ne va pas avec cette question ?</p>
+  return `<div class="pause-overlay ${paused ? '' : 'flag-overlay'}"><form class="pause-card card report" onsubmit="return false">
+    <h2>${paused ? '⏸ Partie en pause' : '⚑ Signaler un souci'}</h2>
+    <p class="muted small">${paused ? 'Le chrono est figé pour tout le monde. ' : 'La partie continue pendant ce temps. '}Qu'est-ce qui ne va pas avec cette question ?</p>
     <div class="report-types">${types.map(([id, label]) => `<button type="button" class="rchip ${report.type === id ? 'sel' : ''}" data-action="reportType" data-value="${id}">${label}</button>`).join('')}</div>
     <div class="report-fields" ${report.type ? '' : 'hidden'}>
       <label class="field" ${report.type === 'accept' ? '' : 'hidden'}>Réponse à accepter
@@ -1224,11 +1383,14 @@ function pauseOverlay() {
         <textarea id="report-comment" maxlength="1000" rows="3" placeholder="${report.type === 'wrong' ? 'Ex. : la bonne réponse est…' : 'Précise si besoin'}"></textarea>
       </label>
     </div>
-    <div class="report-actions">
+    ${paused ? `<div class="report-actions">
       <button type="button" class="btn primary" data-action="reportSend" data-resume="yes" ${report.type ? '' : 'disabled'}>Envoyer et reprendre</button>
       <button type="button" class="btn ghost small" data-action="reportSend" data-resume="no" ${report.type ? '' : 'disabled'}>Envoyer, rester en pause</button>
       <button type="button" class="link" data-action="resume">Reprendre sans signaler</button>
-    </div>
+    </div>` : `<div class="report-actions">
+      <button type="button" class="btn primary" data-action="reportSend" ${report.type ? '' : 'disabled'}>Envoyer</button>
+      <button type="button" class="link" data-action="flagclose">Annuler</button>
+    </div>`}
   </form></div>`;
 }
 // ---- Ta bande (profils Steam)
@@ -1305,7 +1467,32 @@ function steamCard() {
   </section>`;
 }
 
-const avatar = (name) => `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`;
+// ---- Images de profil (galerie maison, photo du compte, initiale) : voir server/avatars.js
+const LOOK_KEY = 'quizparty:look'; // choix de l'appareil (invité), repris du compte une fois connecté
+const looks = { emojis: [], hues: [] };
+fetch('/api/avatars').then((r) => r.json()).then((x) => { Object.assign(looks, x); render(); }).catch(() => {});
+/** Photo choisie ('photo:discord', 'photo:google' ; 'photo' = ancien format, photo de la connexion en cours). */
+function photoOf(look, u = account.user) {
+  if (!u || !/^photo(:|$)/.test(look || '')) return null;
+  const p = look.split(':')[1];
+  return p ? u.photos?.[p] ?? null : u.avatar ?? null;
+}
+/** Chaîne enregistrée ('', 'photo:discord', 'e:i:j'…) → { emoji, hue } | { photo } | null. */
+function lookView(look) {
+  if (/^photo(:|$)/.test(look || '')) { const url = photoOf(look); return url ? { photo: url } : null; }
+  const m = /^e:(\d+):(\d+)$/.exec(look || '');
+  return m && looks.emojis[m[1]] ? { emoji: looks.emojis[m[1]], hue: looks.hues[m[2]] } : null;
+}
+/** Mon image : choix enregistré, sinon la photo du compte s'il y en a une. */
+const myLookRaw = () => store.get(LOOK_KEY) ?? (account.user?.avatar && account.user.provider ? `photo:${account.user.provider}` : '');
+const myLook = () => lookView(myLookRaw());
+const lookOfName = (name) => state?.players?.find((p) => p.name === name)?.look ?? null;
+const avatar = (name, look = lookOfName(name)) => (look?.photo
+  ? `<span class="avatar ph"><img src="${esc(look.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"></span>`
+  : look?.emoji
+    ? `<span class="avatar emo" style="--h:${look.hue}">${look.emoji}</span>`
+    : `<span class="avatar" style="--h:${hue(name)}">${esc([...name][0]?.toUpperCase() || '?')}</span>`);
+const myAvatar = (name) => avatar(name || '?', myLook());
 // À score égal, le départage éventuel (mots croisés : premier à avoir trouvé son dernier mot)
 const sortedByScore = () => [...state.players].sort((a, b) => b.score - a.score || (a.tiebreak ?? Infinity) - (b.tiebreak ?? Infinity));
 const sortedByTotal = () => [...state.players].sort((a, b) => b.total - a.total || b.wins - a.wins);
@@ -1636,7 +1823,8 @@ function playersList(host) {
           ${state.players.map((p) => `
             <li data-key="${p.id}" class="${p.connected ? '' : 'off'}">
               ${avatar(p.name)}
-              <span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>
+              ${p.account ? `<button class="pname pstats" data-action="pstats" data-id="${p.id}" aria-label="Stats de ${esc(p.name)}">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''} <span class="pstats-ico" aria-hidden="true">📊</span></button>`
+                : `<span class="pname">${esc(p.name)}${p.id === state.you ? ' <em>(toi)</em>' : ''}</span>`}
               ${p.steam?.status === 'ok' ? '<span class="steam-dot" title="Profil Steam lié" aria-label="Profil Steam lié">S</span>' : ''}
               ${p.id === state.hostId ? '<span class="tag">hôte</span>' : ''}
               ${host && p.id !== state.you ? `<button class="x" data-action="kick" data-id="${p.id}" aria-label="Retirer">✕</button>` : ''}
@@ -1646,12 +1834,7 @@ function playersList(host) {
 
 /** Pages (« page: true », plein écran sur téléphone) et panneaux du bas, par écran. */
 const SHEETS = {
-  name: { phase: 'home', render: () => ({ title: 'Ton pseudo', body: `
-    <form class="sh-form" data-form="name">
-      <input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="done">
-      <button class="btn primary" type="submit">C’est bon</button>
-    </form>
-    <p class="sh-note">C’est le nom que verront tes potes. Pas de compte : il reste juste sur cet appareil.</p>` }) },
+  name: { phase: 'home', page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
   create: { phase: 'home', render: () => ({ title: 'Créer un salon', body: `
     <form class="sh-form" data-form="create">
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
@@ -1663,6 +1846,7 @@ const SHEETS = {
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
+  daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   getapp: { phase: 'home', render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
   tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
     <ol class="sh-steps">
@@ -1684,36 +1868,285 @@ const SHEETS = {
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
   note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^🔒 <b>[^<]*<\/b> /, '')}</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
+  account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
+  // Fenêtre au-dessus du Profil (pas une page) : « Valider » ou ✕ ramène au Profil
+  look: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Image de profil', body: lookBody() }) },
+  menu: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Menu', body: menuBody() }) },
+  stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
+    <button class="btn" data-action="sheet" data-value="account">👤 Profil</button>
     <button class="btn" data-action="sheet" data-value="players">👥 Joueurs (${state.players.length})</button>
     ${state.gamesPlayed ? '<button class="btn" data-action="sheet" data-value="scores">🏆 Score global</button>' : ''}
     <button class="btn" data-action="sheet" data-value="steam">🎮 Lier mon Steam</button>
     <button class="btn" data-action="propose">💡 Proposer une question</button>` }) },
 };
 
+/** Bloc « Compte » du profil : connexion facultative (Discord, Google), ou compte connecté. */
+const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? '🎮' : 'G'}</span>`;
+/** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
+const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">👤 Se connecter</button>` : '');
+
+/** Fenêtre « Image de profil » : galerie maison (emoji + couleur), photos des comptes reliés, initiale.
+ *  Chaque choix est enregistré tout de suite ; « Valider » referme la fenêtre. */
+const lookUi = { hue: null };
+function lookBody() {
+  const raw = myLookRaw();
+  const cur = /^e:(\d+):(\d+)$/.exec(raw);
+  const h = lookUi.hue ?? (cur ? Number(cur[2]) : 0);
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const u = account.user;
+  const opt = (look, inner, label) => `<button class="lk ${raw === look ? 'on' : ''}" data-action="pickLook" data-value="${look}" aria-label="${label}" aria-pressed="${raw === look}">${inner}</button>`;
+  return `
+  <div class="lk-now">${myAvatar(name)}<div><b>${esc(name || 'Sans pseudo')}</b><small>C’est ce que voient les autres joueurs.</small></div></div>
+  <h3 class="lk-h">Couleur</h3>
+  <div class="lk-hues" role="radiogroup">${looks.hues.map((x, j) => `<button class="lk-hue ${j === h ? 'on' : ''}" style="--h:${x}" data-action="pickHue" data-value="${j}" aria-label="Couleur ${j + 1}" aria-checked="${j === h}" role="radio"></button>`).join('')}</div>
+  <h3 class="lk-h">Avatar</h3>
+  <div class="lk-grid">
+    ${opt('', avatar(name || '?', null), 'Initiale de mon pseudo')}
+    ${Object.entries(u?.photos ?? {}).map(([p, url]) => opt(`photo:${p}`, `${avatar(name, { photo: url })}<em class="lk-src">${providerIcon(p)}</em>`, 'Ma photo ' + (PROVIDER_LABEL[p] || p))).join('')}
+    ${looks.emojis.map((e, i) => opt(`e:${i}:${h}`, `<span class="avatar emo" style="--h:${looks.hues[h]}">${e}</span>`, `Avatar ${e}`)).join('')}
+  </div>
+  ${u ? '' : '<p class="sh-note small">Retenue sur cet appareil. Connecte-toi pour la garder partout (et utiliser ta photo Discord ou Google).</p>'}
+  <button class="btn primary" data-action="sheetclose">Valider</button>`;
+}
+actions.pickHue = (btn) => {
+  lookUi.hue = Number(btn.dataset.value);
+  const cur = /^e:(\d+):\d+$/.exec(myLookRaw());
+  if (cur) return actions.pickLook({ dataset: { value: `e:${cur[1]}:${lookUi.hue}` } });
+  render();
+};
+actions.pickLook = async (btn) => {
+  const look = btn.dataset.value;
+  const before = store.get(LOOK_KEY);
+  store.set(LOOK_KEY, look);
+  render();
+  const r = await send('profile:avatar', { look });
+  if (r.error) { store.set(LOOK_KEY, before); render(); toast(r.error); }
+};
+
+/** Page Profil (accueil et salon) : pseudo, compte (connexion, déconnexion, suppression), thème. */
+function profileBody() {
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const playing = state && !['lobby', 'end'].includes(state.phase);
+  return `
+  <div class="pf-head"><button class="pf-av pf-look" data-action="sheet" data-value="look" aria-label="Changer mon image de profil">${myAvatar(name)}<i>Changer</i></button>
+    <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')} · ${esc(u.name)}${u.admin ? ' · admin' : ''}` : 'Invité'}</small></div></div>
+  <form class="sh-form" data-form="name">
+    <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(name)}" enterkeyhint="done"></label>
+    <button class="btn primary" type="submit">Enregistrer</button>
+  </form>
+  <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
+  ${u ? `<div class="acc">
+    <h3>Compte</h3>
+    <button class="btn danger-btn" data-action="deleteAccount">Supprimer mon compte</button>
+    <p class="sh-note small">La suppression efface ton compte et ton profil, définitivement. Tu pourras toujours jouer en invité.</p>
+  </div>` : `${accountBlock()}${state ? '<p class="sh-note small">Tu reviens dans ce salon juste après la connexion.</p>' : ''}`}
+  <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
+  <p class="sh-note small pf-links"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a></p>`;
+}
+function accountBlock() {
+  const cfg = account.cfg;
+  const u = account.user;
+  if (u) {
+    return `<div class="acc acc-in">
+      <div class="acc-me">${u.avatar ? `<img class="acc-avatar" src="${esc(u.avatar)}" alt="" referrerpolicy="no-referrer" onerror="this.hidden=true">` : avatar(u.name)}
+        <div><b>${esc(u.name)}</b><small>Connecté avec ${esc(PROVIDER_LABEL[u.provider] || 'ton compte')}${u.admin ? ' · admin' : ''}</small></div></div>
+      <button class="link" data-action="logout">Se déconnecter</button>
+    </div>`;
+  }
+  if (!cfg?.enabled) return '';
+  return `<div class="acc">
+    <h3>Compte <small>facultatif</small></h3>
+    <p class="sh-note">Pour retrouver ton profil sur tous tes appareils et garder tes stats de parties. Sans compte, tu joues en invité, comme avant.</p>
+    <div class="acc-btns">${cfg.providers.map((p) => `<button class="btn acc-btn acc-${p}" data-action="login" data-value="${p}">${providerIcon(p)}Continuer avec ${PROVIDER_LABEL[p] || p}</button>`).join('')}</div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------- stats de joueur
+// Mes stats (page Profil) ou celles d'un joueur connecté du salon (en touchant son nom).
+// Trois onglets qu'on fait glisser au doigt, pour tenir sur un écran de téléphone sans défiler.
+const statsUi = { title: 'Stats', who: null, data: null, error: null, loading: false, tab: 0, req: 0 };
+const STATS_TABS = ['Résumé', 'Modes', 'Jeux'];
+const pct = (good, n) => (n ? Math.round((100 * good) / n) : 0);
+const secs = (ms) => `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', ',')} s`;
+async function openStats(who, title) {
+  const req = ++statsUi.req;
+  const myName = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || account.user?.name || '';
+  const other = who !== 'me' ? state?.players.find((p) => p.id === who) : null;
+  Object.assign(statsUi, { who, title, data: null, error: null, loading: true, tab: 0,
+    person: who === 'me' ? { name: myName, avatar: account.user?.avatar ?? null } : { name: other?.name ?? '', avatar: null } });
+  openSheet('stats');
+  const r = who === 'me' ? await send('stats:me') : await send('stats:player', { playerId: who });
+  if (req !== statsUi.req) return;
+  statsUi.loading = false;
+  if (r.error) statsUi.error = r.error;
+  else {
+    statsUi.data = r.stats ?? {};
+    if (r.avatar) statsUi.person.avatar = r.avatar;
+  }
+  if (ui.sheet === 'stats') render();
+}
+actions.mystats = () => openStats('me', 'Mes stats');
+actions.pstats = (btn) => {
+  const p = state?.players.find((x) => x.id === btn.dataset.id);
+  if (!p) return;
+  openStats(p.id === state.you ? 'me' : p.id, p.id === state.you ? 'Mes stats' : `Stats de ${p.name}`);
+};
+actions.stab = (btn) => { statsUi.tab = Number(btn.dataset.value) || 0; showStatsTab(true); };
+function showStatsTab(smooth) {
+  const track = $('.st-track');
+  if (!track) return;
+  track.scrollTo({ left: statsUi.tab * track.clientWidth, behavior: smooth ? 'smooth' : 'auto' });
+  document.querySelectorAll('.st-tabs button').forEach((b, i) => b.classList.toggle('on', i === statsUi.tab));
+}
+// Glissé au doigt : l'onglet suit la page affichée
+document.addEventListener('scroll', (e) => {
+  if (!e.target.classList?.contains('st-track')) return;
+  const t = e.target;
+  const i = Math.round(t.scrollLeft / Math.max(1, t.clientWidth));
+  if (i !== statsUi.tab) { statsUi.tab = i; document.querySelectorAll('.st-tabs button').forEach((b, j) => b.classList.toggle('on', j === i)); }
+}, true);
+function statsBody() {
+  if (statsUi.loading) return '<p class="sh-note st-wait">Chargement des stats…</p>';
+  if (statsUi.error) return `<p class="sh-note">${esc(statsUi.error)}</p>`;
+  const s = statsUi.data || {};
+  const me = statsUi.who === 'me';
+  if (!s.answers && !s.games) {
+    return `<div class="st-empty"><span aria-hidden="true">📊</span><p>${me ? 'Pas encore de stats : elles commencent à ta première partie finie, connecté à ton compte.' : 'Pas encore de partie finie avec son compte.'}</p></div>`;
+  }
+  const who = statsUi.person || {};
+  const face = statsUi.who === 'me' ? myAvatar(who.name) : avatar(who.name || '?');
+  const tile = (v, label, sub = '') => `<div class="st-tile"><b>${v}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ''}</div>`;
+  // Grille façon défi du jour : un carré par question posée sur ce jeu (vert trouvé, rouge raté)
+  const pips = (g) => {
+    const max = 12, n = Math.min(g.n, max), good = Math.round((g.good / g.n) * n);
+    return `<span class="st-pips" aria-label="${g.good} trouvés sur ${g.n}">${'<i class="ok"></i>'.repeat(good)}${'<i></i>'.repeat(n - good)}</span>`;
+  };
+  const summary = `
+    <div class="st-who">${face}<div><b>${esc(who.name || '')}</b><small>${s.daily ? `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes et ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes`}</small></div></div>
+    <div class="st-big"><div class="st-big-in"><b>${pct(s.correct, s.answers)}<span> %</span></b><div><strong>de bonnes réponses</strong><small>${s.correct ?? 0} sur ${s.answers ?? 0} questions</small></div></div></div>
+    <div class="st-tiles">
+      ${tile(s.games ?? 0, s.games > 1 ? 'parties' : 'partie', s.daily ? `et ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : 'entre potes')}
+      ${tile(s.wins ?? 0, s.wins > 1 ? 'victoires' : 'victoire', s.games ? `${pct(s.wins, s.games)} % des parties` : '')}
+      ${tile(s.podiums ?? 0, s.podiums > 1 ? 'podiums' : 'podium', 'dans le top 3')}
+      ${tile(s.bestScore ?? '–', 'meilleur score', 'en une partie')}
+    </div>
+    <div class="st-col st-recs-col"><h3 class="st-h">Records</h3>
+    <ul class="st-recs">
+      <li><span aria-hidden="true">🔥</span><div><b>${s.streak ?? 0}</b><small>bonnes réponses d’affilée</small></div></li>
+      <li><span aria-hidden="true">⚡</span><div><b>${s.fastest ? secs(s.fastest.ms) : '–'}</b><small>${s.fastest?.game ? `réponse juste la plus rapide, sur ${esc(s.fastest.game)}` : 'réponse juste la plus rapide'}</small></div></li>
+    </ul></div>`;
+  const modes = (s.modes || []).length ? `<div class="st-col st-modes-col"><h3 class="st-h">Réussite par jeu</h3><ul class="st-modes">${s.modes.map((m) => `
+      <li style="--mc:${modeArt(m.mode)[1]}"><span class="st-mi" aria-hidden="true">${modeArt(m.mode)[0]}</span>
+        <div class="st-mb"><div class="st-ml"><b>${esc(m.name || m.mode)}</b><span>${pct(m.good, m.n)} %</span></div>
+        <div class="st-bar"><i style="width:${pct(m.good, m.n)}%"></i></div><small>${m.good} sur ${m.n} question${m.n > 1 ? 's' : ''}</small></div></li>`).join('')}</ul></div>`
+    : '<p class="sh-note">Aucun mode joué pour l’instant.</p>';
+  const gameRow = (g) => `<li><b>${esc(g.game)}</b>${pips(g)}<span>${g.good}/${g.n}</span></li>`;
+  const games = `
+    <div class="st-col st-best"><h3 class="st-h">${me ? 'Les jeux que tu reconnais le mieux' : 'Ses jeux les mieux reconnus'}</h3>
+    ${(s.best || []).length ? `<ol class="st-games">${s.best.map(gameRow).join('')}</ol>` : '<p class="sh-note">Pas encore de jeu trouvé.</p>'}</div>
+    <div class="st-col st-worst-col"><h3 class="st-h">${me ? 'Ceux qui te résistent' : 'Ceux qui lui résistent'}</h3>
+    ${(s.worst || []).length ? `<ol class="st-games st-worst">${s.worst.map(gameRow).join('')}</ol>` : '<p class="sh-note">Aucun pour l’instant.</p>'}
+    <p class="sh-note small">Jaquettes, pitchs, emojis, sons, HUD et écrans de chargement. Un carré par fois où le jeu est tombé.</p></div>`;
+  setTimeout(() => showStatsTab(false), 0);
+  return `
+    <div class="st-tabs" role="tablist">${STATS_TABS.map((t, i) => `<button role="tab" class="${i === statsUi.tab ? 'on' : ''}" data-action="stab" data-value="${i}">${t}</button>`).join('')}</div>
+    <div class="st-track"><section class="st-page st-p1">${summary}</section><section class="st-page st-p2">${modes}</section><section class="st-page st-p3">${games}</section></div>`;
+}
+/**
+ * Bandeau du haut, commun à toute l'app (accueil, salon, podium et pages perso) : logo = écran principal
+ * (l'accueil, ou le salon quand on y est), avatar = menu du profil. Pendant le décompte, les questions et
+ * la correction, il laisse la place au jeu (son propre haut d'écran : question 3/10, chrono).
+ */
+const BAR_PHASES = ['home', 'lobby', 'end'];
+const hasBar = (phase) => !SCREEN && BAR_PHASES.includes(phase);
+function appBar(phase) {
+  if (!hasBar(phase)) return '';
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const solo = !!state?.daily; // défi du jour : pas un vrai salon (ni code, ni Quitter), le logo ramène à l'accueil
+  const inRoom = !!state && !solo;
+  const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
+  const face = name || u ? myAvatar(name || u?.name) : '';
+  const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
+  return `
+  <header class="appbar" data-key="appbar"><div class="ab-in">
+    <button class="ab-logo" data-action="${solo ? 'dailyhome' : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    ${inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
+    <span class="ab-end">
+      ${inRoom ? '<button class="ab-btn" data-action="leave">Quitter</button>' : ''}
+      ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
+      ${solo ? '' : loginTop(inRoom ? 'account' : 'name')}${chip}
+    </span>
+  </div></header>`;
+}
+actions.navhome = () => { if (ui.sheet || tv.sheet) { tv.sheet = false; ui.sheet = null; ui.base = null; render(); } else scrollTo({ top: 0, behavior: 'smooth' }); };
+
+/**
+ * Menu du profil (touche l'avatar ou le pseudo, en haut à droite) : pages personnelles (profil, stats,
+ * bientôt amis et personnalisation), déconnexion en dernier. Feuille par le bas sur téléphone,
+ * menu déroulant sous l'avatar sur ordinateur. Le bandeau du haut garde ce qui touche au jeu.
+ */
+function menuBody() {
+  const u = account.user;
+  const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
+  const profile = state ? 'account' : 'name';
+  const item = (ico, label, attrs, note = '') => `<button class="mn-item" ${attrs}><span class="mn-ico" aria-hidden="true">${ico}</span><span class="mn-l">${label}</span>${note ? `<small>${note}</small>` : ''}</button>`;
+  return `
+  <div class="mn-head">${myAvatar(name)}
+    <div><b>${esc(name || 'Sans pseudo')}</b><small>${u ? `Compte ${esc(PROVIDER_LABEL[u.provider] || '')}` : 'Invité'}</small></div></div>
+  <nav class="mn" role="menu">
+    ${item('👤', 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
+    ${u ? item('📊', 'Mes stats', 'data-action="mystats" role="menuitem"') : item('📊', 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
+    ${item('👥', 'Amis', 'disabled role="menuitem"', 'Bientôt')}
+    ${item('🎨', 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
+  </nav>
+  <div class="mn-row"><span>Thème</span>${themeToggle()}</div>
+  ${u ? `<div class="mn-sep"></div>${item('⎋', 'Se déconnecter', 'data-action="logout" role="menuitem"').replace('mn-item', 'mn-item mn-out')}` : ''}`;
+}
+
 function sheetView() {
   if (!ui.sheet || SCREEN) return '';
-  const def = SHEETS[ui.sheet];
   const phase = displayPhase();
-  if (!def || def.phase !== phase || (phase === 'lobby' && !state)) { ui.sheet = null; return ''; }
+  const ok = (name) => { const d = SHEETS[name]; return d && [].concat(d.phase).includes(phase) && !(phase !== 'home' && !state); };
+  if (!ok(ui.sheet)) { ui.sheet = null; ui.base = null; return ''; }
+  // Menu ouvert depuis une page (stats, profil…) : la page reste dessous
+  // Toujours dans le même ordre (fond, page, menu) : à la fermeture du menu, la page reste la même
+  // dans le DOM (rien n'est recréé, donc pas de clignotement de l'accueil ou du salon)
+  const base = OVER.includes(ui.sheet) && ui.base && ok(ui.base) ? sheetHtml(ui.base, true) : '';
+  return `<div class="sh-bg" data-action="sheetclose"></div>` + base + sheetHtml(ui.sheet, false);
+}
+function sheetHtml(name, under) {
+  const def = SHEETS[name];
   const { title, body } = def.render();
   const page = def.page;
   return `
-  <div class="sh-bg" data-action="sheetclose"></div>
-  <section class="sh ${page ? 'sh-page' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${ui.sheet}">
+  <section class="sh ${page ? 'sh-page' : ''} ${under ? 'sh-under' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" data-key="sh:${name}"${name === 'menu' && ui.anchor ? ` style="--ax:${ui.anchor.right}px;--ay:${ui.anchor.bottom}px"` : ''}>
     <div class="sh-head">${page ? '<button class="sh-back" data-action="sheetclose" aria-label="Retour">←</button>' : ''}<h2>${esc(title)}</h2>${page ? '' : '<button class="btn small ghost" data-action="sheetclose" aria-label="Fermer">✕</button>'}</div>
     <div class="sh-body">${body}</div>
   </section>`;
 }
+const OVER = ['menu', 'look']; // fenêtres ouvertes par-dessus une page : à la fermeture, on revient à la page
 function openSheet(name) {
+  ui.base = OVER.includes(name) && ui.sheet && SHEETS[ui.sheet]?.page ? ui.sheet : null;
   ui.sheet = name;
+  if (name === 'daily') loadDaily(); // résultat et classement à jour
   render();
-  if (['name', 'create'].includes(name)) setTimeout(() => $('#name')?.focus(), 60);
+  if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
-const closeSheet = () => { ui.sheet = null; render(); };
-actions.sheet = (btn) => openSheet(btn.dataset.value);
+const closeSheet = () => { ui.sheet = OVER.includes(ui.sheet) ? ui.base ?? null : null; ui.base = null; render(); };
+actions.sheet = (btn) => {
+  // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
+  if (btn.dataset.value === 'menu') {
+    if (ui.sheet === 'menu') return closeSheet(); // retour à la page d'où on l'a ouvert
+    const r = btn.getBoundingClientRect();
+    ui.anchor = { right: Math.round(innerWidth - r.right), bottom: Math.round(r.bottom + 8) };
+  }
+  openSheet(btn.dataset.value);
+};
 actions.sheetclose = closeSheet;
 actions.soon = (btn) => toast(btn.dataset.value);
 actions.propose = () => { if (ui.sheet) closeSheet(); openPropose(); };
@@ -1727,6 +2160,173 @@ actions.pick = async (btn) => {
 };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
 
+
+// =====================================================================  défi du jour
+// Le même quiz pour tout le monde, de minuit à minuit (heure de Paris), joué seul dans une partie à part.
+// Le serveur garde le résultat des comptes (une tentative, classement, série) ; un invité garde le sien ici.
+const DAILY_KEY = 'quizparty:daily'; // invité : { day, number, score, grid, correct, rounds, streak }
+const daily = { info: null, board: null, loading: false };
+// Lien partagé (…/?defi) : le défi s'ouvre directement
+if (!SCREEN && new URLSearchParams(location.search).has('defi')) {
+  history.replaceState(null, '', location.pathname);
+  setTimeout(() => { if (!state) openSheet('daily'); }, 0);
+}
+const CELL_CLASS = { fast: 'ok', slow: 'mid', miss: 'ko', none: '' };
+const GRID_CELL = { '🟩': 'ok', '🟨': 'mid', '🟥': 'ko' };
+const gridCells = (grid) => [...String(grid || '')].map((c) => GRID_CELL[c] ?? '');
+const prevDay = (day) => { const [y, m, d] = day.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10); };
+/** Mon résultat du jour : celui du serveur (compte) ou celui gardé dans le navigateur (invité). */
+function dailyMine() {
+  const i = daily.info;
+  if (!i) return null;
+  if (i.played) return i.played;
+  const local = store.get(DAILY_KEY);
+  return !i.account && local?.day === i.day ? local : null;
+}
+function dailyStreak() {
+  const i = daily.info;
+  if (!i) return 0;
+  if (i.account) return i.streak || 0;
+  const local = store.get(DAILY_KEY);
+  return local && (local.day === i.day || local.day === prevDay(i.day)) ? local.streak || 0 : 0;
+}
+async function loadDaily() {
+  if (SCREEN || daily.loading) return;
+  daily.loading = true;
+  const r = await send('daily:info');
+  daily.loading = false;
+  if (r.error) return;
+  daily.info = r;
+  daily.board = r.leaderboard ?? null;
+  // Invité qui a déjà joué : il peut voir le classement
+  if (!daily.board && dailyMine()) daily.board = (await send('daily:board')).leaderboard ?? [];
+  render();
+}
+const cellsHtml = (classes, cls = '') => `<span class="d-cells ${cls}" aria-hidden="true">${classes.map((c) => `<i class="${c}"></i>`).join('')}</span>`;
+const fmtPts = (n) => nf.format(n || 0);
+function untilNext(at) {
+  const s = Math.max(0, Math.round((at - now()) / 1000));
+  const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
+  return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`;
+}
+function shareTextOf({ number, grid, score, streak }) {
+  return `QuizParty · Défi n°${number}\n${grid}\n${fmtPts(score)} pts${streak > 1 ? ` · 🔥 ${streak} jours` : ''}\n${location.origin}/?defi`;
+}
+async function shareDaily(text) {
+  if (navigator.share && TOUCH) {
+    try { await navigator.share({ text }); return; } catch (err) { if (err?.name === 'AbortError') return; }
+  }
+  try { await copyText(text); toast('Résultat copié : colle-le à tes potes !'); } catch { toast(text); }
+}
+/** Classement du jour : les premiers, et ma ligne si je suis plus loin. */
+function dailyBoard(list, meId, max = 5) {
+  if (!list) return '';
+  if (!list.length) return '<p class="muted d-empty">Personne au classement pour l’instant.</p>';
+  const myIdx = list.findIndex((x) => meId && x.userId === meId);
+  const shown = list.slice(0, max).map((x, i) => [x, i]);
+  if (myIdx >= max) shown.push([list[myIdx], myIdx]);
+  return `<ol class="list d-board">${shown.map(([x, i]) => `
+    <li class="${i === myIdx ? 'me' : ''}"><span class="pos">${i + 1}</span>${avatar(x.name || '?')}<span class="grow">${esc(x.name)}${cellsHtml(gridCells(x.grid), 'xs')}</span><span class="pts">${fmtPts(x.score)}</span></li>`).join('')}
+  </ol>${list.length > shown.length ? `<p class="muted d-more">${list.length} joueurs aujourd’hui</p>` : ''}`;
+}
+function dailyTile() {
+  const i = daily.info, mine = dailyMine(), streak = dailyStreak();
+  const sub = !i ? 'Le même quiz pour tout le monde, résultat à partager'
+    : mine ? `Joué : ${fmtPts(mine.score)} pts · prochain dans ${untilNext(i.nextAt)}`
+    : `${i.rounds} questions mélangées, une seule tentative`;
+  return `<button class="h-tile daily ${mine ? 'done' : ''}" data-action="sheet" data-value="daily">${i ? `<i class="soon">n°${i.number}</i>` : ''}<span class="t-ico">📅</span><b>Défi du jour</b><small>${esc(sub)}</small>
+    ${mine ? cellsHtml(gridCells(mine.grid), 'tile') : `<span class="d-go">${streak ? `🔥 ${streak} jour${streak > 1 ? 's' : ''} · ` : ''}À jouer ▸</span>`}</button>`;
+}
+function dailyBody() {
+  const i = daily.info;
+  if (!i) { loadDaily(); return '<p class="muted">Chargement…</p>'; }
+  const mine = dailyMine(), streak = dailyStreak();
+  if (mine) {
+    return `<div class="d-sheet">
+      <div class="d-result">
+        <small>Défi n°${i.number} · ${mine.correct}/${mine.rounds} trouvées</small>
+        <b>${fmtPts(mine.score)} <span>pts</span></b>
+        ${cellsHtml(gridCells(mine.grid), 'big')}
+        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+      </div>
+      <button class="btn primary" data-action="dailyshare">📤 Partager mon résultat</button>
+      <div class="d-col"><h3>Classement du jour</h3>
+      ${dailyBoard(daily.board, i.me, 8)}</div>
+      ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? '<button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour apparaître au classement et garder ta série sur tous tes appareils.' : ''}</p>`}
+      <p class="muted d-next">Prochain défi dans ${untilNext(i.nextAt)}</p>
+    </div>`;
+  }
+  return `<div class="d-sheet">
+    <div class="d-intro">
+      <span class="d-num">Défi n°${i.number}</span>
+      <ul class="d-rules">
+        <li><b>${i.rounds}</b> questions mélangées : quiz, jaquettes, emojis, sons…</li>
+        <li><b>${i.duration} s</b> par question, plus tu réponds vite, plus tu marques</li>
+        <li><b>Une seule tentative</b> : le même défi pour tout le monde aujourd’hui</li>
+      </ul>
+      ${streak ? `<span class="d-streak">🔥 Série en cours : ${streak} jour${streak > 1 ? 's' : ''}</span>` : ''}
+    </div>
+    ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? 'En invité, ton score reste sur cet appareil. <button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour le classement du jour et ta série.' : 'Ton score reste sur cet appareil.'}</p>`}
+    <button class="btn primary big" data-action="dailystart">C’est parti !</button>
+  </div>`;
+}
+/** Fin du défi : invité → on garde le résultat dans le navigateur (avec sa série). */
+function rememberDaily(s) {
+  if (s.daily.account || s.phase !== 'end') return;
+  const old = store.get(DAILY_KEY);
+  if (old?.day === s.daily.day) return;
+  const streak = old && old.day === prevDay(s.daily.day) ? (old.streak || 0) + 1 : 1;
+  const me = s.players.find((p) => p.id === s.you);
+  store.set(DAILY_KEY, { day: s.daily.day, number: s.daily.number, score: me?.score ?? 0, grid: s.daily.grid, correct: s.daily.correct, rounds: s.daily.rounds, streak });
+}
+/** Correction et question du défi : la progression (une case par question). */
+const dailyProgress = () => (state.daily ? cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'prog') : '');
+const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">⚑ Signaler</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>`;
+function dailyEnd() {
+  const d = state.daily;
+  const me = state.players.find((p) => p.id === state.you);
+  const local = d.account ? null : store.get(DAILY_KEY);
+  const streak = d.account ? d.streak : local?.day === d.day ? local.streak : 1;
+  const text = shareTextOf({ number: d.number, grid: d.grid, score: me?.score, streak });
+  return `
+    <main class="screen d-end">
+      <div class="d-result">
+        <small>Défi n°${d.number} · ${d.correct}/${d.rounds} trouvées</small>
+        <b>${fmtPts(me?.score)} <span>pts</span></b>
+        ${cellsHtml(d.cells.map((c) => CELL_CLASS[c] || 'ko'), 'big')}
+        ${streak ? `<span class="d-streak">🔥 ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
+      </div>
+      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">📤 Partager mon résultat</button>
+      <section class="card d-card">
+        <h2>Classement du jour</h2>
+        ${d.account ? (d.leaderboard ? dailyBoard(d.leaderboard, d.me) : '<p class="muted">Chargement…</p>') : `<p class="muted">En invité, tu n’es pas au classement.${account.cfg?.enabled ? ' Connecte-toi avant le défi de demain pour y être et garder ta série.' : ''}</p>${d.leaderboard ? dailyBoard(d.leaderboard, null, 3) : ''}`}
+      </section>
+      <p class="muted d-next">Prochain défi dans ${untilNext(d.nextAt)}</p>
+      <button class="btn" data-action="dailyhome">Retour à l’accueil</button>
+    </main>`;
+}
+actions.dailystart = async () => {
+  const name = store.get(NAME_KEY) || account.user?.nickname || account.user?.name;
+  if (!name) { toast('Choisis d’abord ton pseudo'); return openSheet('name'); }
+  unlockAudio();
+  const res = await send('daily:start', { name });
+  if (res.already) { daily.info = null; loadDaily(); return toast('Tu as déjà joué le défi du jour'); }
+  if (res.error) return toast(res.error);
+  ui.sheet = null;
+  enterRoom(res);
+};
+actions.dailyshare = (btn) => {
+  if (btn.dataset.value) return shareDaily(btn.dataset.value);
+  const i = daily.info, mine = dailyMine();
+  if (i && mine) shareDaily(shareTextOf({ number: i.number, grid: mine.grid, score: mine.score, streak: dailyStreak() }));
+};
+actions.dailyhome = async () => {
+  await send('room:leave');
+  leaveLocal();
+  daily.info = null;
+  loadDaily();
+};
+
 const views = {
   tvpair: tvPairView,
   tvlobby: tvLobbyView,
@@ -1737,10 +2337,6 @@ const views = {
     const invited = urlCode();
     return `
     <main class="screen home2">
-      <div class="h-top">
-        <div class="logo">Quiz<b>Party</b></div>
-        <button class="me-chip" data-action="sheet" data-value="name" aria-label="Changer de pseudo">${name ? `${avatar(name)}<span>${esc(name)}</span>` : '<span>Ton pseudo ✎</span>'}</button>
-      </div>
       <section class="h-play">
         <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
         <p>${invited ? 'Tes potes t’attendent : choisis ton pseudo et rejoins-les.' : 'Un salon, un code, et c’est parti. Sur la télé ou juste sur vos téléphones.'}</p>
@@ -1750,7 +2346,7 @@ const views = {
         ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
       </section>
       <div class="h-tiles">
-        <button class="h-tile daily" data-action="soon" data-value="Le défi du jour arrive bientôt : le même quiz pour tout le monde, chaque jour, avec un résultat à partager."><i class="soon">Bientôt</i><span class="t-ico">📅</span><b>Défi du jour</b><small>Le même quiz pour tout le monde, résultat à partager</small><span class="streak" aria-hidden="true"><i class="ok"></i><i class="ok"></i><i class="mid"></i><i class="ok"></i><i></i></span></button>
+        ${dailyTile()}
         <button class="h-tile" data-action="soon" data-value="Les défis entre potes arrivent bientôt : le même quiz figé, chacun le joue quand il veut, classement commun."><i class="soon">Bientôt</i><span class="t-ico">⚔️</span><b>Défis entre potes</b><small>Chacun joue quand il veut, classement commun</small></button>
       </div>
       <div class="h-extras">
@@ -1759,7 +2355,7 @@ const views = {
         ${installCard()}
       </div>
       <div class="h-foot">${themeToggle()}</div>
-      <p class="credits">Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
+      <p class="credits"><a href="/confidentialite">Confidentialité</a> · <a href="/conditions">Conditions</a> · Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
     </main>`;
   },
 
@@ -1775,7 +2371,6 @@ const views = {
       const linked = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
       return `
     <main class="screen lobby lobby-m">
-      <div class="top lm-top"><button class="link" data-action="leave">← Quitter</button><button class="ib" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button></div>
       <section class="lm-code"><small>Code du salon</small><button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}</button></section>
       <div class="lm-chips">
         <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? '✓ Code copié !' : '📋 Copier le code'}</button>
@@ -1801,7 +2396,6 @@ const views = {
     // Ordinateur : joueurs à gauche, jeu choisi au centre, réglages à droite, « Lancer » en bas.
     return `
     <main class="screen lobby">
-      <div class="top lobby-top"><button class="link" data-action="leave">← Quitter</button><div class="lobby-logo" aria-hidden="true">Quiz<b>Party</b></div><span class="lobby-end"><span class="lobby-count muted">${count}</span>${themeToggle()}</span></div>
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
@@ -1892,7 +2486,7 @@ const views = {
     <main class="screen has-side">
       <div class="play">
       <div class="qhead">
-        <span class="pill">${r.index + 1} / ${r.total}</span>
+        <span class="pill">${state.daily ? `📅 n°${state.daily.number} · ` : ''}${r.index + 1} / ${r.total}</span>${state.daily ? dailyProgress() : ''}
         <span class="timer" data-until="${r.endsAt}" data-mode="count" data-urgent="5000"></span>
       </div>
       <div class="bar"><div class="bar-fill" data-until="${r.endsAt}" data-total="${r.durationMs}" data-mode="bar" data-urgent="5000"></div></div>
@@ -1902,8 +2496,8 @@ const views = {
       ${GUESS_KINDS.includes(r.kind) ? media : `<h1 class="prompt">${esc(r.prompt)}</h1>`}
       <div class="q-answer">${body}</div>
       </div>
-      ${roster(r)}
-      ${isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+      ${state.daily ? '' : roster(r)}
+      ${state.daily ? dailyBar() : isHost() ? `<div class="host-bar">${reportButton()}<button class="btn small ghost" data-action="skip">Passer</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
     </main>`;
   },
 
@@ -2030,12 +2624,12 @@ const views = {
 
     const board = sortedByScore().slice(0, 8);
     // Téléphone : « Réponse » et « Classement » sont deux pages qu'on fait glisser du doigt (le haut et les boutons restent fixes)
-    const swipe = !SCREEN && !(controller() && r.kind !== 'crossword');
+    const swipe = !SCREEN && !state.daily && !(controller() && r.kind !== 'crossword');
     return `
     <main class="screen reveal-screen">
       <div class="qhead"><span class="pill">${r.kind === 'crossword' ? 'Fin du chrono' : `${r.index + 1} / ${r.total}`}</span><span class="muted">${last ? 'Résultats' : r.kind === 'crossword' ? 'Grille suivante' : 'Question suivante'} dans <span data-until="${state.phaseEndsAt}" data-mode="count"></span> s</span></div>
       <div class="bar thin"><div class="bar-fill" data-until="${state.phaseEndsAt}" data-total="${state.phaseEndsAt - state.phaseStartedAt}" data-mode="bar"></div></div>
-      ${SCREEN ? '' : `<div class="rv-top">${banner}</div>`}
+      ${SCREEN ? '' : `<div class="rv-top">${banner}${state.daily ? dailyProgress() : ''}</div>`}
       <div class="rv-swipe ${swipe ? 'on' : ''}" data-swipe>
       <div class="rv-main rv-page">
       ${controller() && r.kind !== 'crossword' ? `<p class="tv-hint">📺 La correction est sur la télé</p>` : `
@@ -2043,8 +2637,11 @@ const views = {
       ${rv.picture ? gamePicture(rv.picture, true) : ''}
       ${detail}`}
       </div>
-      <div class="rv-side rv-page">
-      <section class="card">
+      <div class="rv-side rv-page" ${state.daily && !wide() ? 'hidden' : ''}>
+      ${state.daily ? `<section class="card d-side">
+        <h2>Défi n°${state.daily.number}</h2>
+        <div class="d-result"><b>${fmtPts(state.players.find((p) => p.id === state.you)?.score)} <span>pts</span></b>${cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'big')}<small>${state.daily.correct} trouvée${state.daily.correct > 1 ? 's' : ''} sur ${r.index + 1}</small></div>
+      </section>` : `<section class="card">
         <h2>Classement</h2>
         <ul class="list">
           ${board.map((p, i) => `
@@ -2055,19 +2652,20 @@ const views = {
               <span class="pts">${p.score}</span>
             </li>`).join('')}
         </ul>
-      </section>
-      ${isHost() && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
+      </section>`}
+      ${state.admin && ['cover', 'screen', 'sound'].includes(r.kind) ? `<div class="host-bar ban-bar">${r.banned ? `<span class="muted">${{ screen: 'Image retirée', sound: 'Son retiré' }[r.kind] || 'Jeu retiré'} des prochaines parties</span>` : `<button class="link danger" data-action="ban">Retirer ${{ screen: 'cette image', sound: 'ce son' }[r.kind] || 'ce jeu'} des prochaines parties</button>`}</div>` : ''}
       </div>
       </div>
       ${swipe ? `<div class="rv-dots" role="tablist" aria-label="Pages de la correction">
         <button class="rv-dot" data-action="rvpage" data-value="0" role="tab"><i></i>Réponse</button>
         <button class="rv-dot" data-action="rvpage" data-value="1" role="tab"><i></i>Classement</button>
       </div>` : ''}
-      ${isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : ''}
+      ${state.daily ? dailyBar(`<button class="btn small primary" data-action="skip">${last ? 'Voir mon résultat' : 'Suivant'}</button>`) : isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
     </main>`;
   },
 
   end() {
+    if (state.daily) return dailyEnd();
     const ranked = sortedByScore();
     const step = (p, place) => (p ? `
       <div class="step p${place}">
@@ -2151,13 +2749,14 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + pauseOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
+  next.innerHTML = (views[phase] || views.home)() + appBar(phase) + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
   // Écran de question : plus large sur ordinateur, pour la colonne des joueurs à droite
   app.classList.toggle('wide', phase === 'question');
   app.classList.toggle('wider', phase === 'lobby'); // salon sur trois colonnes
+  app.classList.toggle('has-bar', hasBar(phase)); // bandeau du haut commun
   app.classList.toggle('pad-mode', controller() && ['countdown', 'question', 'reveal'].includes(phase)); // téléphone en manette
 
   const newInput = $('#est-input') || $('#guess-input') || $('#cw-word');
@@ -2175,8 +2774,8 @@ function render() {
     if (steamKeep.focus && document.activeElement !== steamNew) steamNew.focus();
   }
   if (phase === 'home') {
-    if (nameVal) $('#name').value = nameVal;
-    if (codeVal) $('#code').value = codeVal;
+    if (nameVal && $('#name')) $('#name').value = nameVal;
+    if (codeVal && $('#code')) $('#code').value = codeVal;
   }
   if (renderedPhase !== phase) closeZoom(); // l'image agrandie ne survit pas au changement d'écran
   renderedPhase = phase;

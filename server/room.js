@@ -4,8 +4,10 @@ import { emptyProgress, gridAt, VALIDATE_AT } from './games/crossword.js';
 import { covers } from './images/index.js';
 import { screens } from './images/screens.js';
 import { sounds } from './images/sounds.js';
-import { feedback, makeFeedback } from './feedback.js';
+import { feedback, makeFeedback, MODERATOR_TYPES } from './feedback.js';
 import { loadProfile, loadAchievements, PRIVACY_URL } from './steam.js';
+import { stats, answerRow } from './stats.js';
+import { defaultLook, lookView } from './avatars.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
@@ -37,6 +39,9 @@ const shortId = () => crypto.randomBytes(5).toString('hex');
  * sont décidés ici, les clients ne font qu'afficher l'état reçu et envoyer des actions.
  */
 export class Room {
+  /** Comptes joueurs actifs (Supabase configuré) : réglé au démarrage par index.js. */
+  static accounts = false;
+
   constructor(io, code) {
     this.io = io;
     this.code = code;
@@ -95,6 +100,9 @@ export class Room {
       rtt: 80,
       timers: {},
       steam: null, // profil Steam lié (voir linkSteam) : { status, input, name, avatar, id, games, message }
+      user: null, // compte connecté (auth.js) : { id, name, avatar, provider, admin }, null pour un invité
+      // Stats : première manche jouée de la partie en cours (un joueur arrivé en route ne compte que la suite)
+      fromRound: this.phase === 'lobby' || this.phase === 'end' ? 0 : Math.max(0, this.roundIndex) + (this.phase === 'reveal' ? 1 : 0),
     };
     // Un joueur parti puis revenu avec le même pseudo retrouve son score global
     const key = player.name.toLowerCase();
@@ -123,6 +131,8 @@ export class Room {
     }
     player.socketId = socket.id;
     player.connected = true;
+    player.user = socket.data.user ?? null; // compte de l'appareil qui (re)prend la place
+    player.look = socket.data.look ?? player.look ?? defaultLook(player.user); // image de profil (voir avatars.js)
     clearTimeout(player.timers.remove);
     clearTimeout(player.timers.handoff);
     socket.data.code = this.code;
@@ -174,7 +184,7 @@ export class Room {
     const socket = player.socketId && this.io.sockets.sockets.get(player.socketId);
     if (socket) {
       socket.leave(this.channel);
-      socket.data = {};
+      socket.data = { user: socket.data.user ?? null }; // le compte reste connecté hors du salon
       if (reason === 'kick') socket.emit('kicked');
     }
     if (this.hostId === id) this.handoffHost();
@@ -356,6 +366,8 @@ export class Room {
       clearTimeout(p.timers.remove);
     }
     this.roundIndex = -1;
+    this.sessionId = `${this.code}-${Date.now().toString(36)}`; // identifiant de la partie dans les stats
+    for (const p of this.players.values()) p.fromRound = 0;
     this.nextRound();
   }
 
@@ -429,10 +441,55 @@ export class Room {
     this.checkAllAnswered(); // un joueur a pu partir pendant la pause
   }
 
-  /** Hôte : retour sur la question en cours, enregistré sur disque pour corriger les banques plus tard. */
+  /** Changement de pseudo depuis la page Profil : seulement dans le salon, entre deux parties. */
+  renamePlayer(playerId, name) {
+    const p = this.players.get(playerId);
+    if (!p || !['lobby', 'end'].includes(this.phase)) return null;
+    if (p.name.toLowerCase() === name.toLowerCase()) return p.name;
+    p.name = this.uniqueName(name);
+    this.broadcast();
+    return p.name;
+  }
+
+  /** Compte connecté d'un joueur (ou null : invité). Vient du serveur après vérification du jeton. */
+  setUser(playerId, user, look) {
+    const p = this.players.get(playerId);
+    if (!p) return;
+    p.user = user ?? null;
+    if (look != null) p.look = look;
+    this.broadcast();
+  }
+
+  /** Page Profil : nouvelle image de profil, visible tout de suite par les autres joueurs. */
+  setLook(playerId, look) {
+    const p = this.players.get(playerId);
+    if (!p) return;
+    p.look = look;
+    this.broadcast();
+  }
+
+  /**
+   * Actions d'admin (accepter une réponse, supprimer une question, retirer un jeu/une image/un son).
+   * Avec les comptes : seulement les comptes admin (ADMIN_USER_IDS), où qu'ils jouent, hôte ou non.
+   * Sans comptes (PC, tests) : l'hôte, comme avant.
+   */
+  canModerate(playerId) {
+    const p = this.players.get(playerId);
+    if (!p) return false;
+    return Room.accounts ? !!p.user?.admin : playerId === this.hostId;
+  }
+
+  /**
+   * Retour sur la question en cours (⚑ Signaler), ouvert à tous les joueurs. Les retours d'un admin sont
+   * des consignes à appliquer ; ceux des autres sont des suggestions, vérifiées avant d'être appliquées.
+   */
   report(byId, payload = {}) {
     const r = this.round;
     if (!r || !['countdown', 'question', 'reveal'].includes(this.phase)) throw new Error('Pas de question en cours');
+    if (payload.roundId && payload.roundId !== r.id) throw new Error('La question est déjà passée');
+    const moderator = this.canModerate(byId);
+    if (MODERATOR_TYPES.includes(payload.type) && !moderator) throw new Error("Réservé à l'admin");
+    const by = this.players.get(byId);
     const kind = KINDS[r.kind];
     const answers = [];
     for (const [pid, a] of r.answers) {
@@ -446,12 +503,15 @@ export class Room {
       mode: this.settings.mode,
       phase: this.phase,
       room: this.code,
-      by: this.players.get(byId)?.name ?? null,
+      by: by?.name ?? null,
+      userId: by?.user?.id ?? null,
+      admin: moderator && !!by?.user?.admin,
+      host: byId === this.hostId,
       answers: r.kind === 'crossword' ? [] : answers,
     });
     feedback.add(entry);
     r.reported = (r.reported ?? 0) + 1;
-    if (payload.resume) this.resume();
+    if (payload.resume && byId === this.hostId) this.resume();
     else this.broadcast();
     return { ok: true, id: entry.id };
   }
@@ -580,6 +640,8 @@ export class Room {
       if (scored.get(p.id)?.tiebreak != null) p.tiebreak = scored.get(p.id).tiebreak;
     }
 
+    r.scored = scored; // pour les stats, envoyées à la fin de la partie (rien n'est écrit pendant)
+
     const results = [...r.answers].map(([pid, a]) => ({
       playerId: pid,
       name: this.players.get(pid).name,
@@ -661,6 +723,43 @@ export class Room {
     this.reveal = null;
     this.setPhase('end');
     this.broadcast();
+    this.recordStats(players, best, tb, bestTb);
+  }
+
+  /** Stats des joueurs connectés à un compte : envoyées en tâche de fond, la partie n'attend pas. */
+  recordStats(players, best, tb, bestTb) {
+    const accounts = players.filter((p) => p.user?.id);
+    if (!accounts.length || !stats.enabled) return;
+    const better = (a, b) => a.score > b.score || (a.score === b.score && tb(a) < tb(b));
+    for (const p of accounts) {
+      const answers = [];
+      this.rounds.forEach((r, i) => {
+        if (i < (p.fromRound ?? 0) || !r.scored) return;
+        const a = r.answers?.get(p.id);
+        const result = r.scored.get(p.id);
+        answers.push(answerRow({ round: r, roundIndex: i, mode: this.settings.mode, answered: !!a, result: { ...result, timeMs: a?.timeMs } }));
+      });
+      if (!answers.length) continue;
+      stats.recordGame({
+        userId: p.user.id,
+        source: 'party',
+        sessionId: this.sessionId ?? `${this.code}-${Date.now().toString(36)}`,
+        mode: this.settings.mode,
+        score: p.score,
+        rank: 1 + players.filter((o) => o !== p && better(o, p)).length,
+        players: players.length,
+        won: best > 0 && p.score === best && tb(p) === bestTb,
+        answers,
+      });
+    }
+  }
+
+  /** Stats d'un joueur du salon (carte ouverte en le touchant) : seulement s'il est connecté à un compte. */
+  async playerStats(playerId) {
+    const p = this.players.get(playerId);
+    if (!p) throw new Error('Joueur introuvable');
+    if (!p.user?.id) throw new Error(`${p.name} joue en invité : pas de stats`);
+    return { ok: true, name: p.name, avatar: p.user.avatar ?? null, stats: await stats.statsOf(p.user.id) };
   }
 
   /** Hôte : retour au salon (arrêt en cours de partie, ou "nouvelle partie" depuis la fin). */
@@ -749,6 +848,8 @@ export class Room {
       phase: this.phase,
       hostId: this.hostId,
       you: pid,
+      // Mes droits : admin = actions réservées (accepter une réponse, supprimer, retirer un jeu)
+      admin: pid != null && this.canModerate(pid),
       serverNow: Date.now(),
       tv: this.tvOn, // un écran télé affiche la partie : les téléphones passent en manette
       settings: this.settings,
@@ -766,6 +867,8 @@ export class Room {
         total: p.total,
         wins: p.wins,
         connected: p.connected,
+        account: !!p.user, // connecté à un compte (Discord, Google), sans rien dévoiler d'autre
+        look: lookView(p.look, p.user), // image de profil choisie (emoji sur couleur, photo du compte) ; null = initiale
         answered: !!(inRound && r.answers.has(p.id)),
         status: statusOf(p.id),
         misses: multiTry ? r.misses?.get(p.id)?.length ?? 0 : 0, // essais ratés (nom tapé seulement)

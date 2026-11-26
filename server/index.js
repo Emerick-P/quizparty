@@ -14,6 +14,10 @@ import { createAccess } from './access.js';
 import { installSubmissions } from './submissions.js';
 import { store } from './store.js';
 import { syncContent } from './content-sync.js';
+import { createAuth } from './auth.js';
+import { AVATAR_EMOJIS, AVATAR_HUES } from './avatars.js';
+import { installLegal } from './legal.js';
+import { Room } from './room.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,10 +40,16 @@ const access = createAccess();
 access.install(app);
 io.use(access.socketGuard);
 
+// Comptes joueurs facultatifs (Discord, Google via Supabase Auth) et pages légales (ouvertes à tous)
+const auth = createAuth();
+Room.accounts = auth.enabled;
+auth.install(app, express);
+installLegal(app);
+
 // Formulaire « Proposer » (/proposer) : soumissions des amis, derrière le même code d'accès
 installSubmissions(app);
 
-// Page d'accueil : les liens vers app.js / style.css portent une version tirée des fichiers
+// Page d'accueil : les liens vers les scripts (public/js) et les feuilles de style portent une version tirée des fichiers
 // (?v=…). Dès qu'un fichier change, son URL change : ni le navigateur ni le tunnel Cloudflare
 // ne peuvent resservir l'ancienne version, même sans vider le cache.
 const version = (file) => {
@@ -53,8 +63,7 @@ const version = (file) => {
 function sendIndex(_req, res, screen = false) {
   let html = fs
     .readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
-    .replace('"/app.js"', `"/app.js?v=${version('app.js')}"`)
-    .replace('"/style.css"', `"/style.css?v=${version('style.css')}"`);
+    .replace(/"\/((?:js\/)?[\w-]+\.(?:js|css))"/g, (_m, f) => `"/${f}?v=${version(f)}"`);
   if (screen) html = html.replace('</head>', `  <link rel="stylesheet" href="/tv.css?v=${version('tv.css')}">\n</head>`);
   res.set('Cache-Control', 'no-store');
   res.type('html').send(html);
@@ -91,6 +100,7 @@ app.get('/manifest.webmanifest', (req, res) => {
 });
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
+app.get('/api/avatars', (_req, res) => res.json({ emojis: AVATAR_EMOJIS, hues: AVATAR_HUES }));
 app.get('/health', (_req, res) => res.json({ ok: true, rooms: rooms.rooms.size, covers: covers.status() }));
 
 // Jaquettes en cache, sous un identifiant opaque (l'URL ne trahit pas le jeu)
@@ -120,7 +130,7 @@ app.get('/sfx/:file', (req, res) => {
   res.sendFile(f);
 });
 
-const rooms = new RoomManager(io, { access });
+const rooms = new RoomManager(io, { access, auth });
 io.on('connection', (socket) => rooms.handleConnection(socket));
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -145,5 +155,5 @@ if (store.name === 'supabase') {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}`);
+  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}${access.enabled ? ' (code d’accès activé)' : ''}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
 });

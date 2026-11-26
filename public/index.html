@@ -40,6 +40,23 @@
   </div>
   <div id="toast" class="toast" hidden></div>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/app.js"></script>
+  <!-- Scripts classiques chargés dans cet ordre (déclarations partagées) : voir CLAUDE.md -->
+  <script defer src="/js/core.js"></script>
+  <script defer src="/js/device.js"></script>
+  <script defer src="/js/net.js"></script>
+  <script defer src="/js/session.js"></script>
+  <script defer src="/js/actions.js"></script>
+  <script defer src="/js/propose.js"></script>
+  <script defer src="/js/media.js"></script>
+  <script defer src="/js/crossword.js"></script>
+  <script defer src="/js/widgets.js"></script>
+  <script defer src="/js/tv-views.js"></script>
+  <script defer src="/js/home.js"></script>
+  <script defer src="/js/stats.js"></script>
+  <script defer src="/js/nav.js"></script>
+  <script defer src="/js/daily.js"></script>
+  <script defer src="/js/views.js"></script>
+  <script defer src="/js/render.js"></script>
+  <script defer src="/js/main.js"></script>
 </body>
 </html>
