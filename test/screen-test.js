@@ -136,6 +136,7 @@ const server2 = spawn(process.execPath, ['server/index.js'], {
   env: {
     ...process.env,
     PORT: String(PORT),
+    SUPABASE_URL: '', // comme le premier serveur : sans comptes, l'hôte peut retirer une image
     COUNTDOWN_MS: '300',
     REVEAL_MS: '500',
     TWITCH_CLIENT_ID: '',
