@@ -15,15 +15,17 @@ function appBar(phase) {
   const name = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || '';
   const solo = !!state?.daily; // défi du jour : pas un vrai salon (ni code, ni Quitter), le logo ramène à l'accueil
   const inRoom = !!state && !solo;
+  const away = inRoom && onPage(); // profil, stats… ouverts depuis le salon : le chemin du retour bien en vue
   const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
   const face = name || u ? myAvatar(name || u?.name) : '';
   const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
     <button class="ab-logo" data-action="${solo ? (state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
-    ${inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
+    ${away ? `<button class="ab-btn ab-back" data-action="toroom">${ico('back')} Retour au salon</button>`
+    : inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
     <span class="ab-end">
-      ${inRoom ? '<button class="ab-btn" data-action="leave">Quitter</button>' : ''}
+      ${inRoom && !away ? '<button class="ab-btn" data-action="leave">Quitter le salon</button>' : ''}
       ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
       ${solo ? '' : loginTop(inRoom ? 'account' : 'name')}${chip}
     </span>
@@ -80,6 +82,11 @@ function sheetHtml(name, under) {
 }
 const OVER = ['menu', 'look']; // fenêtres ouvertes par-dessus une page : à la fermeture, on revient à la page
 function openSheet(name) {
+  // Une page en remplace une autre : on garde la précédente, le bouton Retour y ramène
+  const from = OVER.includes(ui.sheet) ? ui.base : ui.sheet;
+  if (!OVER.includes(name) && from && from !== name && SHEETS[from]?.page) ui.trail.push(from);
+  const seen = ui.trail.indexOf(name);
+  if (seen >= 0) ui.trail.length = seen; // déjà visitée : on revient en arrière plutôt que d'empiler
   ui.base = OVER.includes(name) && ui.sheet && SHEETS[ui.sheet]?.page ? ui.sheet : null;
   ui.sheet = name;
   if (name === 'daily') loadDaily(); // résultat et classement à jour
@@ -87,7 +94,12 @@ function openSheet(name) {
   if (name === 'create') setTimeout(() => $('#name')?.focus(), 60);
   if (name === 'join') setTimeout(() => (urlCode() ? $('#name') : $('#code'))?.focus(), 60);
 }
-const closeSheet = () => { ui.sheet = OVER.includes(ui.sheet) ? ui.base ?? null : null; ui.base = null; render(); };
+function dropSheet() {
+  ui.sheet = OVER.includes(ui.sheet) && ui.base ? ui.base : ui.trail.pop() ?? null;
+  ui.base = null;
+}
+const closeSheet = () => { dropSheet(); render(); };
+const onPage = () => !!ui.sheet && !!(SHEETS[ui.sheet]?.page || SHEETS[ui.base]?.page);
 actions.sheet = (btn) => {
   // Menu du profil : sur ordinateur il se déroule sous l'avatar (position du bouton)
   if (btn.dataset.value === 'menu') {
@@ -109,3 +121,92 @@ actions.pick = async (btn) => {
   if (r.error) toast(r.error);
 };
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && ui.sheet) closeSheet(); });
+
+/**
+ * Bouton ou geste Retour du navigateur (Android, iPhone, ordinateur), le même partout : chaque couche
+ * ouverte au-dessus de l'accueil (salon, page, panneau, fenêtre) a son entrée dans l'historique
+ * (history.state.qp = nombre de couches). Retour ferme la couche du dessus. Il ne fait jamais quitter
+ * un salon ou un défi sans la popup de confirmation, même pendant une question (la partie continue
+ * derrière). L'adresse ne change pas : un rechargement reprend la session par son jeton, comme avant.
+ */
+let leaveAsk = false; // popup « Quitter le salon ? »
+let navSkip = 0; // retours lancés par l'app elle-même : leur popstate ne ferme rien
+let navRoom = ''; // dernier salon affiché
+if (!SCREEN) history.replaceState({ qp: 0 }, '');
+function navLayers() {
+  const l = [];
+  if (state) l.push('room');
+  if (ui.sheet) { for (const _ of ui.trail) l.push('page'); if (OVER.includes(ui.sheet) && ui.base) l.push('page'); l.push('sheet'); }
+  if (proposeOpen()) l.push('propose');
+  if (tv.sheet && tvSheet()) l.push('tv');
+  if (report.open && flagOverlay()) l.push('flag');
+  if (steamHelpOpen && steamHelpOverlay()) l.push('steam');
+  if (leaveAsk) l.push('ask');
+  return l;
+}
+/** Après chaque rendu : l'historique suit les couches ouvertes ou fermées par les boutons de l'app. */
+function navSync() {
+  if (SCREEN || navSkip) return;
+  if (!state) leaveAsk = false;
+  // L'adresse garde le code du salon (?code=), même après un aller-retour dans l'historique
+  if (state && !state.daily) { navRoom = state.code; if (urlCode() !== state.code) setUrlCode(state.code); }
+  else if (!state && navRoom && urlCode() === navRoom) setUrlCode('');
+  if (!ui.sheet) { ui.trail = []; ui.base = null; }
+  const want = navLayers().length;
+  const have = history.state?.qp ?? 0;
+  for (let d = have + 1; d <= want; d++) history.pushState({ qp: d }, '');
+  if (want < have) { navSkip++; history.go(want - have); }
+}
+/** Ferme la couche du dessus. Le salon ne se ferme pas : on demande d'abord (false). */
+function navPop() {
+  const top = navLayers().at(-1);
+  if (top === 'ask') leaveAsk = false;
+  else if (top === 'steam') steamHelpOpen = false;
+  else if (top === 'flag') report.open = false;
+  else if (top === 'tv') tv.sheet = false;
+  else if (top === 'propose') closePropose();
+  else if (top === 'sheet') dropSheet();
+  else { askLeave(true); return false; }
+  return true;
+}
+addEventListener('popstate', (e) => {
+  if (SCREEN) return;
+  if (navSkip) { navSkip--; navSync(); return; }
+  const d = e.state?.qp ?? 0;
+  while (navLayers().length > d && navPop());
+  render();
+});
+
+/** Quitter le salon (ou abandonner un défi) : toujours confirmé, sauf un défi déjà fini. */
+function askLeave(fromBack) {
+  if (!state) return;
+  if (state.daily && state.phase === 'end') return leaveNow();
+  leaveAsk = true;
+  if (!fromBack) render();
+}
+async function leaveNow() {
+  leaveAsk = false;
+  if (state?.daily) return state.daily.challenge ? actions.defihome() : actions.dailyhome();
+  await send('room:leave');
+  leaveLocal();
+}
+actions.leaveok = leaveNow;
+actions.leavecancel = () => { leaveAsk = false; render(); };
+actions.toroom = () => { ui.sheet = null; ui.base = null; ui.trail = []; render(); };
+function leaveOverlay() {
+  if (!leaveAsk || !state || SCREEN) return '';
+  const d = state.daily;
+  const playing = ['countdown', 'question', 'reveal'].includes(state.phase);
+  const title = d ? 'Abandonner le défi ?' : 'Quitter le salon ?';
+  const text = d ? 'Ta tentative compte avec les points déjà faits : tu ne pourras pas la rejouer.'
+    : `${playing ? 'La partie continue sans toi. ' : ''}Tu pourras revenir avec le code <b>${esc(state.code)}</b>.`;
+  return `<div class="pause-overlay leave-ask" data-action="leavecancel" data-key="leave"><div class="pause-card card" role="alertdialog" aria-modal="true" aria-labelledby="leave-t" data-action="noop">
+    <h2 id="leave-t">${title}</h2>
+    <p class="muted">${text}</p>
+    <div class="leave-row">
+      <button class="btn ghost" data-action="leaveok">${d ? 'Abandonner' : 'Quitter'}</button>
+      <button class="btn primary" data-action="leavecancel">${d ? 'Continuer' : 'Rester'}</button>
+    </div>
+  </div></div>`;
+}
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && leaveAsk) actions.leavecancel(); });

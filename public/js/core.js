@@ -120,5 +120,5 @@ function urlCode() {
 }
 function setUrlCode(code) {
   const url = code && code.length === 4 ? `${location.pathname}?code=${code}` : location.pathname; // pas d'adresse pour le défi du jour
-  history.replaceState(null, '', url);
+  history.replaceState(history.state, '', url); // garde la position dans l'historique (bouton Retour, nav.js)
 }

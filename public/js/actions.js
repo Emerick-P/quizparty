@@ -94,7 +94,7 @@ const actions = {
     if (res.error) return toast(res.error);
     enterRoom(res);
   },
-  async leave() { await send('room:leave'); leaveLocal(); },
+  leave() { askLeave(); }, // popup de confirmation d'abord (nav.js)
   async install() {
     if (!pwa.prompt) return;
     pwa.prompt.prompt();

@@ -178,6 +178,8 @@
   .sh::before { display: none; }
   .sh-page { width: min(860px, 92vw); max-width: none; left: 50%; right: auto; transform: translate(-50%, -50%); padding-top: 18px; }
   .sh-page .pick-grid { grid-template-columns: repeat(4, 1fr); }
+  .sh[data-key="sh:games"] { width: min(980px, 92vw); max-width: none; left: 50%; right: auto; top: calc(50% + var(--bar-h, 0px) / 2); transform: translate(-50%, -50%); max-height: calc(100vh - var(--bar-h, 0px) - 40px); }
+  .sh[data-key="sh:games"] .pick-grid { grid-template-columns: repeat(4, 1fr); }
 }
 
 /* ---------- partie sur téléphone en paysage (sans télé) : question à gauche, réponses à droite */
@@ -779,3 +781,12 @@ html { overflow-x: clip; }
   .p-intro .d-rules { gap: 4px; margin-top: 6px; }
   .p-intro .d-num { font-size: 1.2rem; }
 }
+
+/* ---------- navigation : choix du jeu en grande fenêtre, popup « Quitter le salon ? », retour au salon */
+@media (max-width: 999px) { .sh[data-key="sh:games"] { max-height: 92dvh; } }
+.leave-ask .pause-card { max-width: 400px; }
+.leave-row { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+.leave-row .btn { flex: 1; }
+.ab-btn.ab-back { display: inline-flex; align-items: center; gap: 6px; background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.ab-btn.ab-back:hover { color: var(--lime-ink); border-color: var(--lime); filter: brightness(1.06); }
+.ab-btn.ab-back svg { width: 16px; height: 16px; }

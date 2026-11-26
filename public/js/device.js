@@ -1,4 +1,4 @@
-// QuizParty — Appareil : écran télé (/tv), app installée (PWA), vibrations, bouton Retour.
+// QuizParty — Appareil : écran télé (/tv), app installée (PWA), vibrations.
 // Script classique (pas un module) : les fichiers de public/js partagent leurs déclarations, voir CLAUDE.md.
 'use strict';
 
@@ -108,15 +108,3 @@ function buzzOnPhase(phase) {
     buzz(me?.correct || me?.points > 0 ? [30, 60, 30] : 120);
   }
 }
-// Retour (bouton ou geste Android) : pendant une partie, il ferme d'abord un panneau ouvert, puis il ne quitte pas le salon
-function guardBack() {
-  if (!SCREEN && state && !history.state?.qp) history.pushState({ qp: 1 }, '');
-}
-addEventListener('popstate', () => {
-  if (SCREEN || !state) return;
-  history.pushState({ qp: 1 }, '');
-  if (tv.sheet) { tv.sheet = false; render(); }
-  else if (ui.sheet) closeSheet();
-  else if (typeof proposeOpen === 'function' && proposeOpen()) closePropose();
-  else toast('Pour quitter le salon, utilise « ← Quitter »');
-});

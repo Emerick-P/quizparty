@@ -188,10 +188,10 @@ DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStr
 
 actions : dailystart, dailyshare, dailyhome
 
-### public/js/device.js (123 l.)
-Appareil : écran télé (/tv), app installée (PWA), vibrations, bouton Retour.
+### public/js/device.js (111 l.)
+Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
-SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, installCard, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase, guardBack
+SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, installCard, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
 ### public/js/home.js (227 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
@@ -212,12 +212,12 @@ Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 
 images, loadImage, PIX_COLS, PIX_LAST_AT, pixColumns, drawCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
-### public/js/nav.js (112 l.)
+### public/js/nav.js (213 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.
 
-BAR_PHASES, hasBar, appBar, menuBody, sheetView, sheetHtml, OVER, openSheet, closeSheet
+BAR_PHASES, hasBar, appBar, menuBody, sheetView, sheetHtml, OVER, openSheet, dropSheet, closeSheet, onPage, leaveAsk, navSkip, navRoom, navLayers, navSync, navPop, askLeave, leaveNow, leaveOverlay
 
-actions : navhome, sheet, sheetclose, soon, propose, go, pick
+actions : navhome, sheet, sheetclose, soon, propose, go, pick, leaveok, leavecancel, toroom
 
 ### public/js/net.js (67 l.)
 Connexion temps réel : socket, horloge serveur (façon NTP), send(), état global (state, pending).

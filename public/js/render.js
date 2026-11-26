@@ -52,7 +52,7 @@ function render() {
   // Un bouton en train d'être cliqué reste le même élément, donc le clic n'est jamais perdu,
   // et rien ne clignote quand un autre joueur agit.
   const next = document.createElement('div');
-  next.innerHTML = (views[phase] || views.home)() + appBar(phase) + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView();
+  next.innerHTML = (views[phase] || views.home)() + appBar(phase) + pauseOverlay() + flagOverlay() + steamHelpOverlay() + tvSheet() + sheetView() + leaveOverlay();
   // Changement d'écran (ou de question) : nouvel écran, avec son animation d'entrée
   if (next.firstElementChild) next.firstElementChild.dataset.key = `${phase}:${state?.round?.id ?? ''}`;
   morphChildren(app, next);
@@ -82,7 +82,7 @@ function render() {
   }
   renderedPhase = phase;
   buzzOnPhase(phase);
-  guardBack();
+  navSync();
   keepAwake();
   updatePropose();
   updateSwipe();

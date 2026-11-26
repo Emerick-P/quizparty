@@ -9,7 +9,7 @@ const SHARE_NOTE = '<b>Entre potes seulement.</b> Partage le lien et le code d�
 const WIDE_MQ = matchMedia('(min-width: 1000px)');
 const wide = () => WIDE_MQ.matches;
 WIDE_MQ.addEventListener?.('change', () => render());
-const ui = { sheet: null, phase: null };
+const ui = { sheet: null, phase: null, trail: [] }; // trail : pages d'où l'on vient (bouton Retour)
 
 function modeGroups() {
   const { modes } = state.options;
@@ -117,7 +117,7 @@ const SHEETS = {
     </ol>
     <p class="sh-note">La télé affiche les questions, les images et les scores ; chacun répond sur son téléphone, l’hôte aussi. Sans télé, tout se joue sur les téléphones.</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
-  games: { phase: 'lobby', page: true, render: () => ({ title: 'Choisis le jeu', body: modeGroups().map((g) => `
+  games: { phase: 'lobby', render: () => ({ title: 'Choisis le jeu', body: modeGroups().map((g) => `
     <div class="pick-group"><h3>${esc(g.name)}</h3><div class="pick-grid">
     ${g.modes.map((m) => `<button class="pick ${state.settings.mode === m.id ? 'sel' : ''} ${m.unavailable ? 'off' : ''}" style="--mc:${modeArt(m.id)[1]}" data-action="pick" data-value="${m.id}" ${isHost() && !m.unavailable ? '' : 'disabled'}>
       <span class="pick-ico" aria-hidden="true">${modeArt(m.id)[0]}</span><b>${esc(m.name)}</b><small>${esc(m.unavailable || m.description)}</small></button>`).join('')}
