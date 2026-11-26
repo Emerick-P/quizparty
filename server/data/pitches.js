@@ -329,7 +329,7 @@ export const PITCHES = [
   { slug: 'jak-and-daxter-the-precursor-legacy', level: 'hard', pitch: "Un garçon qui ne dit pas un mot voit son meilleur ami devenir une bestiole orange bavarde après un bain dans un liquide sombre." },
   { slug: 'ratchet-clank', level: 'hard', pitch: "Un mécanicien à oreilles de chat et un petit robot veulent empêcher un affreux de se bâtir une planète neuve avec des morceaux d’autres." },
   { slug: 'uncharted-2-among-thieves', level: 'hard', pitch: "Un voleur d’antiquités se réveille blessé dans un train qui pend au-dessus du vide, et doit s’en extraire avant de chercher un trésor." },
-  { slug: 'team-fortress-2', level: 'hard', pitch: "Neuf collègues se battent sans fin pour des points de contrôle, dont un médecin qui soigne à distance, un gros mangeur de sandwichs et un masqué sournois." },
+  { slug: 'team-fortress-2', level: 'hard', pitch: "Neuf collègues se battent sans fin, dont un médecin qui soigne à distance, un gros mangeur de sandwichs et un masqué sournois." },
   { slug: 'starcraft', level: 'hard', pitch: "Des insectes, des guerriers psychiques et des humains exilés se disputent un coin de galaxie, et tout se joue sur la vitesse de clic." },
   { slug: 'diablo-ii', level: 'hard', pitch: "On tue le même patron des centaines de fois, dans l’espoir qu’il laisse tomber enfin une paire de bottes." },
   { slug: 'warcraft-iii-reign-of-chaos', level: 'hard', pitch: "Un prince décide de purger sa propre ville, et finit par tuer son père avec une épée maudite." },
