@@ -48,6 +48,9 @@ Client francophone : code, commentaires, textes et messages en français.
 → `manette.css` (mode télé côté téléphone) → `salon.css` (accueil, salon, panneaux) ; `tv.css` en plus sur `/tv` ;
 `proposer.css` pour `/proposer`.
 Toute couleur passe par les variables de `plateau.css` (`--surf`, `--deep`, `--tile`, `--ink`, `--accent-text`…).
+Habillage « Cartouche » : graphite et vert citron (`--lime`), réponses en touches A B C D aux couleurs `--c0`…`--c3`,
+polices Space Grotesk (`--display`, `--body`) et JetBrains Mono (`--mono`). Icônes au trait avec `ico('nom')` (`ICONS` dans `core.js`),
+jamais d'emoji dans l'interface (sauf le contenu du mode « Le jeu en emojis »). Pas d'italique, de biais, de dégradé ni de majuscules espacées.
 Il reste des couleurs en dur, surtout dans `style.css` et `plateau.css` : à remplacer par des tokens pendant la refonte du design.
 Toujours vérifier les deux thèmes (Clair / Obscur), en portrait et en paysage sur téléphone, sans défilement.
 
