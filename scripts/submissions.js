@@ -3,14 +3,15 @@
 //   --all                                 liste tout (100 dernières)
 //   --status <id> <accepted|rejected|doubt|pending> ["note"] ["intégré où"]
 //   --file <id>                           télécharge l'image ou le son dans data/submissions/files/
-// Avec SUPABASE_URL / SUPABASE_SECRET_KEY dans .env : Supabase. Sinon : data/submissions/ en local.
+// Avec SUPABASE_URL / SUPABASE_SECRET_KEY dans .env : Supabase de dev ; ajouter --prod pour la prod (.env.prod).
+// Sans Supabase : data/submissions/ en local.
 import '../server/env.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { store } from '../server/store.js';
 import { SUBMIT_MODES } from '../server/submissions.js';
 
-const [cmd, ...args] = process.argv.slice(2);
+const [cmd, ...args] = process.argv.slice(2).filter((a) => a !== '--prod'); // --prod : lu par env.js
 
 if (cmd === '--status') {
   const [id, status, note, where] = args;

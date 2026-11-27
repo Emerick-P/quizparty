@@ -307,7 +307,7 @@ export class LiveRoom extends Room {
       const versus = ranked.slice(Math.max(0, i - VERSUS_NEIGHBOURS), i + VERSUS_NEIGHBOURS + 1)
         .filter((o) => o !== p && o.user.id !== p.user.id)
         .map((o) => ({ userId: o.user.id, score: p.score > o.score ? 1 : p.score < o.score ? 0 : 0.5 }));
-      stats.recordGame({ userId: p.user.id, source: 'live', sessionId: this.sessionId, mode: 'live', score: p.score, rank: null, players: null, won: false, answers, versus })
+      stats.recordGame({ userId: p.user.id, source: 'live', sessionId: this.sessionId, mode: 'live', score: p.score, rank: null, players: 1, won: false, answers, versus })
         .then((game) => { this.showRating(p.id, game); this.sendTo(p.id); });
     }
   }

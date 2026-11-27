@@ -27,8 +27,10 @@ Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heu
 
 DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, unavailable, refreshImages, shuffleChoices, Daily, publicResult, DailyRoom, startDaily, openDaily
 
-### server/env.js (7 l.)
-Charge le fichier .env s'il existe (Node 20.12+). Importé en premier par server/index.js.
+### server/env.js (49 l.)
+Charge l'environnement, puis vérifie quelle base Supabase est visée. Importé en premier par server/index.js
+
+ROOT, PROD_REF, wantsProd, file, dbTarget, prodGuard, refused
 
 ### server/feedback.js (85 l.)
 Retours des joueurs sur une question (bouton ⚑ Signaler pendant la partie).
@@ -322,7 +324,7 @@ npm run share : lance le serveur (s'il ne tourne pas déjà) + un tunnel Cloudfl
 
 ROOT, PORT, LOCAL, children, findCloudflared, serverIsUp, waitForServer, stopAll, banner, main
 
-### scripts/submissions.js (45 l.)
+### scripts/submissions.js (46 l.)
 Propositions des amis : npm run submissions [-- options]
 
 ### public/proposer.js (199 l.)

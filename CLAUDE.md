@@ -54,6 +54,17 @@ jamais d'emoji dans l'interface (sauf le contenu du mode « Le jeu en emojis »)
 Il reste des couleurs en dur, surtout dans `style.css` et `plateau.css` : à remplacer par des tokens pendant la refonte du design.
 Toujours vérifier les deux thèmes (Clair / Obscur), en portrait et en paysage sur téléphone, sans défilement.
 
+## Prod et dev (deux bases Supabase)
+- **Prod** = projet Supabase `quizparty` (`kmdcsvcvmgpleeqlpnmm`), utilisé seulement par Render.
+  **Dev** = `quizparty-dev` (`uqjsjdapaernkqzcqupm`) : le `.env` local et `npm run share` pointent dessus.
+- `server/env.js` refuse de démarrer hors Render sur la base de prod. Scripts de maintenance sur la prod :
+  `--prod`, qui lit `.env.prod` (ex. `npm run submissions -- --prod`). `npm test` reste sans Supabase.
+- Données fictives du dev : `supabase/seed.sql` (rejouable). Le dev se met en pause après 7 jours sans activité :
+  le réactiver depuis le tableau de bord Supabase (ou le connecteur).
+- Changement de schéma : un fichier `supabase/migrations/AAAA-MM-JJ-nom.sql` + la même chose dans `schema.sql`.
+  On l'applique **d'abord au dev**, on teste, puis à la prod seulement avec l'accord écrit du client.
+- Le compte gratuit n'a droit qu'à 2 projets actifs : `gamerdex-prod` est en pause pour laisser la place au dev.
+
 ## Règles du projet
 - `main` = la prod : chaque push redéploie Render et coupe les parties en cours. On travaille sur une branche `feature/…`.
   On ne merge et on ne pousse sur `main` qu'avec l'accord du client (seule exception : la tâche nocturne des propositions).
