@@ -21,7 +21,7 @@ function appBar(phase) {
   const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
-    <button class="ab-logo" data-action="${solo ? (state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    <button class="ab-logo" data-action="${solo ? (state.daily.live ? 'livehome' : state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
     ${away ? `<button class="ab-btn ab-back" data-action="toroom">${ico('back')} Retour au salon</button>`
     : inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
     <span class="ab-end">
@@ -52,6 +52,7 @@ function menuBody() {
   <nav class="mn" role="menu">
     ${item(ico('user'), 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
     ${u ? item(ico('chart'), 'Mes stats', 'data-action="mystats" role="menuitem"') : item(ico('chart'), 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
+    ${item(ico('trophy'), 'Classement', 'data-action="ranking" role="menuitem"')}
     ${item(ico('users'), 'Amis', 'disabled role="menuitem"', 'Bientôt')}
     ${item(ico('palette'), 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
   </nav>
@@ -186,7 +187,7 @@ function askLeave(fromBack) {
 }
 async function leaveNow() {
   leaveAsk = false;
-  if (state?.daily) return state.daily.challenge ? actions.defihome() : actions.dailyhome();
+  if (state?.daily) return state.daily.live ? actions.livehome() : state.daily.challenge ? actions.defihome() : actions.dailyhome();
   await send('room:leave');
   leaveLocal();
 }
@@ -197,14 +198,15 @@ function leaveOverlay() {
   if (!leaveAsk || !state || SCREEN) return '';
   const d = state.daily;
   const playing = ['countdown', 'question', 'reveal'].includes(state.phase);
-  const title = d ? 'Abandonner le défi ?' : 'Quitter le salon ?';
-  const text = d ? 'Ta tentative compte avec les points déjà faits : tu ne pourras pas la rejouer.'
+  const title = d?.live ? 'Quitter le direct ?' : d ? 'Abandonner le défi ?' : 'Quitter le salon ?';
+  const text = d?.live ? (state.phase === 'lobby' ? 'Tu peux revenir tant que le direct n’a pas commencé.' : 'Le direct continue sans toi et tu ne pourras pas y revenir.')
+    : d ? 'Ta tentative compte avec les points déjà faits : tu ne pourras pas la rejouer.'
     : playing ? 'La partie continue sans toi.' : '';
   return `<div class="pause-overlay leave-ask" data-action="leavecancel" data-key="leave"><div class="pause-card card" role="alertdialog" aria-modal="true" aria-labelledby="leave-t" data-action="noop">
     <h2 id="leave-t">${title}</h2>
     ${text ? `<p class="muted">${text}</p>` : ''}
     <div class="leave-row">
-      <button class="btn ghost" data-action="leaveok">${d ? 'Abandonner' : 'Quitter'}</button>
+      <button class="btn ghost" data-action="leaveok">${d && !d.live ? 'Abandonner' : 'Quitter'}</button>
       <button class="btn primary" data-action="leavecancel">${d ? 'Continuer' : 'Rester'}</button>
     </div>
   </div></div>`;

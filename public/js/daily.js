@@ -85,6 +85,7 @@ function dailyBody() {
         ${cellsHtml(gridCells(mine.grid), 'big')}
         ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
+      ${ratingEnd()}
       <button class="btn primary" data-action="dailyshare">${ico('share')} Partager mon résultat</button>
       <div class="d-col"><h3>Classement du jour</h3>
       ${dailyBoard(daily.board, i.me, 8)}</div>
@@ -117,7 +118,7 @@ function rememberDaily(s) {
 }
 /** Correction et question du défi : la progression (une case par question). */
 const dailyProgress = () => (state.daily ? cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'prog') : '');
-const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">${ico('flag')} Signaler</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>`;
+const dailyBar = (extra = '') => `<div class="host-bar player-bar d-bar">${extra}<button class="btn small ghost report-btn" data-action="flag" title="Signaler une erreur sur cette question">${ico('flag')} Signaler</button>${state.daily?.live ? '' : '<button class="btn small ghost" data-action="stop">Arrêter</button>'}</div>`;
 function dailyEnd() {
   const d = state.daily;
   const me = state.players.find((p) => p.id === state.you);
@@ -132,6 +133,7 @@ function dailyEnd() {
         ${cellsHtml(d.cells.map((c) => CELL_CLASS[c] || 'ko'), 'big')}
         ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
+      ${ratingEnd()}
       <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
       <section class="card d-card">
         <h2>Classement du jour</h2>

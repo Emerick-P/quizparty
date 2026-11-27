@@ -1,6 +1,6 @@
 # Plan du code (généré par `npm run codemap`, ne pas modifier à la main)
 
-Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → nav → daily → challenges → views → render → main.
+Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → daily → challenges → live → views → render → main.
 
 ### server/auth.js (175 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
@@ -12,7 +12,7 @@ Images de profil : galerie maison (un emoji sur une couleur), la photo du compte
 
 AVATAR_EMOJIS, AVATAR_HUES, cleanLook, photoOf, defaultLook, lookView
 
-### server/challenges.js (268 l.)
+### server/challenges.js (270 l.)
 Défis entre potes : un joueur connecté fige une série de questions et partage un lien (/?c=CODE).
 
 CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DAYS, CHALLENGE_DEFAULTS, EXCLUDED, ALPHABET, CODE_LEN, newCode, cleanCode, playerKey, ctxOf, challengeModes, publicResult, Challenges, ChallengeRoom, startChallenge
@@ -22,7 +22,7 @@ Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour qu
 
 ROOT, readJson, contentRows, syncContent
 
-### server/daily.js (409 l.)
+### server/daily.js (411 l.)
 Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
 
 DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, EPOCH, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, dayNumber, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, refreshImages, shuffleChoices, Daily, publicResult, DailyRoom, startDaily, openDaily
@@ -49,17 +49,33 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/room.js (1019 l.)
+### server/live.js (406 l.)
+Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
+
+LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, dayOf, addDay, slotsOf, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
+
+LIVE_FORMATS : midi, brunch, soir, nuit, finale
+
+DEFAULT_SLOTS : week, sat, sun
+
+### server/rating.js (353 l.)
+Cote des joueurs (type Glicko-2), calculée surtout contre la cote des QUESTIONS.
+
+RATING, RATED_MODES, SCALE, DAY, ROOT, norm, questionKey, roundKey, guessOf, outcomeOf, priors, priorOf, questionStart, monthFmt, seasonOf, tierOf, publicRating, gOf, logistic, inflate, terms, glicko, versusScore, createRatings
+
+RATING : start, rd, vol, tau, minRd, maxRd, placement, question, weights, versus, versusMax, minAnsweredShare, season
+
+### server/room.js (1036 l.)
 ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (304 l.)
+### server/rooms.js (317 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
 
-### server/stats.js (175 l.)
+### server/stats.js (189 l.)
 Stats des joueurs connectés (comptes Supabase).
 
 contentIndex, contentIdOf, INPUT_OF_KIND, answerRow, createStats, normalize, computeStats, stats
@@ -69,7 +85,7 @@ Profils Steam des joueurs (API Steam Web, gratuite, profils publics seulement).
 
 API, KEY, CACHE_MS, TIMEOUT_MS, PRIVACY_URL, cache, steamEnabled, gameImage, parseProfile, call, loadProfile, ACH_GAMES, appCache, appAchievements, pool, inFlight, loadAchievements, fetchAchievements
 
-### server/store.js (181 l.)
+### server/store.js (193 l.)
 Stockage des soumissions des amis et des signalements ⚑ de l'hôte.
 
 ROOT, BUCKET, supabaseBackend, localBackend, createStore, store
@@ -158,7 +174,7 @@ getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
 actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
-### public/js/challenges.js (196 l.)
+### public/js/challenges.js (197 l.)
 Défis entre potes.
 
 DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, potesSettings, loadPotes, loadPote, potesTile, potesBody, poteBody, potesEnd
@@ -181,7 +197,7 @@ Mots croisés : grille, saisie, envoi des mots.
 
 CW_IDLE_MS, cw, cwCells, cwLetters, cwPlaying, cwLocked, cwFound, LETTERS, cwLabels, cwWord, cwSync, cwSetTyped, cwNext, cwChoose, cwFocus, cwWrong, cwSubmit, cwOnInput, cwGrid, cwClues, crosswordQuestion
 
-### public/js/daily.js (165 l.)
+### public/js/daily.js (167 l.)
 Défi du jour.
 
 DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, dailyBoard, dailyTile, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
@@ -193,14 +209,21 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, installCard, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (227 l.)
+### public/js/home.js (229 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
 
 actions : pickHue, pickLook
 
-SHEETS : name, create, join, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, more
+SHEETS : name, create, join, live, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, ranking, more
+
+### public/js/live.js (108 l.)
+Quiz en direct.
+
+live, liveTime, liveDay, loadLive, liveTile, liveBody, liveWait, liveEnd
+
+actions : livejoin, livehome
 
 ### public/js/main.js (26 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
@@ -212,7 +235,7 @@ Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 
 images, loadImage, PIX_PREFETCH_MS, drawCover, drawClearCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
-### public/js/nav.js (213 l.)
+### public/js/nav.js (215 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.
 
 BAR_PHASES, hasBar, appBar, menuBody, sheetView, sheetHtml, OVER, openSheet, dropSheet, closeSheet, onPage, leaveAsk, navSkip, navRoom, navLayers, navSync, navPop, askLeave, leaveNow, leaveOverlay
@@ -231,6 +254,13 @@ PROPOSE_PHASES, proposeButton, proposePanel, proposeOpen, openPropose, closeProp
 
 actions : propose
 
+### public/js/ranking.js (44 l.)
+Classement général par cote (saison du mois en cours).
+
+rankUi, MONTHS, seasonLabel, rankAvatar, loadRanking, rankingBody, RATING_PLACEMENT
+
+actions : ranking
+
 ### public/js/render.js (167 l.)
 Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
@@ -241,10 +271,10 @@ Compte (Discord/Google), écran télé, événements du serveur, reprise de sess
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase
 
-### public/js/stats.js (96 l.)
+### public/js/stats.js (115 l.)
 Stats de joueur (Mes stats, stats d’un joueur du salon).
 
-statsUi, STATS_TABS, pct, secs, openStats, showStatsTab, statsBody
+statsUi, fmtRating, ratingText, ratingEnd, STATS_TABS, pct, secs, openStats, showStatsTab, statsBody
 
 actions : mystats, pstats, stab
 
@@ -253,7 +283,7 @@ Mode télé : vues de l’écran télé et du téléphone en manette.
 
 TOUCH, tvCard, tvSheet, tvPairView, tvLobbyView, tvQuestion, tvCrossword, padQuestion
 
-### public/js/views.js (361 l.)
+### public/js/views.js (365 l.)
 Écrans de jeu par phase (views[phase]) : salon, décompte, question, correction, podium…
 
 views
@@ -281,6 +311,11 @@ rows, bad, banned, yearGaps
 Affiche les retours de l'hôte enregistrés pendant les parties : npm run feedback
 
 online, list, where
+
+### scripts/rating-backfill.js (49 l.)
+Reprise des réponses déjà en base pour la cote (à lancer une fois, après la migration 2026-11-27-cote.sql).
+
+dry, keyOf, games, ratings, done, counted
 
 ### scripts/share.js (126 l.)
 npm run share : lance le serveur (s'il ne tourne pas déjà) + un tunnel Cloudflare gratuit,

@@ -105,6 +105,7 @@ const SHEETS = {
       <label class="field"><span>Ton pseudo</span><input id="name" maxlength="16" autocomplete="nickname" placeholder="Ex : Camille" value="${esc(store.get(NAME_KEY) || '')}" enterkeyhint="go"></label>
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
+  live: { phase: 'home', page: true, render: () => ({ title: 'Quiz en direct', body: liveBody() }) },
   daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   defis: { phase: 'home', page: true, render: () => ({ title: 'Défis entre potes', body: potesBody() }) },
   defi: { phase: 'home', page: true, render: () => ({ title: 'Défi entre potes', body: poteBody() }) },
@@ -134,6 +135,7 @@ const SHEETS = {
   look: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Image de profil', body: lookBody() }) },
   menu: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Menu', body: menuBody() }) },
   stats: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: statsUi.title, body: statsBody() }) },
+  ranking: { phase: ['home', 'lobby', 'end'], page: true, render: () => ({ title: 'Classement', body: rankingBody() }) },
   more: { phase: 'lobby', render: () => ({ title: 'Options', body: `
     <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
     <button class="btn" data-action="sheet" data-value="account">${ico('user')} Profil</button>

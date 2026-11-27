@@ -184,6 +184,12 @@ try {
   assert.equal(aa.filter((a) => a.correct).length, ga.correct);
   assert.ok(aa.every((a) => a.correct ? a.points > 0 && a.time_ms >= 0 : a.points === 0));
   assert.deepEqual(db.answers.filter((a) => a.user_id === chloe).map((a) => a.round_index), [2, 3, 4]);
+  assert.ok(aa.every((a) => /^vraifaux:[0-9a-f]{12}$/.test(a.question_key)), 'clé stable de la question (cote)');
+  // Cote : Alice (connectée) voit sa progression de placement en fin de partie, Bob (invité) rien
+  const ra = (await A.waitFor((s) => s.phase === 'end' && s.myRating)).myRating;
+  assert.equal(ra.placed, false);
+  assert.equal(ra.progress, 5);
+  assert.equal(B.state.myRating, null, 'invité : pas de cote');
   console.log('✓ partie finie enregistrée (comptes seulement, arrivée en route, partie arrêtée ignorée)');
 
   // Lecture
@@ -192,6 +198,7 @@ try {
   assert.equal(me.stats.answers, 5);
   assert.equal(me.stats.correct, ga.correct);
   assert.equal(me.stats.modes[0].name, 'Vrai ou faux');
+  assert.equal(me.rating.placed, false, 'pas de cote affichée avant le placement');
   const other = await B.emit('stats:player', { playerId: end.players.find((p) => p.name === 'Chloé').id });
   assert.equal(other.ok, true, 'un invité peut voir les stats d’un joueur connecté du salon');
   assert.equal(other.name, 'Chloé');

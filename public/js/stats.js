@@ -5,7 +5,25 @@
 // ---------------------------------------------------------------- stats de joueur
 // Mes stats (page Profil) ou celles d'un joueur connecté du salon (en touchant son nom).
 // Trois onglets qu'on fait glisser au doigt, pour tenir sur un écran de téléphone sans défiler.
-const statsUi = { title: 'Stats', who: null, data: null, error: null, loading: false, tab: 0, req: 0 };
+const statsUi = { title: 'Stats', who: null, data: null, rating: null, error: null, loading: false, tab: 0, req: 0 };
+
+// ---------------------------------------------------------------- cote
+// Avant le placement : progression (« 12/30 réponses »). Ensuite : le nombre, et le gain en fin de partie.
+const fmtRating = (n) => new Intl.NumberFormat('fr-FR').format(Math.round(n));
+function ratingText(r) {
+  if (!r) return '';
+  if (!r.placed) return `Cote : placement ${r.progress}/${r.need} réponses`;
+  return `Cote <b>${fmtRating(r.rating)}</b>`;
+}
+/** Ligne de fin de partie (state.myRating, envoyé par le serveur une fois la partie enregistrée). */
+function ratingEnd() {
+  const r = state?.myRating;
+  if (!r) return '';
+  const d = r.delta;
+  const gain = r.justPlaced ? '<span class="rt-new">débloquée</span>'
+    : Number.isFinite(d) ? `<span class="rt-d ${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d)}</span>` : '';
+  return `<p class="rt-chip">${ico('chart')}<span>${ratingText(r)}</span>${gain}</p>`;
+}
 const STATS_TABS = ['Résumé', 'Modes', 'Jeux'];
 const pct = (good, n) => (n ? Math.round((100 * good) / n) : 0);
 const secs = (ms) => `${(ms / 1000).toFixed(ms < 10000 ? 1 : 0).replace('.', ',')} s`;
@@ -13,7 +31,7 @@ async function openStats(who, title) {
   const req = ++statsUi.req;
   const myName = (state?.players?.find((p) => p.id === state.you)?.name) || store.get(NAME_KEY) || account.user?.name || '';
   const other = who !== 'me' ? state?.players.find((p) => p.id === who) : null;
-  Object.assign(statsUi, { who, title, data: null, error: null, loading: true, tab: 0,
+  Object.assign(statsUi, { who, title, data: null, rating: null, error: null, loading: true, tab: 0,
     person: who === 'me' ? { name: myName, avatar: account.user?.avatar ?? null } : { name: other?.name ?? '', avatar: null } });
   openSheet('stats');
   const r = who === 'me' ? await send('stats:me') : await send('stats:player', { playerId: who });
@@ -22,6 +40,7 @@ async function openStats(who, title) {
   if (r.error) statsUi.error = r.error;
   else {
     statsUi.data = r.stats ?? {};
+    statsUi.rating = r.rating ?? null;
     if (r.avatar) statsUi.person.avatar = r.avatar;
   }
   if (ui.sheet === 'stats') render();
@@ -63,7 +82,7 @@ function statsBody() {
     return `<span class="st-pips" aria-label="${g.good} trouvés sur ${g.n}">${'<i class="ok"></i>'.repeat(good)}${'<i></i>'.repeat(n - good)}</span>`;
   };
   const summary = `
-    <div class="st-who">${face}<div><b>${esc(who.name || '')}</b><small>${s.daily ? `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes et ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes`}</small></div></div>
+    <div class="st-who">${face}<div><b>${esc(who.name || '')}</b><small>${s.daily ? `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes et ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : `${s.games ?? 0} partie${s.games > 1 ? 's' : ''} entre potes`}</small>${statsUi.rating ? `<span class="rt-line">${ratingText(statsUi.rating)}</span>` : ''}</div></div>
     <div class="st-big"><div class="st-big-in"><b>${pct(s.correct, s.answers)}<span> %</span></b><div><strong>de bonnes réponses</strong><small>${s.correct ?? 0} sur ${s.answers ?? 0} questions</small></div></div></div>
     <div class="st-tiles">
       ${tile(s.games ?? 0, s.games > 1 ? 'parties' : 'partie', s.daily ? `et ${s.daily} défi${s.daily > 1 ? 's' : ''} du jour` : 'entre potes')}

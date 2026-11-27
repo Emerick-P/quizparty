@@ -1,6 +1,7 @@
 import { store as defaultStore } from './store.js';
 import { contentRows } from './content-sync.js';
 import { MODES } from './games/index.js';
+import { createRatings, roundKey, guessOf, outcomeOf } from './rating.js';
 
 /**
  * Stats des joueurs connectés (comptes Supabase).
@@ -46,18 +47,30 @@ export function answerRow({ round, roundIndex, mode, result, answered }) {
     correct: result?.self ? null : !!result?.correct, // question sur soi-même (Ta bande) : ne compte pas
     points: result?.points ?? 0,
     timeMs: answered && Number.isFinite(result?.timeMs) ? Math.round(result.timeMs) : null,
+    // Cote (rating.js) : clé stable de la question, résultat 0..1, part de hasard
+    questionKey: result?.self ? null : roundKey(round, m),
+    outcome: outcomeOf(round, result, answered),
+    guess: guessOf(round),
   };
 }
 
 export function createStats(store = defaultStore) {
+  const ratings = createRatings(store);
   const enabled = () => store.name === 'supabase' || process.env.STATS_LOCAL === '1';
 
   /**
    * Enregistre une partie finie d'un joueur connecté. Ne lève jamais : une base indisponible
    * ne doit pas gêner la partie (l'erreur est seulement écrite dans les logs).
    */
-  async function recordGame({ userId, source = 'party', sessionId, mode, score = 0, rank = null, players = 1, won = false, answers = [] }) {
+  async function recordGame({ userId, source = 'party', sessionId, mode, score = 0, rank = null, players = 1, won = false, answers = [], versus = [] }) {
     if (!userId || !enabled()) return null;
+    // Cote d'abord : elle regarde les questions déjà vues, donc avant d'enregistrer celles de cette partie.
+    let rating = null;
+    try {
+      rating = await ratings.recordGame({ userId, source, sessionId, answers, versus });
+    } catch (err) {
+      console.error('[cote] mise à jour :', err.message);
+    }
     try {
       const game = await store.insert('game_results', {
         user_id: userId,
@@ -86,11 +99,12 @@ export function createStats(store = defaultStore) {
         correct: a.correct ?? null,
         points: a.points ?? 0,
         time_ms: a.timeMs ?? null,
+        question_key: a.questionKey ?? null,
       })));
-      return game;
+      return { ...game, rating };
     } catch (err) {
       console.error('[stats] enregistrement :', err.message);
-      return null;
+      return rating ? { rating } : null;
     }
   }
 
@@ -117,7 +131,7 @@ export function createStats(store = defaultStore) {
     return computeStats(games, answers);
   }
 
-  return { recordGame, insertAnswers, statsOf, get enabled() { return enabled(); } };
+  return { recordGame, insertAnswers, statsOf, ratingOf: ratings.ratingOf, ratingBoard: ratings.board, get enabled() { return enabled(); } };
 }
 
 /** Un jeu ne peut pas être à la fois « bien reconnu » et « qui résiste » : on le garde du côté où il pèse le plus. */

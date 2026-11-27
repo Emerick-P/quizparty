@@ -225,7 +225,9 @@ export class ChallengeRoom extends DailyRoom {
     this.statsSent = true;
     const answers = this.log.filter(Boolean).map((x) => x.row);
     if (!answers.length) return;
+    const pid = [...this.players.values()][0]?.id;
     return stats.recordGame({ userId: user.id, source: 'challenge', sessionId: this.challenge.id, mode: this.challenge.mode, score: this.score(), rank: null, players: 1, won: false, answers })
+      .then((game) => this.showRating(pid, game))
       .catch((err) => console.error('[défis] stats :', err.message));
   }
 

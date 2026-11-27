@@ -3,6 +3,7 @@ import { stats } from './stats.js';
 import { cleanLook, defaultLook, photoOf } from './avatars.js';
 import { Room, cleanName } from './room.js';
 import { Daily, startDaily } from './daily.js';
+import { Live } from './live.js';
 import { Challenges, challengeModes, startChallenge, CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DEFAULTS, CHALLENGE_DAYS } from './challenges.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
@@ -17,6 +18,7 @@ export class RoomManager {
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
     this.daily = new Daily(); // défi du jour (voir daily.js)
     this.challenges = new Challenges(); // défis entre potes (voir challenges.js)
+    this.live = new Live(this); // quiz en direct (voir live.js)
     setInterval(() => this.sweep(), 60_000).unref();
   }
 
@@ -32,6 +34,7 @@ export class RoomManager {
   sweep() {
     const now = Date.now();
     for (const [code, room] of this.rooms) {
+      if (room.waiting) continue; // salle d'attente du direct
       if (room.players.size === 0 || (room.emptySince && now - room.emptySince > EMPTY_ROOM_TTL_MS)) {
         room.destroy();
         this.rooms.delete(code);
@@ -50,7 +53,7 @@ export class RoomManager {
     room.removePlayer(socket.data.playerId);
     socket.leave(room.channel);
     socket.data = { user: socket.data.user ?? null }; // le compte reste connecté hors du salon
-    if (room.players.size === 0) {
+    if (room.players.size === 0 && !room.waiting) {
       room.destroy();
       this.rooms.delete(room.code);
     }
@@ -154,7 +157,7 @@ export class RoomManager {
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       const room = this.rooms.get(String(code || '').trim().toUpperCase());
-      if (!room || room.isDaily) throw new Error('Salon introuvable');
+      if (!room || room.isDaily || room.isLive) throw new Error('Salon introuvable');
       this.leave(socket);
       const p = room.addPlayer(n, socket);
       return { ok: true, code: room.code, token: p.token, playerId: p.id };
@@ -180,6 +183,13 @@ export class RoomManager {
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');
       return startDaily(this, socket, n, this.daily);
+    });
+    // Quiz en direct : prochains créneaux, entrée dans la salle d'attente (voir live.js)
+    on('live:info', () => ({ ok: true, ...this.live.info() }));
+    on('live:join', ({ name }) => {
+      const n = cleanName(name);
+      if (!n) throw new Error('Choisis un pseudo');
+      return this.live.join(socket, n);
     });
     on('daily:board', async () => ({ ok: true, leaderboard: await this.daily.board() }));
 
@@ -222,8 +232,11 @@ export class RoomManager {
     on('stats:me', async () => {
       const user = socket.data.user;
       if (!user) throw new Error('Connecte-toi pour avoir tes stats');
-      return { ok: true, stats: await stats.statsOf(user.id) };
+      const [st, rating] = await Promise.all([stats.statsOf(user.id), stats.ratingOf(user.id).catch(() => null)]);
+      return { ok: true, stats: st, rating };
     });
+    // Classement général par cote (saison en cours) : public, comme le classement du défi du jour
+    on('rating:board', async () => ({ ok: true, ...(await stats.ratingBoard()), me: socket.data.user?.id ?? null }));
     on('stats:player', inRoom((room, { playerId }) => room.playerStats(String(playerId || ''))));
     // Page Profil : image de profil (galerie, photo du compte, initiale). Invité : retenue sur l'appareil.
     on('profile:avatar', async ({ look }) => {

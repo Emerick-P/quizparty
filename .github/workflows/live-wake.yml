@@ -1,0 +1,29 @@
+# Réveil du serveur avant chaque quiz en direct (Render gratuit s'endort après 15 min sans visite).
+# GitHub lance ces tâches en heure UTC, parfois avec quelques minutes de retard : chaque créneau a deux
+# lignes (heure d'hiver UTC+1 et heure d'été UTC+2), environ 20 min avant le départ (heure de Paris).
+# Une fois réveillé, le serveur se garde éveillé jusqu'à la fin du direct (Live.keepAwake dans server/live.js).
+# Coût : environ 150 minutes d'Actions par mois (2 000 gratuites pour un dépôt privé).
+name: Réveil avant le direct
+on:
+  schedule:
+    - cron: '25 10,11 * * 1-5'  # 12 h 45 en semaine
+    - cron: '10 16,17 * * *'    # 18 h 30 tous les jours
+    - cron: '40 19,20 * * 1-6'  # 22 h, du lundi au samedi
+    - cron: '40 8,9 * * 0,6'    # 11 h le week-end
+    - cron: '40 18,19 * * 0'    # 21 h le dimanche (finale)
+  workflow_dispatch:
+permissions: {}
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Réveiller le serveur
+        env:
+          SITE_URL: ${{ vars.APP_URL || 'https://quizparty-3g8q.onrender.com' }}
+        run: |
+          for i in 1 2 3; do
+            curl -fsS --max-time 90 "$SITE_URL/health" && exit 0
+            sleep 20
+          done
+          exit 1

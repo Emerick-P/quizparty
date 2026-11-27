@@ -56,7 +56,7 @@ export const gridText = (cells) => cells.map((c) => CELL[c] ?? '⬛').join('');
 
 // Stats de joueur (tables game_results et answers, voir stats.js) : source 'daily', session = le jour
 async function recordStats(payload) {
-  try { await stats.recordGame(payload); } catch (err) { console.error('[défi] stats :', err.message); }
+  try { return await stats.recordGame(payload); } catch (err) { console.error('[défi] stats :', err.message); return null; }
 }
 
 const hasDb = () => typeof store.query === 'function';
@@ -333,7 +333,9 @@ export class DailyRoom extends Room {
     this.statsSent = true;
     const answers = this.log.filter(Boolean).map((x) => x.row);
     if (!answers.length) return;
-    return recordStats({ userId: user.id, source: 'daily', sessionId: this.challenge.day, mode: 'daily', score: this.score(), rank: null, players: 1, won: false, answers });
+    const pid = [...this.players.values()][0]?.id;
+    return recordStats({ userId: user.id, source: 'daily', sessionId: this.challenge.day, mode: 'daily', score: this.score(), rank: null, players: 1, won: false, answers })
+      .then((game) => this.showRating(pid, game));
   }
 
   /** Le joueur ferme le défi en cours : il compte comme terminé (une seule tentative). */

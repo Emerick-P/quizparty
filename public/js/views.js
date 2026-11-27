@@ -21,11 +21,13 @@ const views = {
         ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
       </section>
       <div class="h-tiles">
+        ${liveTile()}
         ${dailyTile()}
         ${potesTile()}
       </div>
       <div class="h-extras">
         ${TOUCH ? `<button class="chip-btn" data-action="sheet" data-value="tvinfo">${ico('tv')} Jouer sur la télé</button>` : ''}
+        <button class="chip-btn" data-action="ranking">${ico('trophy')} Classement</button>
         <button class="chip-btn" data-action="propose">${ico('bulb')} Proposer une question</button>
         ${installCard()}
       </div>
@@ -35,6 +37,7 @@ const views = {
   },
 
   lobby() {
+    if (state.daily?.live) return liveWait();
     const host = isHost();
     const copied = Date.now() < copiedUntil;
     const count = `${state.players.length} joueur${state.players.length > 1 ? 's' : ''}`;
@@ -250,7 +253,7 @@ const views = {
           ${r.choices.map((c, i) => `
             <div class="choice c${i} ${i === rv.correctIndex ? 'correct' : 'wrong'}">
               <span>${esc(c)}${me && me.answer === i ? '<span class="mine">toi</span>' : ''}</span>
-              <span class="count">${rv.counts[i]}</span>
+              ${rv.counts ? `<span class="count">${rv.counts[i]}</span>` : ''}
             </div>`).join('')}
         </div>` : resultList()}`;
     } else if (r.kind === 'typed') {
@@ -276,7 +279,7 @@ const views = {
           ${r.choices.map((c, i) => `
             <div class="choice c${i} ${i === rv.correctIndex ? 'correct' : 'wrong'}">
               <span>${esc(c)}${me && me.answer === i ? '<span class="mine">toi</span>' : ''}</span>
-              <span class="count">${rv.counts[i]}</span>
+              ${rv.counts ? `<span class="count">${rv.counts[i]}</span>` : ''}
             </div>`).join('')}
         </div>
         ${rv.info ? `<p class="info">${esc(rv.info)}</p>` : ''}`;
@@ -299,7 +302,7 @@ const views = {
       </div>
       <div class="rv-side rv-page" ${state.daily && !wide() ? 'hidden' : ''}>
       ${state.daily ? `<section class="card d-side">
-        <h2>${state.daily.challenge ? `Défi de ${esc(state.daily.challenge.by)}` : `Défi n°${state.daily.number}`}</h2>
+        <h2>${state.daily.live ? esc(state.daily.live.name) : state.daily.challenge ? `Défi de ${esc(state.daily.challenge.by)}` : `Défi n°${state.daily.number}`}</h2>
         <div class="d-result"><b>${fmtPts(state.players.find((p) => p.id === state.you)?.score)} <span>pts</span></b>${cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'big')}<small>${state.daily.correct} trouvée${state.daily.correct > 1 ? 's' : ''} sur ${r.index + 1}</small></div>
       </section>` : `<section class="card">
         <h2>Classement</h2>
@@ -320,12 +323,12 @@ const views = {
         <button class="rv-dot" data-action="rvpage" data-value="0" role="tab"><i></i>Réponse</button>
         <button class="rv-dot" data-action="rvpage" data-value="1" role="tab"><i></i>Classement</button>
       </div>` : ''}
-      ${state.daily ? dailyBar(`<button class="btn small primary" data-action="skip">${last ? 'Voir mon résultat' : 'Suivant'}</button>`) : isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
+      ${state.daily ? dailyBar(state.daily.live ? '' : `<button class="btn small primary" data-action="skip">${last ? 'Voir mon résultat' : 'Suivant'}</button>`) : isHost() ? `<div class="host-bar rv-host">${reportButton()}<button class="btn small ghost" data-action="skip">${last ? 'Voir les résultats' : 'Suivant'}</button><button class="btn small ghost" data-action="stop">Arrêter</button></div>` : playerBar()}
     </main>`;
   },
 
   end() {
-    if (state.daily) return state.daily.challenge ? potesEnd() : dailyEnd();
+    if (state.daily) return state.daily.live ? liveEnd() : state.daily.challenge ? potesEnd() : dailyEnd();
     const ranked = sortedByScore();
     const step = (p, place) => (p ? `
       <div class="step p${place}">
@@ -338,6 +341,7 @@ const views = {
     return `
     <main class="screen">
       <div class="title">${myPos === 1 ? 'Victoire' : 'Partie terminée'}</div>
+      ${SCREEN ? '' : ratingEnd()}
       ${SCREEN ? '<p class="waiting tv-only">L’hôte peut relancer une partie depuis son téléphone</p>' : ''}
       <div class="podium">${step(ranked[1], 2)}${step(ranked[0], 1)}${step(ranked[2], 3)}</div>
       <section class="card">

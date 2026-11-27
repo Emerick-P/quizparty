@@ -59,9 +59,15 @@ function supabaseBackend(url, key) {
       return out?.[0] ?? null;
     },
     /** Lignes filtrées : eq { colonne: valeur }, gte { colonne: valeur }, order 'colonne.desc', limit. */
-    async query(table, { eq = {}, gte = {}, order, limit = 200, select = '*' } = {}) {
+    /** Plusieurs lignes en une requête (clé primaire id). */
+    async upsertMany(table, rows) {
+      if (rows.length) await call('POST', `/rest/v1/${table}`, { body: rows, headers: { Prefer: 'resolution=merge-duplicates' } });
+    },
+    /** inList : { colonne: [valeurs] } (valeurs entre guillemets : les ids contiennent des « : »). */
+    async query(table, { eq = {}, gte = {}, inList = {}, order, limit = 200, select = '*' } = {}) {
       const q = new URLSearchParams({ select, limit: String(limit) });
       for (const [k, v] of Object.entries(eq)) q.append(k, `eq.${v}`);
+      for (const [k, vs] of Object.entries(inList)) q.append(k, `in.(${vs.map((v) => `"${String(v).replace(/["\\]/g, '')}"`).join(',')})`);
       for (const [k, v] of Object.entries(gte)) q.append(k, `gte.${v}`);
       if (order) q.set('order', order);
       return call('GET', `/rest/v1/${table}?${q}`);
@@ -144,9 +150,15 @@ function localBackend(dir) {
     async get(table, id) {
       return read(table).find((r) => r.id === id) ?? null;
     },
-    async query(table, { eq = {}, gte = {}, order, limit = 200 } = {}) {
+    async upsertMany(table, rows) {
+      const ids = new Set(rows.map((r) => r.id));
+      fs.mkdirSync(dir, { recursive: true });
+      write(table, [...read(table).filter((r) => !ids.has(r.id)), ...rows]);
+    },
+    async query(table, { eq = {}, gte = {}, inList = {}, order, limit = 200 } = {}) {
       let rows = read(table).filter((r) => Object.entries(eq).every(([k, v]) => String(r[k]) === String(v))
-        && Object.entries(gte).every(([k, v]) => r[k] >= v));
+        && Object.entries(gte).every(([k, v]) => r[k] >= v)
+        && Object.entries(inList).every(([k, vs]) => vs.map(String).includes(String(r[k]))));
       if (order) {
         const [col, dir] = order.split(',')[0].split('.');
         rows.sort((a, b) => (a[col] < b[col] ? -1 : a[col] > b[col] ? 1 : 0) * (dir === 'desc' ? -1 : 1));

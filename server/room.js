@@ -10,7 +10,7 @@ import { stats, answerRow } from './stats.js';
 import { defaultLook, lookView } from './avatars.js';
 
 // ---- Réglages du moteur (surchargeables par variables d'environnement, utile pour les tests)
-const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
+export const COUNTDOWN_MS = Number(process.env.COUNTDOWN_MS ?? 3000); // "3, 2, 1" avant chaque question
 const REVEAL_MS = Number(process.env.REVEAL_MS ?? 8000);       // affichage de la correction
 const ANSWER_GRACE_MS = 400;       // on attend les réponses encore "en vol" après la fin du timer
 const MAX_LATENCY_COMP_MS = 250;   // compensation de latence maximale accordée à un joueur
@@ -89,7 +89,8 @@ export class Room {
   }
 
   addPlayer(name, socket) {
-    if (this.players.size >= MAX_PLAYERS) throw new Error(`Salon complet (${MAX_PLAYERS} joueurs max)`);
+    const max = this.maxPlayers ?? MAX_PLAYERS; // le direct (live.js) en accepte bien plus
+    if (this.players.size >= max) throw new Error(`Salon complet (${max} joueurs max)`);
     const player = {
       id: shortId(),
       token: crypto.randomUUID(),
@@ -435,6 +436,7 @@ export class Room {
     if (!allowed(this.settings.mode, this.ctx())) throw new Error('Mode inconnu');
     const why = mode.unavailable?.(this.ctx());
     if (why) throw new Error(why);
+    for (const p of this.players.values()) p.ratingResult = null;
     this.rounds = mode.build(this.settings.rounds, this.used, this.settings, this.ctx());
     if (!this.rounds.length) throw new Error('Aucune question disponible');
     this.protectMedia();
@@ -450,14 +452,14 @@ export class Room {
     this.nextRound();
   }
 
-  nextRound() {
+  /** Manche suivante ; `now` : heure serveur du « 3, 2, 1 » (le direct la fixe pour partir à l'heure pile). */
+  nextRound(now = Date.now()) {
     this.clearTimers();
     this.paused = null;
     this.reveal = null;
     this.roundIndex++;
     if (this.roundIndex >= this.rounds.length) return this.finish();
 
-    const now = Date.now();
     const r = this.rounds[this.roundIndex];
     r.id = `${this.roundIndex}-${shortId()}`;
     r.answers = new Map();
@@ -804,6 +806,7 @@ export class Room {
     const accounts = players.filter((p) => p.user?.id);
     if (!accounts.length || !stats.enabled) return;
     const better = (a, b) => a.score > b.score || (a.score === b.score && tb(a) < tb(b));
+    const rankOf = (p) => 1 + players.filter((o) => o !== p && better(o, p)).length;
     for (const p of accounts) {
       const answers = [];
       this.rounds.forEach((r, i) => {
@@ -819,12 +822,23 @@ export class Room {
         sessionId: this.sessionId ?? `${this.code}-${Date.now().toString(36)}`,
         mode: this.settings.mode,
         score: p.score,
-        rank: 1 + players.filter((o) => o !== p && better(o, p)).length,
+        rank: rankOf(p),
         players: players.length,
         won: best > 0 && p.score === best && tb(p) === bestTb,
         answers,
-      });
+        // Cote : petit bonus contre les autres joueurs connectés, selon le classement final
+        versus: accounts.filter((o) => o !== p && o.user.id !== p.user.id).map((o) => ({ userId: o.user.id, score: rankOf(p) < rankOf(o) ? 1 : rankOf(p) > rankOf(o) ? 0 : 0.5 })),
+      }).then((game) => this.showRating(p.id, game));
     }
+  }
+
+  /** Évolution de la cote après la partie (envoyée au joueur seulement, dans son état). */
+  showRating(pid, game) {
+    const p = this.players.get(pid);
+    if (!p || !game?.rating || this.phase !== 'end') return;
+    const { before, after, delta } = game.rating;
+    p.ratingResult = { placed: after.placed, rating: after.rating, delta, justPlaced: after.placed && !before.placed, progress: after.progress, need: after.need };
+    this.broadcast();
   }
 
   /** Stats d'un joueur du salon (carte ouverte en le touchant) : seulement s'il est connecté à un compte. */
@@ -832,7 +846,8 @@ export class Room {
     const p = this.players.get(playerId);
     if (!p) throw new Error('Joueur introuvable');
     if (!p.user?.id) throw new Error(`${p.name} joue en invité : pas de stats`);
-    return { ok: true, name: p.name, avatar: p.user.avatar ?? null, stats: await stats.statsOf(p.user.id) };
+    const [st, rating] = await Promise.all([stats.statsOf(p.user.id), stats.ratingOf(p.user.id).catch(() => null)]);
+    return { ok: true, name: p.name, avatar: p.user.avatar ?? null, stats: st, rating };
   }
 
   /** Hôte : retour au salon (arrêt en cours de partie, ou "nouvelle partie" depuis la fin). */
@@ -922,6 +937,8 @@ export class Room {
       phase: this.phase,
       hostId: this.hostId,
       you: pid,
+      // Ma cote après la partie (fin de partie seulement) : { placed, rating, delta, justPlaced, progress, need }
+      myRating: (this.phase === 'end' && pid != null && this.players.get(pid)?.ratingResult) || null,
       // Mes droits : admin = actions réservées (accepter une réponse, supprimer, retirer un jeu)
       admin: pid != null && this.canModerate(pid),
       serverNow: Date.now(),

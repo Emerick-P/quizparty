@@ -112,7 +112,7 @@ socket.on('state', (s) => {
   if (s.round?.picture) loadImage(s.round.picture.url);
   if (pending && (!s.round || s.round.id !== pending.roundId || s.round.yourAnswer !== null)) pending = null;
   autoLinkSteam();
-  if (s.daily) rememberDaily(s);
+  if (s.daily && !s.daily.live) rememberDaily(s);
   render();
 });
 

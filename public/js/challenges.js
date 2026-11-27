@@ -137,6 +137,7 @@ function potesEnd() {
         <b>${fmtPts(me?.score)} <span>pts</span></b>
         ${cellsHtml(d.cells.map((x) => CELL_CLASS[x] || 'ko'), 'big')}
       </div>
+      ${ratingEnd()}
       <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
       <section class="card d-card">
         <h2>Classement du défi</h2>

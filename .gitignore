@@ -11,3 +11,5 @@ data/submissions/
 .cap/
 # Sortie de graphify (graphe du code, régénérable)
 graphify-out/
+# Réglages Claude Code propres au PC (contient un jeton)
+.claude/settings.local.json
