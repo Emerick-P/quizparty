@@ -266,7 +266,7 @@ Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
 
-### public/js/session.js (178 l.)
+### public/js/session.js (183 l.)
 Compte (Discord/Google), écran télé, événements du serveur, reprise de session, phase affichée.
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase

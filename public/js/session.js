@@ -70,11 +70,16 @@ async function accountSync() {
     store.set(AUTH_KEY, again);
     return accountSync();
   }
-  // Renouvellement automatique 5 min avant l'expiration (le jeton dure 1 h)
-  const wait = Math.max(30_000, (store.get(AUTH_KEY)?.expires_at ?? 0) * 1000 - Date.now() - 4 * 60_000);
+  // Renouvellement automatique 5 min avant l'expiration (le jeton dure 1 h).
+  // Compte pas encore confirmé (serveur muet) : on réessaie vite, sinon l'écran resterait « invité » près d'une heure.
+  const wait = account.ready ? Math.max(30_000, (store.get(AUTH_KEY)?.expires_at ?? 0) * 1000 - Date.now() - 4 * 60_000) : 30_000;
   account.timer = setTimeout(() => { if (socket.connected) accountSync().then(render); }, wait);
   render();
 }
+// Connexion faite dans un autre onglet (ou la fenêtre de l'app) : celui-ci la reprend, sans recharger la page
+addEventListener('storage', (e) => {
+  if (!SCREEN && e.key === AUTH_KEY && e.newValue && !account.user && socket.connected) accountSync();
+});
 function accountLost() {
   store.del(AUTH_KEY);
   account.user = null;
