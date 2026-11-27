@@ -51,19 +51,25 @@ const stats = createStats(store);
 const ans = (i, correct, extra = {}) => ({ roundIndex: i, mode: 'quiz', kind: 'qcm', answered: true, correct, points: correct ? 500 : 0, timeMs: 1000, questionKey: `quiz:test${i}`, outcome: correct ? 1 : 0, guess: 0.25, ...extra });
 const batch = (from, n, correct) => Array.from({ length: n }, (_, k) => ans(from + k, correct));
 {
-  const g1 = await stats.recordGame({ userId: 'u1', source: 'party', sessionId: 'A', mode: 'quiz', answers: batch(0, 10, true) });
+  const g1 = await stats.recordGame({ userId: 'u1', source: 'live', sessionId: 'A', mode: 'quiz', answers: batch(0, 10, true) });
   assert.equal(g1.rating.counted, 10);
   assert.equal(g1.rating.after.placed, false, 'pas encore placé');
   assert.equal(g1.rating.after.rating, null, 'pas de nombre avant le placement');
   assert.equal(g1.rating.after.progress, 10);
 
+  // Salons et défis entre potes : jamais comptés dans la cote
+  for (const source of ['party', 'challenge']) {
+    const x = await stats.recordGame({ userId: 'u1', source, sessionId: `X-${source}`, mode: 'quiz', answers: batch(900, 10, true) });
+    assert.equal(x.rating, null, `${source} : hors cote`);
+  }
+
   // Les mêmes questions une 2e fois : ne comptent plus
-  const g2 = await stats.recordGame({ userId: 'u1', source: 'party', sessionId: 'B', mode: 'quiz', answers: batch(0, 10, true) });
+  const g2 = await stats.recordGame({ userId: 'u1', source: 'live', sessionId: 'B', mode: 'quiz', answers: batch(0, 10, true) });
   assert.equal(g2.rating, null, 'questions déjà vues : rien ne compte');
 
   // Absent : 2 réponses sur 10
   const afk = batch(100, 10, false).map((a, i) => (i < 8 ? { ...a, answered: false } : a));
-  const g3 = await stats.recordGame({ userId: 'u1', source: 'party', sessionId: 'C', mode: 'quiz', answers: afk });
+  const g3 = await stats.recordGame({ userId: 'u1', source: 'live', sessionId: 'C', mode: 'quiz', answers: afk });
   assert.equal(g3.rating, null, 'joueur absent : partie ignorée');
 
   // Les questions réussies deviennent plus faciles
@@ -72,11 +78,11 @@ const batch = (from, n, correct) => Array.from({ length: n }, (_, k) => ans(from
 
   // Placement : 30 réponses comptées
   await stats.recordGame({ userId: 'u1', source: 'daily', sessionId: 'D1', mode: 'daily', answers: batch(200, 10, true) });
-  const g4 = await stats.recordGame({ userId: 'u1', source: 'party', sessionId: 'E', mode: 'quiz', answers: batch(300, 10, true), versus: [{ userId: 'u2', score: 1 }] });
+  const g4 = await stats.recordGame({ userId: 'u1', source: 'live', sessionId: 'E', mode: 'quiz', answers: batch(300, 10, true), versus: [{ userId: 'u2', score: 1 }] });
   assert.equal(g4.rating.after.placed, true);
   assert.ok(g4.rating.after.rating > 1600, `tout juste : cote ${g4.rating.after.rating}`);
   assert.equal(g4.rating.delta, null, 'pas de gain affiché la partie du placement');
-  const g5 = await stats.recordGame({ userId: 'u1', source: 'party', sessionId: 'F', mode: 'quiz', answers: batch(400, 10, false) });
+  const g5 = await stats.recordGame({ userId: 'u1', source: 'live', sessionId: 'F', mode: 'quiz', answers: batch(400, 10, false) });
   assert.ok(g5.rating.delta < 0, 'tout faux : la cote baisse');
   assert.equal((await stats.ratingOf('u1')).placed, true);
   assert.equal((await store.query('rating_events', { eq: { user_id: 'u1' } })).length, 4);

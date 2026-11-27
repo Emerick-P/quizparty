@@ -26,14 +26,23 @@ function dailyStreak() {
   const local = store.get(DAILY_KEY);
   return local && (local.day === i.day || local.day === prevDay(i.day)) ? local.streak || 0 : 0;
 }
+/** Simulation pour voir la carte « déjà joué » sans toucher à la base : seulement sur localhost avec ?mock=daily (ou ?mock=all). */
+const MOCK_DAILY = !SCREEN && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && ['daily', 'all'].includes(new URLSearchParams(location.search).get('mock'));
+function mockDaily(r) {
+  if (!MOCK_DAILY || r.played) return r;
+  const grid = '🟩🟩🟨🟩🟥🟩🟩🟨🟩🟩';
+  const names = ['Maxime', 'Julie', 'Toi', 'Théo', 'Camille'];
+  return { ...r, account: true, me: 'mock-me', streak: 4, played: { score: 4320, grid, correct: 9, rounds: r.rounds || 10, streak: 4, finished: true },
+    leaderboard: names.map((name, i) => ({ userId: name === 'Toi' ? 'mock-me' : `mock-${i}`, name, score: 5100 - i * 380, grid })) };
+}
 async function loadDaily() {
   if (SCREEN || daily.loading) return;
   daily.loading = true;
   const r = await send('daily:info');
   daily.loading = false;
   if (r.error) return;
-  daily.info = r;
-  daily.board = r.leaderboard ?? null;
+  daily.info = mockDaily(r);
+  daily.board = daily.info.leaderboard ?? null;
   // Invité qui a déjà joué : il peut voir le classement
   if (!daily.board && dailyMine()) daily.board = (await send('daily:board')).leaderboard ?? [];
   render();
@@ -65,13 +74,25 @@ function dailyBoard(list, meId, max = 5) {
     <li class="${i === myIdx ? 'me' : ''}"><span class="pos">${i + 1}</span>${avatar(x.name || '?')}<span class="grow">${esc(x.name)}${x.guest ? ' <small class="d-guest">invité</small>' : ''}${cellsHtml(gridCells(x.grid), 'xs')}</span><span class="pts">${fmtPts(x.score)}</span></li>`).join('')}
   </ol>${list.length > shown.length ? `<p class="muted d-more">${list.length} joueurs aujourd’hui</p>` : ''}`;
 }
-function dailyTile() {
+/** Grande carte du Défi du jour (onglet Compétition) : à jouer, ou le récap de mon résultat, ma place et ma série. */
+function dailyCard() {
   const i = daily.info, mine = dailyMine(), streak = dailyStreak();
-  const sub = !i ? 'Le même quiz pour tout le monde, résultat à partager'
-    : mine ? `Joué : ${fmtPts(mine.score)} pts · prochain dans ${untilNext(i.nextAt)}`
-    : `${i.rounds} questions mélangées, une seule tentative`;
-  return `<button class="h-tile daily ${mine ? 'done' : ''}" data-action="sheet" data-value="daily">${i ? `<i class="soon">n°${i.number}</i>` : ''}<span class="t-ico">${ico('calendar')}</span><b>Défi du jour</b><small>${esc(sub)}</small>
-    ${mine ? cellsHtml(gridCells(mine.grid), 'tile') : `<span class="d-go">${streak ? `${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} · ` : ''}À jouer ▸</span>`}</button>`;
+  const open = 'data-action="sheet" data-value="daily"';
+  if (!i) return `<button class="d-card" ${open}><span class="d-top"><span class="t-ico">${ico('calendar')}</span><b>Défi du jour</b></span><small>Chargement…</small></button>`;
+  const flame = streak ? `<span class="d-streak-chip">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''}</span>` : '';
+  if (!mine) {
+    return `<button class="d-card todo cut" ${open}>
+      <span class="d-top"><span class="t-ico">${ico('calendar')}</span><b>Défi du jour</b><i class="soon">n°${i.number}</i></span>
+      <span class="d-body"><small>${i.rounds} questions mélangées, une seule tentative. Le même quiz pour tout le monde.</small></span>
+      <span class="d-foot">${flame}<span class="d-go">À jouer ▸</span></span></button>`;
+  }
+  const idx = i.me && daily.board ? daily.board.findIndex((x) => x.userId === i.me) : -1;
+  const place = idx >= 0 ? `<span><b>${ordinal(idx + 1)}</b> du jour</span>` : '';
+  return `<button class="d-card done" ${open}>
+    <span class="d-top"><span class="t-ico">${ico('calendar')}</span><b>Défi du jour</b><i class="soon">n°${i.number}</i></span>
+    <span class="d-score"><b>${fmtPts(mine.score)}</b> pts</span>
+    <span class="d-body">${cellsHtml(gridCells(mine.grid), 'tile')}<small>${mine.correct}/${mine.rounds} trouvées${place ? ' · ' : ''}${place}</small></span>
+    <span class="d-foot">${flame}<small>Prochain dans ${untilNext(i.nextAt)}</small></span></button>`;
 }
 function dailyBody() {
   const i = daily.info;

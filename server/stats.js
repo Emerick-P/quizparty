@@ -131,7 +131,18 @@ export function createStats(store = defaultStore) {
     return computeStats(games, answers);
   }
 
-  return { recordGame, insertAnswers, statsOf, ratingOf: ratings.ratingOf, ratingBoard: ratings.board, get enabled() { return enabled(); } };
+  /** Parties d'un joueur pour une source et des sessions données (ex. ses directs du jour). */
+  async function gamesOf(userId, source, sessionIds) {
+    if (!userId || !enabled() || !sessionIds.length) return [];
+    try {
+      return await store.query('game_results', { eq: { user_id: userId, source }, inList: { session_id: sessionIds }, limit: 50 });
+    } catch (err) {
+      console.error('[stats] lecture :', err.message);
+      return [];
+    }
+  }
+
+  return { recordGame, gamesOf, insertAnswers, statsOf, ratingOf: ratings.ratingOf, ratingBoard: ratings.board, get enabled() { return enabled(); } };
 }
 
 /** Un jeu ne peut pas être à la fois « bien reconnu » et « qui résiste » : on le garde du côté où il pèse le plus. */

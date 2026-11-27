@@ -8,31 +8,12 @@ const views = {
   loading: () => `<main class="screen center"><p class="muted">Reconnexion…</p></main>`,
 
   home: () => {
-    const name = store.get(NAME_KEY) || '';
-    const invited = urlCode();
+    const tab = homeTab();
     return `
-    <main class="screen home2">
-      <section class="h-play">
-        <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
-        <p>${invited ? 'Tes potes t’attendent : choisis ton pseudo et rejoins-les.' : 'Un salon, un code, et c’est parti. Sur la télé ou juste sur vos téléphones.'}</p>
-        <div class="h-btns">${invited
-          ? '<button class="btn primary big" data-action="sheet" data-value="join">Rejoindre le salon</button>'
-          : '<button class="btn primary" data-action="go" data-value="create">Créer un salon</button><button class="btn h-ghost" data-action="sheet" data-value="join">Rejoindre</button>'}</div>
-        ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
-      </section>
-      <div class="h-tiles">
-        ${liveTile()}
-        ${dailyTile()}
-        ${potesTile()}
-      </div>
-      <div class="h-extras">
-        ${TOUCH ? `<button class="chip-btn" data-action="sheet" data-value="tvinfo">${ico('tv')} Jouer sur la télé</button>` : ''}
-        <button class="chip-btn" data-action="ranking">${ico('trophy')} Classement</button>
-        <button class="chip-btn" data-action="propose">${ico('bulb')} Proposer une question</button>
-        ${installCard()}
-      </div>
-      <div class="h-foot">${themeToggle()}</div>
+    <main class="screen home2 tab-${tab}">
+      ${tab === 'comp' ? homeComp() : homePlay()}
       <p class="credits"><a href="/confidentialite">Confidentialité</a> · <a href="/conditions">Conditions</a> · Données et jaquettes de jeux : <a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Les jaquettes et les sons des jeux appartiennent à leurs éditeurs respectifs.</p>
+      ${tabBar(tab)}
     </main>`;
   },
 

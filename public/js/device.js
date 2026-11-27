@@ -57,12 +57,11 @@ navigator.getInstalledRelatedApps?.().then((apps) => { if (apps?.length) { pwa.i
  * Ordinateur : un bouton ouvre un QR code (le téléphone arrive sur la fenêtre d'installation).
  * Téléphone : Android installe en un geste ; iPhone, aide en 2 gestes ; déjà installée, on le dit.
  */
-function installCard() {
-  if (STANDALONE || SCREEN) return '';
-  if (!TOUCH) return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('phone')} L’app sur ton téléphone</button>`;
-  if (appInstalled() && !pwa.prompt) return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('check')} App installée</button>`;
-  if (pwa.prompt) return `<button class="chip-btn" data-action="install">${ico('download')} Installer l’app</button>`;
-  return `<button class="chip-btn" data-action="sheet" data-value="getapp">${ico('download')} Installer l’app</button>`;
+const NOINSTALL_KEY = 'quizparty:noinstall'; // « Ne plus afficher » le bouton du bandeau (il reste dans le menu de l'avatar)
+/** Petit bouton d'installation du bandeau du haut : caché si l'app est installée ou si on l'a masqué. */
+function installTop(compact) {
+  if (STANDALONE || SCREEN || (appInstalled() && !pwa.prompt) || store.get(NOINSTALL_KEY)) return '';
+  return `<span class="ab-install"><button class="ab-inst" data-action="getapp" aria-label="${TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone'}">${ico('download')}${compact ? '' : `<span>${TOUCH ? 'Installer' : 'App mobile'}</span>`}</button><button class="ab-inst-x" data-action="installhide" aria-label="Ne plus afficher">${ico('x')}</button></span>`;
 }
 /** Fenêtre « L'app sur ton téléphone » (ordinateur : QR code ; téléphone : la marche à suivre). */
 function getAppBody() {

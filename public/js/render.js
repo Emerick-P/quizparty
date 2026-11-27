@@ -40,6 +40,7 @@ function morphChildren(from, to) {
 
 function render() {
   const phase = displayPhase();
+  if (state) homeUi.at = 0; // après une partie, l'accueil recharge ma cote
   // Conserve la saisie en cours (l'état est re-diffusé à chaque réponse d'un autre joueur)
   const input = $('#est-input') || $('#guess-input') || $('#cw-word');
   const keep = input ? { value: input.value, focus: document.activeElement === input } : null;
@@ -152,6 +153,12 @@ function updateTimers() {
       el.style.transform = `scaleX(${Math.min(1, left / total)})`;
     } else {
       const sec = Math.ceil(left / 1000);
+      if (el.dataset.mode === 'eta') { // « dans 2 h 15 », puis mm:ss pendant la dernière heure
+        const min = Math.ceil(sec / 60);
+        const s = sec > 3600 ? `dans ${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')}` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+        if (el.textContent !== s) el.textContent = s;
+        continue;
+      }
       // « clock » : minutes et secondes, pour les chronos longs (mots croisés)
       const s = el.dataset.mode === 'clock' ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : String(sec);
       if (el.textContent !== s) el.textContent = s;

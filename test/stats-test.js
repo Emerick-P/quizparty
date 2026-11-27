@@ -185,11 +185,9 @@ try {
   assert.ok(aa.every((a) => a.correct ? a.points > 0 && a.time_ms >= 0 : a.points === 0));
   assert.deepEqual(db.answers.filter((a) => a.user_id === chloe).map((a) => a.round_index), [2, 3, 4]);
   assert.ok(aa.every((a) => /^vraifaux:[0-9a-f]{12}$/.test(a.question_key)), 'clé stable de la question (cote)');
-  // Cote : Alice (connectée) voit sa progression de placement en fin de partie, Bob (invité) rien
-  const ra = (await A.waitFor((s) => s.phase === 'end' && s.myRating)).myRating;
-  assert.equal(ra.placed, false);
-  assert.equal(ra.progress, 5);
-  assert.equal(B.state.myRating, null, 'invité : pas de cote');
+  // Cote : un salon n'y compte pas (ni pour Alice, connectée, ni pour Bob, invité)
+  assert.ok(!A.state.myRating, 'salon : hors cote');
+  assert.ok(!B.state.myRating, 'invité : pas de cote');
   console.log('✓ partie finie enregistrée (comptes seulement, arrivée en route, partie arrêtée ignorée)');
 
   // Lecture

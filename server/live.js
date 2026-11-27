@@ -64,18 +64,51 @@ export function parisTime(day, h, m, sec = 0) {
   }
   return t;
 }
+const hmOf = (t) => { const p = parisParts(t); return `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`; };
 const dayOf = (t) => { const p = parisParts(t); return `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`; };
 const addDay = (day, n) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 86400_000).toISOString().slice(0, 10);
+const WEEKDAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+/** « aujourd'hui », « demain » ou le jour de la semaine (calculé ici, à l'heure de Paris du serveur). */
+function whenOf(day, t) {
+  const today = dayOf(t);
+  if (day === today) return 'aujourd’hui';
+  if (day === addDay(today, 1)) return 'demain';
+  return WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()];
+}
+
+/**
+ * Pour tester en local : LIVE_TEST_IN_MINUTES=3 ajoute un direct « Apéro » dans 3 minutes (à la minute pleine,
+ * compté depuis le démarrage du serveur). Avec 5 ou moins, la salle d'attente est ouverte tout de suite.
+ */
+const TEST_SLOT = (() => {
+  const n = Number(process.env.LIVE_TEST_IN_MINUTES);
+  if (!(n > 0)) return null;
+  const t = Math.ceil((Date.now() + n * 60_000) / 60_000) * 60_000;
+  return { day: dayOf(t), time: hmOf(t) };
+})();
+
+/**
+ * Directs exceptionnels (à thème, événements) : LIVE_EVENTS='[{"day":"2026-12-05","time":"20:00","format":"soir","name":"Spécial Zelda","tagline":"…","theme":"zelda"}]'.
+ * Ils s'ajoutent aux créneaux habituels de leur jour (event: true, theme dans le créneau public).
+ * Pour l'instant seul le cadre existe : les questions suivent le format, le tirage par thème reste à écrire (buildLive).
+ */
+function eventTable() {
+  try { const t = process.env.LIVE_EVENTS ? JSON.parse(process.env.LIVE_EVENTS) : []; return Array.isArray(t) ? t : []; } catch { return []; }
+}
 
 /** Créneaux d'une journée (heure de Paris), triés. */
 export function slotsOf(day) {
   const wd = new Date(`${day}T12:00:00Z`).getUTCDay();
   const table = slotTable();
-  const list = wd === 0 ? table.sun : wd === 6 ? table.sat : table.week;
-  return list.filter(([, f]) => LIVE_FORMATS[f]).map(([hm, format]) => {
+  const list = [...(wd === 0 ? table.sun : wd === 6 ? table.sat : table.week)].map(([hm, format]) => ({ hm, format }));
+  if (TEST_SLOT?.day === day) list.push({ hm: TEST_SLOT.time, format: 'soir' });
+  for (const e of eventTable()) {
+    if (e?.day === day && typeof e.time === 'string') list.push({ hm: e.time, format: e.format, extra: { name: e.name, tagline: e.tagline, theme: e.theme ?? null, event: true } });
+  }
+  return list.filter(({ format }) => LIVE_FORMATS[format]).map(({ hm, format, extra }) => {
     const [h, m, sec = 0] = hm.split(':').map(Number); // « 18:30 » (les tests donnent aussi les secondes)
     const startsAt = parisTime(day, h, m, sec);
-    return { id: `${day}T${hm}`, day, time: hm, format, startsAt, opensAt: startsAt - LIVE_OPEN_MS };
+    return { id: `${day}T${hm}${extra ? '-evt' : ''}`, day, time: hm, format, startsAt, opensAt: startsAt - LIVE_OPEN_MS, ...(extra ? { event: true, name: extra.name, tagline: extra.tagline, theme: extra.theme } : {}) };
   }).sort((a, b) => a.startsAt - b.startsAt);
 }
 /** Prochain créneau pas encore parti (celui dont la salle d'attente est peut-être ouverte). */
@@ -90,7 +123,10 @@ export function nextSlot(t = Date.now()) {
 export function publicSlot(s, t = Date.now()) {
   if (!s) return null;
   const f = formatOf(s.format);
-  return { id: s.id, time: s.time, day: s.day, format: s.format, name: f.name, tagline: f.tagline, rounds: f.rounds, duration: f.duration, startsAt: s.startsAt, opensAt: s.opensAt, open: t >= s.opensAt && t < s.startsAt };
+  // Fin estimée du direct (questions + corrections) : sert seulement à distinguer « en cours » et « terminé »
+  const endsAt = s.startsAt + f.rounds * (f.duration * 1000 + LIVE_REVEAL_MS) + 10_000;
+  const status = t < s.opensAt ? 'upcoming' : t < s.startsAt ? 'open' : t < endsAt ? 'running' : 'done';
+  return { id: s.id, time: s.time, day: s.day, format: s.format, event: !!s.event, theme: s.theme ?? null, name: s.name || f.name, tagline: s.tagline || f.tagline, rounds: f.rounds, duration: f.duration, startsAt: s.startsAt, opensAt: s.opensAt, endsAt, status, when: whenOf(s.day, t), open: status === 'open' };
 }
 
 // ---- questions d'un créneau
@@ -337,6 +373,8 @@ export class Live {
     this.used = new Set();
     this.recent = []; // clés posées dans les derniers directs (dans l'ordre)
     this.timer = null;
+    const n = nextSlot();
+    if (n) console.log(`[direct] prochain : ${n.id} heure de Paris (${formatOf(n.format).name}), dans ${Math.round((n.startsAt - Date.now()) / 60_000)} min`);
     this.plan();
     // Render (offre gratuite) s'endort après 15 min sans visite : on se garde éveillé autour d'un direct
     this.awake = setInterval(() => this.keepAwake(), 4 * 60_000);
@@ -380,7 +418,18 @@ export class Live {
     const day = dayOf(t);
     const today = slotsOf(day).map((s) => publicSlot(s, t));
     const upcoming = [...today.filter((s) => s.startsAt > t), ...slotsOf(addDay(day, 1)).map((s) => publicSlot(s, t))].slice(0, 4);
-    return { next: publicSlot(next, t), upcoming };
+    return { next: publicSlot(next, t), upcoming, today };
+  }
+
+  /** Mes directs d'aujourd'hui (compte connecté) : { id du créneau : { score, correct, rounds } }. Rien pour un invité. */
+  async mine(userId, t = Date.now()) {
+    if (!userId || !stats.enabled) return {};
+    const slots = slotsOf(dayOf(t));
+    if (!slots.length) return {};
+    const rows = await stats.gamesOf(userId, 'live', slots.map((s) => `live-${s.id}`));
+    const out = {};
+    for (const r of rows) out[String(r.session_id).replace(/^live-/, '')] = { score: r.score ?? 0, correct: r.correct ?? 0, rounds: r.rounds ?? 0 };
+    return out;
   }
 
   /** Entrer dans la salle d'attente du créneau ouvert. */

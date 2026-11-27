@@ -41,6 +41,7 @@ async function accountRefresh(s) {
 async function accountSync() {
   if (account.failed) { toast(`Connexion annulée${account.failed === 'access_denied' ? '' : ` : ${account.failed}`}`); account.failed = null; }
   let s = store.get(AUTH_KEY);
+  account.ready = false;
   clearTimeout(account.timer);
   if (!s?.access_token) { account.user = null; return; }
   if (s.expires_at * 1000 - Date.now() < 5 * 60_000 && s.refresh_token) {
@@ -51,6 +52,8 @@ async function accountSync() {
   const r = await send('auth:set', { token: s.access_token });
   if (r.user) {
     account.user = r.user;
+    account.ready = true; // le serveur connaît le compte : les requêtes de compte (cote, stats) peuvent partir
+    if (!state) { homeUi.at = 0; render(); }
     if (r.user.look != null) store.set(LOOK_KEY, r.user.look); // l'image du compte suit le joueur partout
     store.set(AUTH_KEY, { ...s, user: r.user });
     // Pseudo : celui du compte s'il en a un ; sinon celui de l'appareil, enregistré sur le compte

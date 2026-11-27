@@ -95,6 +95,8 @@ const actions = {
     enterRoom(res);
   },
   leave() { askLeave(); }, // popup de confirmation d'abord (nav.js)
+  getapp(btn) { if (pwa.prompt) return actions.install(btn); openSheet('getapp'); },
+  installhide() { store.set(NOINSTALL_KEY, 1); toast('Bouton masqué : tu retrouves « Installer l’app » dans le menu de ton avatar'); render(); },
   async install() {
     if (!pwa.prompt) return;
     pwa.prompt.prompt();

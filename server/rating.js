@@ -7,8 +7,10 @@ import { fileURLToPath } from 'node:url';
  * Cote des joueurs (type Glicko-2), calculée surtout contre la cote des QUESTIONS.
  *
  * - Chaque question a sa propre cote (sa difficulté). Répondre juste à une question bien cotée rapporte
- *   beaucoup, rater une question facile coûte. Ça marche donc même en jouant seul (Défi du jour, défis).
- * - Petit bonus contre les autres joueurs connectés d'une partie (classement final), poids faible.
+ *   beaucoup, rater une question facile coûte. Ça marche donc même en jouant seul (Défi du jour).
+ * - Seuls comptent le quiz en direct et le Défi du jour (RATING.weights) : les salons et les défis entre potes
+ *   sont hors cote (on y choisit son mode de jeu), mais restent dans les stats.
+ * - Petit bonus contre les voisins du classement d'un direct, poids faible.
  * - Le hasard est pris en compte : en QCM à 4 choix, on a 25 % de chances de tomber juste sans savoir.
  * - Seule la première fois qu'un joueur voit une question compte (sinon on gagne en mémorisant).
  * - La vitesse ne compte pas : seulement savoir ou non. Estimation : résultat partiel selon l'écart.
@@ -33,7 +35,7 @@ export const RATING = {
   maxRd: 350,
   placement: 30, // réponses comptées avant d'afficher la cote
   question: { rd: 160, minRd: 35, vol: 0.03, step: 150 }, // a priori : note 1 à 5 → 1200 à 1800
-  weights: { party: 1, live: 1, daily: 0.5, challenge: 0.5 }, // poids des réponses selon la source
+  weights: { live: 1, daily: 0.5 }, // seules sources qui comptent pour la cote (poids des réponses) : ni les salons ni les défis entre potes
   versus: 0.12, // poids d'un duel contre un autre joueur de la partie
   versusMax: 0.6, // poids total des duels dans une partie
   minAnsweredShare: 0.5, // un joueur qui a répondu à moins de la moitié des manches (absent) : partie ignorée
@@ -239,7 +241,7 @@ export function createRatings(store) {
    * Renvoie { before, after, counted, public } ou null si rien n'a compté.
    */
   function recordGame({ userId, source = 'party', sessionId = null, answers = [], versus = [], now = Date.now() }) {
-    if (!userId || !enabled()) return Promise.resolve(null);
+    if (!userId || !enabled() || !(source in RATING.weights)) return Promise.resolve(null);
     return serial(async () => {
       const rated = answers.filter((a) => a.questionKey);
       if (!rated.length) return null;
@@ -255,7 +257,7 @@ export function createRatings(store) {
       const qRows = new Map(fresh.length ? (await store.query('question_ratings', { inList: { id: fresh.map((a) => a.questionKey) }, limit: 1000 })).map((q) => [q.id, q]) : []);
       const qOf = (k) => qRows.get(k) ?? questionStart(k);
 
-      const w = RATING.weights[source] ?? 0.5;
+      const w = RATING.weights[source];
       const obs = fresh.map((a) => {
         const q = qOf(a.questionKey);
         return { rating: q.rating, rd: q.rd, s: a.outcome ?? (a.correct ? 1 : 0), c: a.guess ?? 0, w };

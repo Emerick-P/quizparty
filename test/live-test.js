@@ -26,6 +26,12 @@ assert.equal(new Date(parisTime('2026-03-29', 12, 45)).toISOString(), '2026-03-2
 assert.deepEqual(slotsOf('2026-11-27').map((s) => s.time), ['12:45', '18:30', '22:00'], 'vendredi');
 assert.deepEqual(slotsOf('2026-11-28').map((s) => s.time), ['11:00', '18:30', '22:00'], 'samedi');
 assert.deepEqual(slotsOf('2026-11-29').map((s) => [s.time, s.format]).at(-1), ['21:00', 'finale'], 'dimanche : finale');
+process.env.LIVE_EVENTS = JSON.stringify([{ day: '2026-11-27', time: '20:00', format: 'soir', name: 'Spécial Zelda', tagline: 'Un direct à thème', theme: 'zelda' }]);
+const evs = slotsOf('2026-11-27');
+assert.deepEqual(evs.map((s) => s.time), ['12:45', '18:30', '20:00', '22:00'], 'direct exceptionnel inséré dans la journée');
+assert.ok(evs.find((s) => s.event)?.id.endsWith('-evt'), 'identifiant distinct');
+delete process.env.LIVE_EVENTS;
+assert.equal(slotsOf('2026-11-27').length, 3, 'sans LIVE_EVENTS : créneaux habituels');
 console.log('✓ heures de Paris et créneaux');
 
 // ---- Un créneau dans quelques secondes (heure de Paris, avec les secondes)
@@ -79,14 +85,19 @@ try {
   assert.ok(info.ok && info.next, 'prochain direct annoncé');
   assert.equal(info.next.startsAt, at, 'heure du créneau');
   assert.equal(info.next.open, false);
+  assert.equal(info.next.when, new Date(at).toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' }) === new Date().toLocaleDateString('fr-CA', { timeZone: 'Europe/Paris' }) ? 'aujourd’hui' : 'demain', 'jour annoncé par le serveur');
   assert.equal(info.next.rounds, 6);
   assert.ok(!('players' in info.next) && !JSON.stringify(info).includes('players'), 'jamais de nombre de joueurs');
+  assert.equal(info.next.status, 'upcoming', 'statut du prochain direct');
+  assert.ok(Array.isArray(info.today) && info.today.every((x) => ['upcoming', 'open', 'running', 'done'].includes(x.status)), 'créneaux du jour avec leur statut');
+  assert.deepEqual((await A.emit('live:mine')).results, {}, 'invité : pas de résultats gardés côté serveur');
   const early = await A.emit('live:join', { name: 'Alice' });
   assert.match(early.error || '', /pas encore ouverte/);
 
   await sleep(Math.max(0, at - OPEN_MS - Date.now() + 300));
   info = await A.emit('live:info');
   assert.equal(info.next.open, true, 'salle d’attente ouverte');
+  assert.equal(info.next.status, 'open');
   const ja = await A.emit('live:join', { name: 'Alice' });
   const jb = await B.emit('live:join', { name: 'Bruno' });
   const jc = await C.emit('live:join', { name: 'Carla' });

@@ -22,12 +22,16 @@ function appBar(phase) {
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
     <button class="ab-logo" data-action="${solo ? (state.daily.live ? 'livehome' : state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    ${phase === 'home' && !state && !tv.sheet ? barTabs() : ''}
     ${away ? `<button class="ab-btn ab-back" data-action="toroom">${ico('back')} Retour au salon</button>`
     : inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
     <span class="ab-end">
       ${inRoom && !away ? '<button class="ab-btn" data-action="leave">Quitter le salon</button>' : ''}
       ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
-      ${solo ? '' : loginTop(inRoom ? 'account' : 'name')}${chip}
+      ${phase === 'home' && !state && homeTab() !== 'play' ? `<button class="ab-join" data-action="sheet" data-value="join" aria-label="Rejoindre un salon">${ico('users')}<span>Rejoindre</span></button>` : ''}
+      ${phase === 'home' && !state ? `<button class="ab-prop" data-action="propose" aria-label="Proposer une question" title="Proposer une question">${ico('bulb')}</button>` : ''}
+      ${solo ? '' : installTop(compact)}
+      ${chip}${solo ? '' : loginTop(inRoom ? 'account' : 'name')}
     </span>
   </div></header>`;
 }
@@ -53,6 +57,8 @@ function menuBody() {
     ${item(ico('user'), 'Profil', `data-action="sheet" data-value="${profile}" role="menuitem"`)}
     ${u ? item(ico('chart'), 'Mes stats', 'data-action="mystats" role="menuitem"') : item(ico('chart'), 'Mes stats', `data-action="sheet" data-value="${profile}" role="menuitem"`, 'Connecte-toi')}
     ${item(ico('trophy'), 'Classement', 'data-action="ranking" role="menuitem"')}
+    ${item(ico('bulb'), 'Proposer une question', 'data-action="propose" role="menuitem"')}
+    ${STANDALONE ? '' : item(ico(appInstalled() ? 'check' : 'download'), appInstalled() ? 'App installée' : (TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone'), 'data-action="getapp" role="menuitem"')}
     ${item(ico('users'), 'Amis', 'disabled role="menuitem"', 'Bientôt')}
     ${item(ico('palette'), 'Personnalisation', 'disabled role="menuitem"', 'Bientôt')}
   </nav>

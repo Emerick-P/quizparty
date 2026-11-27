@@ -3,6 +3,8 @@ node_modules/
 .cache/
 # Fichiers bruts du client (non publiés) et sauvegardes locales
 basesound/
+basehud/
+baseloading/
 backup/
 # Retours de l'hôte enregistrés pendant les parties (bouton ⚑ Signaler)
 data/feedback.jsonl

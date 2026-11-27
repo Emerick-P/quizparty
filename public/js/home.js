@@ -19,6 +19,102 @@ function modeGroups() {
     .filter((g) => g.modes.length);
 }
 
+// =====================================================================  accueil : deux onglets
+// Jouer = les salons entre potes. Compétition = tout ce qui compte pour la cote (défaut pour un compte connecté).
+// Le profil, les stats et le thème restent dans le menu de l'avatar. Un invité (ou un lien ?code=…) arrive sur Jouer.
+const HOME_TABS = [['comp', 'Compétition', 'trophy'], ['play', 'Jouer', 'gamepad']];
+const homeUi = { tab: null, rating: null, at: 0 };
+const homeTab = () => (urlCode() ? 'play' : homeUi.tab || (account.user ? 'comp' : 'play'));
+actions.tab = (btn) => { homeUi.tab = btn.dataset.value; ui.sheet = null; ui.base = null; render(); };
+
+/** Onglets de l'accueil : barre du bas sur téléphone en portrait, dans le bandeau du haut sur ordinateur et en paysage. */
+function tabButtons(cur) {
+  return HOME_TABS.map(([id, label, icon]) =>
+    `<button class="tab ${id === cur ? 'on' : ''}" role="tab" aria-selected="${id === cur}" data-action="tab" data-value="${id}"><span class="tab-ico" aria-hidden="true">${ico(icon)}</span><span>${label}</span></button>`).join('');
+}
+const tabBar = (cur) => `<nav class="tabbar" role="tablist" aria-label="Accueil">${tabButtons(cur)}</nav>`;
+const barTabs = () => `<nav class="ab-tabs" role="tablist" aria-label="Accueil">${tabButtons(ui.sheet ? null : homeTab())}</nav>`;
+
+/**
+ * Ma cote et ma place. Affichées tout de suite depuis le dernier relevé (gardé sur l'appareil), puis rafraîchies
+ * (au plus une fois par minute). La requête ne part qu'une fois le compte confirmé par le serveur (account.ready) :
+ * partie plus tôt, elle était refusée (« Connecte-toi ») et la carte restait vide.
+ */
+const COTE_KEY = 'quizparty:cote';
+const coteCache = () => { const c = store.get(COTE_KEY); return c && c.uid === (account.user?.id ?? account.user?.name) ? c : null; };
+const rankIndex = () => { const d = rankUi.data; return d?.list && d.me ? d.list.findIndex((x) => x.userId === d.me) : null; };
+function saveCote() {
+  if (!account.user || !homeUi.rating) return;
+  const old = coteCache();
+  store.set(COTE_KEY, { uid: account.user.id ?? account.user.name, rating: homeUi.rating, idx: rankUi.data ? rankIndex() : old?.idx ?? null, season: rankUi.data?.season ?? old?.season ?? null });
+}
+function loadHomeRating() {
+  if (!account.user || !account.ready || SCREEN || Date.now() - homeUi.at < 60000) return;
+  homeUi.at = Date.now();
+  send('stats:me').then((r) => {
+    if (r.error) { homeUi.at = Date.now() - 50000; setTimeout(() => { if (!state) render(); }, 10000); return; } // on réessaie dans 10 s
+    homeUi.rating = r.rating ?? null;
+    saveCote();
+    if (!state) render();
+  });
+  loadRanking();
+}
+const ordinal = (n) => (n === 1 ? '1er' : `${n}e`);
+/** Aperçu du classement dans la carte (large seulement) : ma place avec 2 joueurs au-dessus et 1 en dessous (l'objectif est de monter) ; sans place, le top 3. */
+function rankPreview() {
+  const d = rankUi.data;
+  if (!d?.list?.length) return '';
+  if (d.list.length < 3) return `<div class="cote-board cote-alone"><p>${d.list.length === 1 ? 'Personne d’autre n’est classé ce mois-ci pour l’instant.' : `Seulement ${d.list.length} joueurs classés ce mois-ci.`} Invite tes potes à jouer !</p></div>`;
+  const mine = d.me ? d.list.findIndex((x) => x.userId === d.me) : -1;
+  const from = mine < 0 ? 0 : Math.max(0, mine - 2), to = mine < 0 ? 3 : Math.min(d.list.length, mine + 2);
+  const rows = d.list.slice(from, to).map((x, k) => [x, from + k]);
+  return `<ol class="cote-board">${rows.map(([x, i]) => `<li class="${i === mine ? 'me' : ''}"><span class="pos">${i + 1}</span>${rankAvatar(x)}<span class="grow">${esc(x.name)}</span><span class="pts">${fmtRating(x.rating)}</span></li>`).join('')}</ol>`;
+}
+/** Carte « Ma cote » : ma cote, ma place, la saison, et le classement juste dessous (c'est lié). */
+function coteCard() {
+  const rk = `<button class="cote-rk" data-action="ranking">${ico('trophy')} Voir le classement <span aria-hidden="true">›</span></button>`;
+  if (!account.user) {
+    return `<section class="cote cote-guest"><div class="cote-left"><div class="cote-main"><span class="cote-l">Ma cote</span><b class="cote-n">Pas de cote</b>
+      <small>${account.cfg?.enabled ? 'Connecte-toi pour en avoir une et apparaître au classement.' : 'Les invités ne sont pas classés.'}</small></div>
+      ${account.cfg?.enabled ? '<button class="btn primary" data-action="sheet" data-value="name">Se connecter</button>' : ''}${rk}</div>${rankPreview()}</section>`;
+  }
+  loadHomeRating();
+  const c = coteCache();
+  const r = homeUi.rating ?? c?.rating;
+  const idx = rankUi.data ? rankIndex() : c?.idx ?? -1;
+  const known = !!rankUi.data || c?.idx != null;
+  const seasonId = rankUi.data?.season ?? c?.season;
+  const season = seasonId ? `Saison de ${seasonLabel(seasonId)}` : '';
+  if (r && !r.placed) {
+    return `<section class="cote"><div class="cote-left"><button class="cote-main" data-action="mystats"><span class="cote-l">Ma cote</span><b class="cote-n">Placement</b>
+      <span class="cote-bar"><i style="width:${Math.round(100 * r.progress / r.need)}%"></i></span><small>${r.progress}/${r.need} réponses avant que ta cote s’affiche</small></button>${rk}</div>${rankPreview()}</section>`;
+  }
+  return `<section class="cote"><div class="cote-left"><button class="cote-main" data-action="mystats"><span class="cote-l">Ma cote${season ? ` · ${esc(season)}` : ''}</span>
+    <b class="cote-n">${r ? fmtRating(r.rating) : '…'}</b>
+    <small>${idx >= 0 ? `${ordinal(idx + 1)} au classement` : r && known ? 'Pas encore classé ce mois-ci' : ' '}</small></button>${rk}</div>${rankPreview()}</section>`;
+}
+function homeComp() {
+  return `<div class="comp">
+    ${coteCard()}
+    ${dailyCard()}
+    ${liveStrip()}
+  </div>`;
+}
+function homePlay() {
+  const invited = urlCode();
+  return `<section class="h-play">
+      <h1>${invited ? `Salon ${esc(invited)}` : 'Jouer entre potes'}</h1>
+      <p>${invited ? 'Tes potes t’attendent : choisis ton pseudo et rejoins-les.' : 'Un salon, un code, et c’est parti. Sur la télé ou juste sur vos téléphones.'}</p>
+      <div class="h-btns">${invited
+        ? '<button class="btn primary big cut" data-action="sheet" data-value="join">Rejoindre le salon</button>'
+        : '<button class="btn primary cut" data-action="go" data-value="create">Créer un salon</button><button class="btn h-ghost" data-action="sheet" data-value="join">Rejoindre</button>'}</div>
+      ${invited ? `<button class="link" onclick="history.replaceState(null,'','/');location.reload()">Créer mon propre salon plutôt</button>` : ''}
+    </section>
+    <div class="play-tiles">${potesTile()}</div>
+    <div class="h-extras">
+      ${TOUCH ? `<button class="chip-btn" data-action="sheet" data-value="tvinfo">${ico('tv')} Jouer sur la télé</button>` : ''}
+    </div>`;
+}
 /** Résumé des réglages en étiquettes : « 4 choix · 10 questions · 15 s ». */
 function settingsTags() {
   const { settings: st } = state;
@@ -109,7 +205,7 @@ const SHEETS = {
   daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   defis: { phase: 'home', page: true, render: () => ({ title: 'Défis entre potes', body: potesBody() }) },
   defi: { phase: 'home', page: true, render: () => ({ title: 'Défi entre potes', body: poteBody() }) },
-  getapp: { phase: 'home', render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
+  getapp: { phase: ['home', 'lobby', 'end'], render: () => ({ title: TOUCH ? 'Installer l’app' : 'L’app sur ton téléphone', body: getAppBody() }) },
   tvinfo: { phase: 'home', render: () => ({ title: 'Jouer sur la télé', body: `
     <ol class="sh-steps">
       <li><b>Crée un salon</b> sur ton téléphone.</li>
@@ -148,7 +244,7 @@ const SHEETS = {
 /** Bloc « Compte » du profil : connexion facultative (Discord, Google), ou compte connecté. */
 const providerIcon = (p) => `<span class="acc-ico acc-${p}" aria-hidden="true">${p === 'discord' ? ico('gamepad') : 'G'}</span>`;
 /** Bouton « Se connecter » en haut à droite (accueil, salon), seulement pour un invité. */
-const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}">${ico('user')} Se connecter</button>` : '');
+const loginTop = (sheet) => (!account.user && account.cfg?.enabled ? `<button class="login-top" data-action="sheet" data-value="${sheet}" aria-label="Se connecter" title="Se connecter">${ico('user')}</button>` : '');
 
 /** Fenêtre « Image de profil » : galerie maison (emoji + couleur), photos des comptes reliés, initiale.
  *  Chaque choix est enregistré tout de suite ; « Valider » referme la fenêtre. */

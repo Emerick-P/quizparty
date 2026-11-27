@@ -186,6 +186,7 @@ export class RoomManager {
     });
     // Quiz en direct : prochains créneaux, entrée dans la salle d'attente (voir live.js)
     on('live:info', () => ({ ok: true, ...this.live.info() }));
+    on('live:mine', async () => ({ ok: true, results: await this.live.mine(socket.data.user?.id ?? null) }));
     on('live:join', ({ name }) => {
       const n = cleanName(name);
       if (!n) throw new Error('Choisis un pseudo');

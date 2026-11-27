@@ -49,16 +49,16 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/live.js (406 l.)
+### server/live.js (455 l.)
 Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
 
-LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, dayOf, addDay, slotsOf, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
+LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
 
 LIVE_FORMATS : midi, brunch, soir, nuit, finale
 
 DEFAULT_SLOTS : week, sat, sun
 
-### server/rating.js (353 l.)
+### server/rating.js (355 l.)
 Cote des joueurs (type Glicko-2), calculée surtout contre la cote des QUESTIONS.
 
 RATING, RATED_MODES, SCALE, DAY, ROOT, norm, questionKey, roundKey, guessOf, outcomeOf, priors, priorOf, questionStart, monthFmt, seasonOf, tierOf, publicRating, gOf, logistic, inflate, terms, glicko, versusScore, createRatings
@@ -70,12 +70,12 @@ RATING : start, rd, vol, tau, minRd, maxRd, placement, question, weights, versus
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (317 l.)
+### server/rooms.js (318 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
 
-### server/stats.js (189 l.)
+### server/stats.js (200 l.)
 Stats des joueurs connectés (comptes Supabase).
 
 contentIndex, contentIdOf, INPUT_OF_KIND, answerRow, createStats, normalize, computeStats, stats
@@ -167,12 +167,12 @@ Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (251 l.)
+### public/js/actions.js (253 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
 getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
-actions : rvpage, theme, create, join, leave, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
+actions : rvpage, theme, create, join, leave, getapp, installhide, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
 ### public/js/challenges.js (197 l.)
 Défis entre potes.
@@ -197,33 +197,33 @@ Mots croisés : grille, saisie, envoi des mots.
 
 CW_IDLE_MS, cw, cwCells, cwLetters, cwPlaying, cwLocked, cwFound, LETTERS, cwLabels, cwWord, cwSync, cwSetTyped, cwNext, cwChoose, cwFocus, cwWrong, cwSubmit, cwOnInput, cwGrid, cwClues, crosswordQuestion
 
-### public/js/daily.js (167 l.)
+### public/js/daily.js (188 l.)
 Défi du jour.
 
-DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, dailyBoard, dailyTile, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
+DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, MOCK_DAILY, mockDaily, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, dailyBoard, dailyCard, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
 
 actions : dailystart, dailyshare, dailyhome
 
-### public/js/device.js (111 l.)
+### public/js/device.js (110 l.)
 Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
-SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, installCard, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
+SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (229 l.)
+### public/js/home.js (325 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
-SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
+SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
 
-actions : pickHue, pickLook
+actions : tab, pickHue, pickLook
 
 SHEETS : name, create, join, live, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, ranking, more
 
-### public/js/live.js (108 l.)
+### public/js/live.js (145 l.)
 Quiz en direct.
 
-live, liveTime, liveDay, loadLive, liveTile, liveBody, liveWait, liveEnd
+live, liveTime, liveDay, LIVE_KEY, liveResult, loadLive, liveStrip, liveBody, liveResultBody, liveWait, liveEnd
 
-actions : livejoin, livehome
+actions : liveslot, livejoin, livehome
 
 ### public/js/main.js (26 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
@@ -235,7 +235,7 @@ Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
 
 images, loadImage, PIX_PREFETCH_MS, drawCover, drawClearCover, coverFigure, SILENT_MP3, sfx, SFX_LATE_MS, VOLUME_KEY, sfxVolume, volumeGain, volumeSettable, setVolume, volumeIcon, audioEl, audioBlocked, unlockAudio, loadSound, stopSound, playSound, syncSound, replaySound, soundFigure, updateSoundUi
 
-### public/js/nav.js (215 l.)
+### public/js/nav.js (221 l.)
 Bandeau du haut, menu du profil, ouverture/fermeture des panneaux.
 
 BAR_PHASES, hasBar, appBar, menuBody, sheetView, sheetHtml, OVER, openSheet, dropSheet, closeSheet, onPage, leaveAsk, navSkip, navRoom, navLayers, navSync, navPop, askLeave, leaveNow, leaveOverlay
@@ -254,19 +254,19 @@ PROPOSE_PHASES, proposeButton, proposePanel, proposeOpen, openPropose, closeProp
 
 actions : propose
 
-### public/js/ranking.js (44 l.)
+### public/js/ranking.js (56 l.)
 Classement général par cote (saison du mois en cours).
 
-rankUi, MONTHS, seasonLabel, rankAvatar, loadRanking, rankingBody, RATING_PLACEMENT
+rankUi, MONTHS, seasonLabel, rankAvatar, MOCK_RANK, mockRanking, loadRanking, rankingBody, RATING_PLACEMENT
 
 actions : ranking
 
-### public/js/render.js (167 l.)
+### public/js/render.js (174 l.)
 Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
 
-### public/js/session.js (175 l.)
+### public/js/session.js (178 l.)
 Compte (Discord/Google), écran télé, événements du serveur, reprise de session, phase affichée.
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase
@@ -283,7 +283,7 @@ Mode télé : vues de l’écran télé et du téléphone en manette.
 
 TOUCH, tvCard, tvSheet, tvPairView, tvLobbyView, tvQuestion, tvCrossword, padQuestion
 
-### public/js/views.js (365 l.)
+### public/js/views.js (346 l.)
 Écrans de jeu par phase (views[phase]) : salon, décompte, question, correction, podium…
 
 views

@@ -15,15 +15,27 @@ function rankAvatar(x) {
   return avatar(x.name || '?', look);
 }
 
+/** Simulation d'un classement de 8 joueurs (toi 4e) : seulement sur localhost avec ?mock=rank (ou ?mock=all), rien en base. */
+const MOCK_RANK = !SCREEN && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && ['rank', 'all'].includes(new URLSearchParams(location.search).get('mock'));
+function mockRanking(r) {
+  if (!MOCK_RANK) return r;
+  const me = account.user?.id ?? 'mock-me';
+  const mine = homeUi.rating?.rating ?? coteCache()?.rating?.rating ?? 1546;
+  const others = ['Maxime', 'Julie', 'Théo', 'Camille', 'Léa', 'Hugo', 'Inès'];
+  const gap = [90, 60, 25, -30, -70, -110, -160]; // les 3 premiers au-dessus de toi, les 4 autres en dessous
+  const list = [...others.slice(0, 3).map((name, i) => ({ userId: `mock-${i}`, name, rating: mine + gap[i], games: 12 - i })), { userId: me, name: account.user?.name || 'Toi', rating: mine, games: 9 },
+    ...others.slice(3).map((name, i) => ({ userId: `mock-${i + 3}`, name, rating: mine + gap[i + 3], games: 8 - i }))];
+  return { ...r, ok: true, error: undefined, season: r.season || new Date().toISOString().slice(0, 7), list, me };
+}
 async function loadRanking() {
   const req = ++rankUi.req;
   rankUi.loading = true;
   rankUi.error = null;
-  const r = await send('rating:board');
+  const r = mockRanking(await send('rating:board'));
   if (req !== rankUi.req) return;
   rankUi.loading = false;
-  if (r.error) rankUi.error = r.error; else rankUi.data = r;
-  if (ui.sheet === 'ranking') render();
+  if (r.error) rankUi.error = r.error; else { rankUi.data = r; saveCote?.(); }
+  if (ui.sheet === 'ranking' || !state) render();
 }
 
 function rankingBody() {

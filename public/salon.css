@@ -805,11 +805,6 @@ html { overflow-x: clip; }
 @media (orientation: landscape) and (max-height: 500px) { .rt-chip { margin: -4px auto 4px; padding: 3px 10px; font-size: .85rem; } }
 
 /* ---- Quiz en direct (live.js) : bandeau de l'accueil, salle d'attente, fin */
-.h-tile.live { grid-column: 1 / -1; min-height: 0; padding: 12px 16px; display: grid; grid-template-columns: auto 1fr; column-gap: 12px; row-gap: 2px; align-items: center; }
-.h-tile.live .t-ico { grid-row: 1 / span 2; margin: 0; color: var(--accent-text); }
-.h-tile.live b { margin: 0; font-size: 1.05rem; }
-.h-tile.live .d-go { grid-column: 2; font-size: .8rem; font-weight: 600; color: var(--accent-text); font-family: var(--mono); }
-.h-tile.live.open { border-color: var(--lime); }
 .l-wait { gap: 14px; text-align: center; }
 .l-wait .l-title { font-family: var(--display); font-size: 1.3rem; font-weight: 600; margin: 0; }
 .l-wait .l-clock { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: clamp(3rem, 18vw, 5.5rem); }
@@ -836,3 +831,166 @@ html { overflow-x: clip; }
 .sh[data-key="sh:ranking"] { overflow: hidden; }
 .sh[data-key="sh:ranking"] .sh-body { flex: 1; min-height: 0; max-width: 640px; width: 100%; margin: 0 auto; gap: 8px; }
 .rk-board { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0; }
+
+/* ---- Accueil en deux onglets (Compétition / Jouer) : home.js, tabButtons() */
+:root { --tab-h: 62px; }
+.home2 { padding-bottom: calc(var(--tab-h) + 16px + env(safe-area-inset-bottom)); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;
+  padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 48px; border: 0; border-radius: 10px; background: none;
+  color: var(--muted); font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.tab .ic { width: 22px; height: 22px; }
+.tab.on { color: var(--accent-text); }
+.tab.on .tab-ico { background: color-mix(in srgb, var(--accent-text) 16%, transparent); }
+.tab-ico { display: grid; place-items: center; width: 44px; height: 26px; border-radius: 99px; }
+.tab:not(.on):active { background: var(--surf); }
+/* Dans le bandeau du haut (ordinateur, téléphone en paysage) : onglets en ligne à côté du logo */
+.ab-tabs { display: none; }
+@media (orientation: landscape) and (max-height: 520px), (min-width: 1000px) {
+  .tabbar { display: none; }
+  .home2 { padding-bottom: 16px; }
+  .ab-tabs { display: flex; gap: 4px; margin-left: 12px; }
+  .ab-tabs .tab { flex-direction: row; min-height: 0; gap: 7px; padding: 7px 14px; font-size: .95rem; border-radius: var(--r-ctl, 8px); }
+  .ab-tabs .tab-ico { width: auto; height: auto; background: none !important; }
+  .ab-tabs .tab .ic { width: 18px; height: 18px; }
+  .ab-tabs .tab.on { background: var(--surf); }
+  .ab-tabs .tab:not(.on):hover { background: var(--surf); color: var(--text); }
+}
+/* Compétition : ma cote + classement, Défi du jour, Quiz en direct */
+.comp { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+.comp > * { min-width: 0; }
+.comp > .l-strip { grid-column: 1 / -1; }
+.cote { display: flex; flex-direction: column; gap: 8px; background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px 16px; }
+.cote-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cote-main { display: flex; flex-direction: column; gap: 3px; text-align: left; font: inherit; color: var(--text); background: none; border: 0; padding: 0; width: 100%; }
+.cote-l { color: var(--muted); font-size: .85rem; font-weight: 500; }
+.cote-n { font-family: var(--mono); font-weight: 700; font-size: 2.4rem; line-height: 1.05; letter-spacing: -.03em; }
+.cote-main small { color: var(--muted); font-size: .85rem; min-height: 1.2em; }
+.cote-bar { display: block; height: 6px; border-radius: 3px; background: var(--btn); overflow: hidden; margin: 4px 0; }
+.cote-bar i { display: block; height: 100%; background: var(--lime); }
+.cote-rk { display: flex; align-items: center; gap: 6px; align-self: flex-start; background: none; border: 0; border-top: 1px solid var(--line); width: 100%; padding: 10px 0 0; color: var(--accent-text); font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; }
+.cote-rk .ic { width: 16px; height: 16px; }
+.cote-guest .cote-n { font-size: 1.5rem; font-family: var(--display); }
+.cote-guest .btn { align-self: flex-start; }
+.cote-board { display: none; list-style: none; margin: 0; padding: 0; flex-direction: column; gap: 2px; }
+.cote-board li { display: flex; align-items: center; gap: 10px; padding: 5px 6px; border-radius: 8px; font-size: .92rem; }
+.cote-board li.me { background: var(--btn); font-weight: 700; }
+.cote-board .pos { width: 1.2rem; color: var(--muted); font-family: var(--mono); font-size: .85rem; }
+.cote-board .avatar { width: 24px; height: 24px; font-size: .8rem; flex: none; }
+.cote-board .grow { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cote-board .pts { font-family: var(--mono); font-weight: 600; }
+/* Défi du jour : à jouer, ou récap du résultat */
+.d-card { display: flex; flex-direction: column; gap: 6px; text-align: left; font: inherit; border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px 16px; width: 100%; min-width: 0;
+  background: var(--surf); color: var(--text); }
+.d-card:active { transform: scale(.99); }
+.d-top { display: flex; align-items: center; gap: 10px; }
+.d-top b { font-family: var(--display); font-weight: 600; font-size: 1.15rem; }
+.d-top .soon { position: static; margin-left: auto; }
+.d-top .t-ico { margin: 0; font-size: 1.3rem; color: inherit; }
+.d-card .d-body { display: flex; flex-direction: column; gap: 6px; }
+.d-card small { color: var(--muted); font-size: .85rem; line-height: 1.35; }
+.d-card .d-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 4px; }
+.d-streak-chip { display: inline-flex; align-items: center; gap: 5px; font-weight: 700; font-size: .88rem; }
+.d-streak-chip .ic { width: 16px; height: 16px; color: #f2a43a; }
+.d-card .d-go { font-weight: 700; font-size: .95rem; }
+.d-card .d-score { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
+.d-card .d-score b { font-weight: 700; } .d-card .d-score { color: var(--text); }
+.d-card .d-body .d-cells.tile { margin: 0; padding: 0; }
+.d-card.todo { background: var(--lime); color: var(--lime-ink); border-color: transparent; }
+.d-card.todo small, .d-card.todo .soon { color: color-mix(in srgb, var(--lime-ink) 72%, var(--lime)); }
+.d-card.todo .d-streak-chip .ic { color: var(--lime-ink); }
+
+/* Quiz en direct : un créneau par tuile, dans l'ordre de la journée */
+.l-h { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-family: var(--display); font-weight: 600; font-size: .95rem; color: var(--muted); }
+.l-h .ic { width: 1.1rem; height: 1.1rem; color: var(--accent-text); }
+.l-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; scroll-padding: 0 16px; margin: 0 -16px; padding: 0 16px 2px; }
+.l-row::-webkit-scrollbar { display: none; }
+.l-tile { flex: 1 0 104px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 1px; text-align: left; font: inherit; color: var(--text);
+  background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 9px 11px; min-width: 0; }
+.l-tile b { font-family: var(--mono); font-weight: 700; font-size: 1.05rem; letter-spacing: -.02em; }
+.l-tile .l-name { font-size: .85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.l-tile small { color: var(--muted); font-size: .78rem; font-family: var(--mono); white-space: nowrap; }
+.l-tile:active { transform: scale(.98); }
+.l-tile.feat { border-color: var(--lime); }
+.l-tile.feat small, .l-tile.open small, .l-tile .d-go { color: var(--accent-text); font-weight: 600; }
+.l-tile.open { background: color-mix(in srgb, var(--lime) 14%, var(--surf)); border-color: var(--lime); }
+.l-tile.running small { color: var(--accent-text); }
+.l-tile.done { background: none; border-style: dashed; }
+.l-tile.done b, .l-tile.done .l-name { color: var(--muted); }
+.l-tile.played small { color: var(--text); font-weight: 600; }
+.l-tile.missed small { color: var(--muted); }
+.l-load { padding: 8px 0; }
+.play-tiles { display: grid; }
+.play-tiles .h-tile { min-height: 0; }
+/* Large (ordinateur, tablette, paysage) : cote | Défi du jour côte à côte, le direct dessous sur toute la largeur */
+@media (min-width: 640px), (orientation: landscape) and (max-height: 520px) {
+  .comp { gap: 14px; }
+  .comp > .cote { flex-direction: row; align-items: stretch; gap: 24px; }
+  .comp > .cote > .cote-left, .comp > .cote > .cote-board { flex: 1 1 0; }
+  .cote-left { justify-content: space-between; }
+  .cote-board { justify-content: center; border-left: 1px solid var(--line); padding-left: 24px; }
+  .d-card { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px 22px; padding: 12px 16px; }
+  .d-card .d-top { flex: none; }
+  .d-card .d-top .soon { margin-left: 6px; }
+  .d-card .d-body { flex-direction: row; align-items: center; gap: 12px; }
+  .d-card .d-foot { margin: 0 0 0 auto; padding: 0; gap: 16px; }
+  .l-row { margin: 0; padding: 0; }
+  .l-tile { padding: 10px 14px; }
+}
+@media (min-width: 640px) and (min-height: 521px) { .cote-board { display: flex; } }
+@media (min-width: 1000px) and (min-height: 521px) {
+  #app:has(.home2) { max-width: 1000px; }
+  .home2.tab-comp, .home2.tab-play { display: flex; flex-direction: column; max-width: 1000px; width: 100%; }
+  .comp { gap: 18px; }
+  .l-tile { padding: 12px 16px; }
+  .l-tile .l-tag { display: block; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .cote { padding: 8px 14px; gap: 4px; } .cote-n { font-size: 2rem; }
+  /* Téléphone en paysage : cote à gauche (sans l'aperçu, faute de hauteur), défi du jour et directs à droite */
+  .comp { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 10px 14px; }
+  .comp > .cote { grid-column: 1; grid-row: 1 / span 2; flex-direction: column; gap: 4px; }
+  .comp > .cote > .cote-left { flex: none; }
+  .comp > .d-card { grid-column: 2; grid-row: 1; }
+  .comp > .l-strip { grid-column: 2; grid-row: 2; }
+  .d-card .d-top .soon { display: none; }
+  .d-card { padding: 10px 14px; gap: 3px; }
+  .l-h { margin-bottom: 4px; }
+  .l-tile { padding: 6px 12px; }
+}
+@media (orientation: portrait) and (max-height: 740px) {
+  .comp { gap: 10px; }
+  .cote { padding: 10px 14px; gap: 4px; } .cote-n { font-size: 2rem; }
+  .cote-rk { padding-top: 6px; }
+  .d-card { padding: 11px 14px; gap: 3px; }
+}
+.l-tag { display: none; color: var(--muted); font-size: .8rem; line-height: 1.3; }
+.l-tile.evt { border-color: color-mix(in srgb, var(--lime) 55%, var(--card-border)); }
+.l-evt { margin-left: 8px; font-family: var(--display); font-style: normal; font-weight: 600; font-size: .68rem; color: var(--accent-text); }
+/* Rejoindre un salon : dans le bandeau sur ordinateur et en paysage (sur téléphone en portrait, c'est dans Jouer) */
+.ab-join { display: none; align-items: center; gap: 6px; background: var(--surf); border: 0; border-radius: 99px; color: var(--text); font: inherit; font-size: .82rem; font-weight: 600; padding: 6px 12px; cursor: pointer; }
+.ab-join .ic { width: 16px; height: 16px; color: var(--accent-text); }
+@media (min-width: 1000px), (orientation: landscape) and (max-height: 520px) { .ab-join { display: inline-flex; } }
+/* Installer l'app : petit bouton discret du bandeau, avec sa croix « Ne plus afficher » */
+.ab-prop { display: grid; place-items: center; width: 34px; height: 34px; background: var(--surf); border: 0; border-radius: 99px; color: var(--text); cursor: pointer; padding: 0; }
+.ab-prop .ic { width: 17px; height: 17px; color: var(--accent-text); }
+.ab-install { display: inline-flex; align-items: center; background: var(--surf); border-radius: 99px; }
+.ab-inst { display: inline-flex; align-items: center; gap: 6px; background: none; border: 0; color: var(--text); font: inherit; font-size: .82rem; font-weight: 600; padding: 6px 4px 6px 10px; cursor: pointer; }
+.ab-inst .ic { width: 16px; height: 16px; color: var(--accent-text); }
+.ab-inst-x { display: grid; place-items: center; width: 26px; height: 28px; background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0 4px 0 0; }
+.ab-inst-x .ic { width: 13px; height: 13px; }
+@media (max-width: 420px) { .ab-inst span { display: none; } .ab-inst { padding-right: 2px; } }
+
+/* Coin coupé (étiquette de cartouche) : réservé à l'action principale du moment, une seule par écran
+   (Défi du jour à jouer ; sinon le direct imminent ; dans Jouer, « Créer un salon »). Les autres cartes sont toutes pareilles. */
+.cut { clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); }
+.l-tile.cut { background: var(--lime); color: var(--lime-ink); border-color: transparent; }
+.l-tile.cut small, .l-tile.cut .l-tag, .l-tile.cut .d-go { color: color-mix(in srgb, var(--lime-ink) 75%, var(--lime)); }
+/* Cartes : même rayon, même bordure, même marge, mêmes titres */
+.cote, .d-card, .h-tile { border-radius: var(--radius); border: 1px solid var(--card-border); }
+.d-card.todo { border-color: transparent; }
+.d-card .d-top b, .h-tile b { font-family: var(--display); font-weight: 600; font-size: 1.05rem; line-height: 1.15; }
+
+.cote-alone { align-items: center; justify-content: center; text-align: center; }
+.cote-alone p { text-wrap: balance; margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.4; max-width: 30ch; }
+.ab-end .login-top { padding: 7px; }
