@@ -181,6 +181,8 @@ try {
   // ---- Accueil : pas encore joué
   let info = await A.emit('daily:info');
   assert.equal(info.day, day);
+  assert.equal(info.number, 1, 'table vide : défi n°1');
+  assert.equal(T('daily_challenges').length, 0, 'l’accueil ne tire pas le défi');
   assert.equal(info.rounds, 10);
   assert.equal(info.played, null);
   assert.equal(info.leaderboard, null, 'classement caché avant d’avoir joué');
@@ -192,6 +194,7 @@ try {
   const sa = await A.emit('daily:start', { name: 'Alice' });
   assert.ok(sa.ok, sa.error);
   assert.equal(rowsOf(day).length, 1, 'la tentative est enregistrée dès le départ');
+  assert.deepEqual(T('daily_challenges').map((r) => [r.id, r.number]), [[day, 1]], 'le défi est enregistré dès son tirage');
   const sg = await G.emit('daily:start', { name: 'Invité' });
   assert.ok(sg.ok, sg.error);
   assert.notEqual(sa.code, sg.code, 'chacun sa partie');
@@ -262,6 +265,7 @@ try {
   assert.equal(T('daily_challenges').length, challenges, 'pas de nouveau tirage');
   const C = client('Carla');
   await C.connected;
+  assert.equal((await C.emit('daily:info')).number, 1, 'même numéro après redémarrage');
   assert.ok((await C.emit('auth:set', { token: 'tok-carla-cccccccccccccccccccccccc' })).ok);
   assert.ok((await C.emit('daily:start', { name: 'Carla' })).ok);
   const seenC = await play(C);
@@ -286,6 +290,19 @@ try {
   assert.ok(T('daily_challenges').find((r) => r.id === day).rounds.every((r) => r.kind !== 'screen' && r.mixPart !== 'sounds'), 'défi réparé en base');
   assert.deepEqual(seenR.filter((_, i) => i !== 1 && i !== 4), seenA.filter((_, i) => i !== 1 && i !== 4), 'les autres manches ne changent pas');
   R.socket.close();
+
+  // ---- Nouveau jour : le numéro suit le plus grand en base, quelle que soit la date
+  await stopServer();
+  tables.daily_challenges = [{ id: previousDay(previousDay(day)), number: 7, rounds: [], keys: [] }];
+  await startServer();
+  const N = client('Nouveau');
+  await N.connected;
+  assert.equal((await N.emit('daily:info')).number, 8);
+  assert.ok((await N.emit('daily:start', { name: 'Nouveau' })).ok);
+  assert.equal((await N.waitFor((s) => s.round && s.daily)).daily.number, 8);
+  assert.equal(T('daily_challenges').find((r) => r.id === day).number, 8);
+  assert.equal((await N.emit('daily:info')).number, 8);
+  N.socket.close();
 
   for (const c of [A, B, G, X, C]) c.socket.close();
   console.log('✓ défi du jour : même défi pour tous (et après redémarrage), une tentative, classement, série, partage');

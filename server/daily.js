@@ -10,6 +10,8 @@ import { stats, answerRow } from './stats.js';
  *
  * - Le défi est tiré une fois par jour (Mix de 10 manches) et gardé dans daily_challenges : un redémarrage
  *   du serveur (Render) ou un déploiement dans la journée ne le change pas.
+ * - Son numéro vient de la base : le plus grand déjà enregistré + 1 (1 si la table est vide).
+ *   Un jour sans aucune partie n'a pas de ligne et ne prend donc pas de numéro.
  * - Chacun le joue seul, dans un salon solo (DailyRoom) qui réutilise tout le moteur des parties :
  *   chrono serveur, compensation de latence, correction. Pas de pause ni de « Passer » sur une question.
  * - Compte connecté : une seule tentative (la ligne de daily_results est créée dès le départ ; quitter en
@@ -22,7 +24,6 @@ export const DAILY_DURATION = 15; // secondes par manche (+ temps en plus des ma
 // Modes du Mix utilisés : pas « Ta bande » (profils Steam du salon) ni les mots croisés (partie entière)
 // Sans les modes réservés (sons : voir RESERVED_MODES), ouverts à tous
 export const DAILY_PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji'];
-const EPOCH = process.env.DAILY_EPOCH || '2026-11-25'; // défi n° 1
 const NO_REPEAT_DAYS = 30; // une question des 30 derniers défis n'est pas reposée
 const TZ = 'Europe/Paris';
 
@@ -34,7 +35,6 @@ const shiftDay = (day, delta) => {
   return new Date(Date.UTC(y, m - 1, d + delta)).toISOString().slice(0, 10);
 };
 export const previousDay = (day) => shiftDay(day, -1);
-export const dayNumber = (day) => Math.round((Date.parse(day) - Date.parse(EPOCH)) / 86400_000) + 1;
 /** Heure (ms) du prochain défi : minuit à Paris. */
 export function nextDayAt(t = Date.now()) {
   const today = dayKey(t);
@@ -60,6 +60,11 @@ async function recordStats(payload) {
 }
 
 const hasDb = () => typeof store.query === 'function';
+/** Erreur de base : détail dans les journaux, message simple pour le joueur. */
+const unavailable = (step) => (err) => {
+  console.error(`[défi] ${step} :`, err.message);
+  throw new Error('Défi indisponible pour le moment');
+};
 
 /** Jaquettes : l'identifiant de l'image change quand le cache est refait (redémarrage de Render). */
 function refreshImages(round) {
@@ -103,9 +108,23 @@ export class Daily {
     return this.cache.get(day);
   }
 
+  /** N° affiché pour un jour : celui de son défi s'il est déjà tiré, sinon celui qu'il prendra. */
+  async number(day) {
+    const loading = this.cache.get(day);
+    return loading ? (await loading).number : this.storedNumber(day).catch(unavailable('numéro'));
+  }
+
+  /** D'après la base : le n° du défi de ce jour, sinon le plus grand + 1 (1 si la table est vide). */
+  async storedNumber(day) {
+    const [last] = await store.query('daily_challenges', { order: 'number.desc', limit: 1, select: 'id,number' });
+    if (!last) return 1;
+    return last.id === day ? last.number : last.number + 1;
+  }
+
   async load(day) {
-    const saved = await store.get('daily_challenges', day).catch((err) => { console.error('[défi] lecture :', err.message); return null; });
-    if (saved?.rounds?.length) return { day, number: dayNumber(day), rounds: await this.repair(day, saved) };
+    const saved = await store.get('daily_challenges', day).catch(unavailable('lecture'));
+    if (saved?.rounds?.length) return { day, number: saved.number, rounds: await this.repair(day, saved) };
+    const number = await this.storedNumber(day).catch(unavailable('numéro'));
     // Questions des derniers défis : pas reposées
     const used = new Set();
     if (hasDb()) {
@@ -116,15 +135,17 @@ export class Daily {
     const rounds = MODES.mix.build(DAILY_ROUNDS, used, { mixParts: DAILY_PARTS, mixInput: 'mixed', level: 'easy' }, null);
     if (!rounds.length) throw new Error('Défi indisponible pour le moment');
     const keys = [...used].filter((k) => !before.has(k));
-    const row = { id: day, number: dayNumber(day), rounds: JSON.parse(JSON.stringify(rounds)), keys };
-    // Deux serveurs (ou deux joueurs au même instant) : le premier défi enregistré fait foi
+    const row = { id: day, number, rounds: JSON.parse(JSON.stringify(rounds)), keys };
+    // Deux serveurs en même temps : le premier défi enregistré fait foi. Un défi non enregistré n'est
+    // jamais joué (un redémarrage en tirerait un autre) : erreur, et nouvel essai au prochain départ.
     try {
       await store.insert('daily_challenges', row);
-    } catch {
+    } catch (err) {
       const again = await store.get('daily_challenges', day).catch(() => null);
-      if (again?.rounds?.length) return { day, number: dayNumber(day), rounds: again.rounds };
+      if (again?.rounds?.length) return { day, number: again.number, rounds: again.rounds };
+      unavailable('enregistrement')(err);
     }
-    return { day, number: row.number, rounds: row.rounds };
+    return { day, number, rounds: row.rounds };
   }
 
   /**
@@ -173,10 +194,10 @@ export class Daily {
   /** Ce que l'accueil affiche : numéro, série, résultat et classement si déjà joué. */
   async info(user) {
     const day = dayKey();
-    const [mine, streak] = await Promise.all([this.result(day, user?.id), user ? this.streak(day, user.id) : 0]);
+    const [mine, streak, number] = await Promise.all([this.result(day, user?.id), user ? this.streak(day, user.id) : 0, this.number(day)]);
     return {
       day,
-      number: dayNumber(day),
+      number,
       rounds: DAILY_ROUNDS,
       duration: DAILY_DURATION,
       nextAt: nextDayAt(),
