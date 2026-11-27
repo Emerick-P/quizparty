@@ -2,7 +2,7 @@
 // la connexion « avec Google ». Adresse de contact : variable CONTACT_EMAIL (jamais écrite dans le code).
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const UPDATED = '25 novembre 2026';
+const UPDATED = '27 novembre 2026';
 
 function page(title, body) {
   return `<!DOCTYPE html>
@@ -47,7 +47,7 @@ export function privacyPage(email) {
 <h2>Sans compte (invité)</h2>
 <ul>
   <li>Ton pseudo est gardé sur ton appareil et, le temps d’une partie, dans la mémoire du serveur. Il disparaît quand le salon se ferme.</li>
-  <li>Un cookie retient que tu as saisi le code d’accès du site. Il n’y a aucun cookie publicitaire ni de mesure d’audience.</li>
+  <li>Il n’y a aucun cookie publicitaire ni de mesure d’audience.</li>
 </ul>
 
 <h2>Avec un compte (Discord ou Google)</h2>
@@ -110,7 +110,6 @@ export function termsPage(email) {
 <h2>Le service</h2>
 <ul>
   <li>Le jeu est gratuit, proposé à titre personnel et sans garantie : il peut être indisponible, changer ou s’arrêter à tout moment.</li>
-  <li>Le site est réservé aux personnes qui ont reçu le lien et le code d’accès. Merci de ne pas les diffuser publiquement.</li>
   <li>Le compte (Discord ou Google) est facultatif : on peut toujours jouer en invité.</li>
 </ul>
 

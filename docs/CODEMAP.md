@@ -44,7 +44,7 @@ feedback : file, add, list
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
 
-### server/legal.js (140 l.)
+### server/legal.js (139 l.)
 Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
@@ -209,14 +209,14 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (333 l.)
+### public/js/home.js (330 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
-SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
+WIDE_MQ, wide, ui, modeGroups, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
 
 actions : tab, pickHue, pickLook
 
-SHEETS : name, create, join, live, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, note, account, look, menu, stats, ranking, more
+SHEETS : name, create, join, live, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
 
 ### public/js/live.js (145 l.)
 Quiz en direct.
@@ -283,7 +283,7 @@ Mode télé : vues de l’écran télé et du téléphone en manette.
 
 TOUCH, tvCard, tvSheet, tvPairView, tvLobbyView, tvQuestion, tvCrossword, padQuestion
 
-### public/js/views.js (346 l.)
+### public/js/views.js (343 l.)
 Écrans de jeu par phase (views[phase]) : salon, décompte, question, correction, podium…
 
 views

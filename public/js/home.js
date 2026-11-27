@@ -5,7 +5,6 @@
 // =====================================================================  accueil et salon : pages et panneaux
 // Sur téléphone, le salon garde l'essentiel à l'écran ; le choix du jeu s'ouvre en page, le reste en panneau du bas.
 // Sur ordinateur (1000 px et plus), salon sur trois colonnes, et le choix du jeu s'ouvre en fenêtre.
-const SHARE_NOTE = '<b>Entre potes seulement.</b> Partage le lien et le code d’accès à tes amis, mais pas sur un forum ni sur les réseaux : QuizParty est un petit projet perso, hébergé gratuitement, avec des sons et des images qu’on n’a pas le droit de diffuser au grand public. C’est pour ça qu’il y a un code.';
 const WIDE_MQ = matchMedia('(min-width: 1000px)');
 const wide = () => WIDE_MQ.matches;
 WIDE_MQ.addEventListener?.('change', () => render());
@@ -232,8 +231,6 @@ const SHEETS = {
   players: { phase: 'lobby', render: () => ({ title: `Joueurs · ${state.players.length}`, body: playersList(isHost()) }) },
   steam: { phase: 'lobby', render: () => ({ title: 'Ton Steam', body: steamCard() }) },
   scores: { phase: 'lobby', render: () => ({ title: 'Score global', body: globalBoard() }) },
-  note: { phase: 'lobby', render: () => ({ title: 'Entre potes seulement', body: `<p class="sh-note big">${SHARE_NOTE.replace(/^<b>[^<]*<\/b> /, '')}</p>
-    <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
   account: { phase: ['lobby', 'end'], page: true, render: () => ({ title: 'Profil', body: profileBody() }) },
   // Fenêtre au-dessus du Profil (pas une page) : « Valider » ou ✕ ramène au Profil
   look: { phase: ['home', 'lobby', 'end'], render: () => ({ title: 'Image de profil', body: lookBody() }) },

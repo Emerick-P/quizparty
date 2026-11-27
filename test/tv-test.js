@@ -1,5 +1,5 @@
 // Mode télé : appairage d'un écran par code à 4 chiffres, vue « tout le monde » sur la télé,
-// téléphones en manette, extinction par l'hôte, et laissez-passer quand le code d'accès est actif.
+// téléphones en manette et extinction par l'hôte.
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { io } from 'socket.io-client';
@@ -42,7 +42,6 @@ function client(url, label, opts = {}) {
 
 const servers = [];
 try {
-  // ---------------------------------------------------------------- sans code d'accès
   const URL = 'http://localhost:3994';
   servers.push(await startServer(3994));
   const H = client(URL, 'hôte'), P = client(URL, 'joueur'), TV = client(URL, 'télé', { auth: { screen: true } });

@@ -34,9 +34,7 @@ const views = {
         <button class="code" data-action="copycode" aria-label="Copier le code ${esc(state.code)}">${esc(state.code)}<small>Code du salon</small></button>
         <div class="lm-chips">
           <button class="chip-btn ${copied ? 'copied' : ''}" data-action="copycode" aria-live="polite">${copied ? `${ico('check')} Code copié` : `${ico('copy')} Copier le code`}</button>
-          ${host && !state.tv && TOUCH ? `<button class="chip-btn tv-chip" data-action="tvsheet">${ico('tv')} Sur la télé</button>` : ''}
-          <button class="chip-btn" data-action="sheet" data-value="note">${ico('lock')} Entre potes</button>
-        </div>
+          ${host && !state.tv && TOUCH ? `<button class="chip-btn tv-chip" data-action="tvsheet">${ico('tv')} Sur la télé</button>` : ''}        </div>
       </section>
       ${state.tv ? tvCard() : ''}
       <button class="lm-players" data-action="sheet" data-value="players" aria-label="Voir les joueurs (${count})">
@@ -63,7 +61,6 @@ const views = {
         <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? 'Lien copié' : 'Copier le lien'}</button>
       </section>
       ${tvCard()}
-      <p class="share-note">${SHARE_NOTE}</p>
       <div class="lobby-cols">
       <div class="lb-players">
       <section class="card">
