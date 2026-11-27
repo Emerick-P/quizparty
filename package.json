@@ -15,12 +15,12 @@
     "submissions": "node scripts/submissions.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20.9.0"
   },
   "dependencies": {
     "express": "^4.21.2",
     "qrcode": "^1.5.4",
-    "sharp": "^0.33.5",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {

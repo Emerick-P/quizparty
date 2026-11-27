@@ -12,7 +12,7 @@ Quiz multijoueur en temps réel entre amis. Chacun joue depuis son téléphone o
 
 ## Lancer en local
 
-Il faut Node.js 18 ou plus.
+Il faut Node.js 20.9 ou plus.
 
 ```bash
 npm install
