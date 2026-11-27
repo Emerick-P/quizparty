@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.*
+!.env.example
 .cache/
 # Fichiers bruts du client (non publiés) et sauvegardes locales
 basesound/
