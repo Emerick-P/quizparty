@@ -209,7 +209,7 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (325 l.)
+### public/js/home.js (333 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 SHARE_NOTE, WIDE_MQ, wide, ui, modeGroups, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock

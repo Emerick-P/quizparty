@@ -60,12 +60,20 @@ function loadHomeRating() {
   loadRanking();
 }
 const ordinal = (n) => (n === 1 ? '1er' : `${n}e`);
-/** Aperçu du classement dans la carte (large seulement) : ma place avec 2 joueurs au-dessus et 1 en dessous (l'objectif est de monter) ; sans place, le top 3. */
+/**
+ * Aperçu du classement dans la carte (large seulement) : ma place avec 2 joueurs au-dessus et 1 en dessous
+ * (l'objectif est de monter) ; sans place (placement compris), le top 3 ; moins de 3 classés, une phrase.
+ */
 function rankPreview() {
   const d = rankUi.data;
-  if (!d?.list?.length) return '';
-  if (d.list.length < 3) return `<div class="cote-board cote-alone"><p>${d.list.length === 1 ? 'Personne d’autre n’est classé ce mois-ci pour l’instant.' : `Seulement ${d.list.length} joueurs classés ce mois-ci.`} Invite tes potes à jouer !</p></div>`;
+  if (!d?.list) return ''; // pas encore chargé
+  const n = d.list.length;
   const mine = d.me ? d.list.findIndex((x) => x.userId === d.me) : -1;
+  if (n < 3) {
+    const few = !n ? 'Personne n’est encore classé ce mois-ci.' : n > 1 ? `Seulement ${n} joueurs classés ce mois-ci.`
+      : mine === 0 ? 'Personne d’autre n’est classé ce mois-ci pour l’instant.' : 'Un seul joueur est classé ce mois-ci.';
+    return `<div class="cote-board cote-alone"><p>${few} Invite tes potes à jouer !</p></div>`;
+  }
   const from = mine < 0 ? 0 : Math.max(0, mine - 2), to = mine < 0 ? 3 : Math.min(d.list.length, mine + 2);
   const rows = d.list.slice(from, to).map((x, k) => [x, from + k]);
   return `<ol class="cote-board">${rows.map(([x, i]) => `<li class="${i === mine ? 'me' : ''}"><span class="pos">${i + 1}</span>${rankAvatar(x)}<span class="grow">${esc(x.name)}</span><span class="pts">${fmtRating(x.rating)}</span></li>`).join('')}</ol>`;
