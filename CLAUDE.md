@@ -28,7 +28,8 @@ Client francophone : code, commentaires, textes et messages en français.
   « Image » (l'image seule), jamais les deux ensemble.
 - **Nom de l'app** (« LoreBound ») : `server/brand.js`, seul endroit à changer ; les pages portent `%APP%` / `%LOGO%`,
   remplacés au service (`index.js`), et le client lit `APP_NAME`. Mascotte : `server/assets/mascotte.svg` (images de
-  partage), à plat `public/mascotte.svg` (en-tête) ; icônes PNG dans `public/`. Les clés `quizparty:` et l'adresse ne changent pas.
+  partage), à plat `public/mascotte.svg` (en-tête) ; icônes PNG dans `public/`. Les clés `quizparty:` ne changent pas.
+  Adresse publique : https://lorebound-quiz.onrender.com (service Render `lorebound-quiz`).
 - **Client** (`public/js/`) : une vingtaine de **scripts classiques, pas des modules**, chargés avec `defer` dans l'ordre d'`index.html`.
   Ils partagent leurs déclarations de premier niveau (`state`, `render`, `actions`…) sans import.
   - Un nouveau fichier s'ajoute dans `index.html`, à sa place dans l'ordre.
@@ -73,7 +74,7 @@ Toujours vérifier les deux thèmes (Clair / Obscur), en portrait et en paysage 
   On l'applique **d'abord au dev**, on teste, puis à la prod seulement avec l'accord écrit du client.
 - Le compte gratuit n'a droit qu'à 2 projets actifs : `gamerdex-prod` est en pause pour laisser la place au dev.
 - **Anti-veille de Render — À SUPPRIMER si le serveur Render passe en payant** : la base de **prod** (pg_cron + pg_net,
-  migration `2026-11-28-reveil-render.sql`) appelle `/health` toutes les 10 min. Retrait :
+  migrations `2026-11-28-reveil-render.sql` puis `-reveil-url-lorebound.sql`) appelle `/health` toutes les 10 min. Retrait :
   `select cron.unschedule('quizparty-reveil');`, et `live-wake.yml` devient inutile aussi. Jamais sur le dev (hors essai),
   ni dans `schema.sql`. Quota gratuit : 750 h/mois pour tout l'espace Render, donc **un seul** service gratuit.
 

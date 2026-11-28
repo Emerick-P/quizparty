@@ -42,7 +42,7 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
   const publicKey = (env.VAPID_PUBLIC_KEY || '').trim();
   const privateKey = (env.VAPID_PRIVATE_KEY || '').trim();
   // Contact exigé par les services de notification (VAPID) : l'adresse du site suffit
-  const subject = (env.VAPID_SUBJECT || env.RENDER_EXTERNAL_URL || '').trim().replace(/^http:\/\/.*/, '') || 'https://quizparty-3g8q.onrender.com';
+  const subject = (env.VAPID_SUBJECT || env.RENDER_EXTERNAL_URL || '').trim().replace(/^http:\/\/.*/, '') || 'https://lorebound-quiz.onrender.com';
   const testOrigin = env.PUSH_TEST_ORIGIN || null; // tests seulement : faux service de notification local
   let enabled = !!(publicKey && privateKey);
   if (enabled) {

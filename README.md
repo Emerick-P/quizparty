@@ -52,12 +52,12 @@ Limite assumée : la question est envoyée pendant le « 3, 2, 1 » pour s'affic
 
 L'état des parties est gardé en mémoire : il faut **une seule instance** du serveur, qui tourne en continu. Un hébergement statique (GitHub Pages, Netlify) ne suffit pas.
 
-**Site permanent : Render (choix actuel)**
+**Site permanent : Render (choix actuel)** : https://lorebound-quiz.onrender.com
 
 Le fichier `render.yaml` décrit le service : Render → **New → Blueprint** → choisir le dépôt GitHub, puis remplir `TWITCH_CLIENT_ID` et `TWITCH_CLIENT_SECRET`. Chaque `git push` sur la branche principale redéploie le site (ce qui coupe les parties en cours).
 
 - Formule gratuite (512 Mo) : le serveur s'endort après 15 minutes sans visite ni message temps réel ; le premier visiteur voit la page d'attente de Render environ une minute. 750 heures gratuites par mois, assez pour **un** service allumé en continu.
-- Anti-veille (**à supprimer si le serveur passe en payant**) : Supabase appelle `/health` toutes les 10 minutes. Une seule fois, sur la base de **prod** : SQL Editor → `supabase/migrations/2026-11-28-reveil-render.sql`. Retrait : `select cron.unschedule('quizparty-reveil');`.
+- Anti-veille (**à supprimer si le serveur passe en payant**) : Supabase appelle `/health` toutes les 10 minutes. Une seule fois, sur la base de **prod** : SQL Editor → `supabase/migrations/2026-11-28-reveil-render.sql`, puis `2026-11-28-reveil-url-lorebound.sql` (l'adresse actuelle). Retrait : `select cron.unschedule('quizparty-reveil');`.
 - Disque non conservé : à chaque réveil, les jaquettes sont retéléchargées depuis IGDB (les modes Jaquette sont grisés quelques instants) et `data/feedback.jsonl` repart de zéro.
 - Pour supprimer la mise en veille : passer le service en formule payante (Compute → Edit, ou `plan: starter` dans `render.yaml`), sans rien changer d'autre.
 

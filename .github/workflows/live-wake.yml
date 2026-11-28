@@ -1,4 +1,4 @@
-# SECOURS de l'anti-veille (Supabase appelle /health toutes les 10 min, migration 2026-11-28-reveil-render.sql).
+# SECOURS de l'anti-veille (Supabase appelle /health toutes les 10 min, migrations 2026-11-28-reveil-*.sql).
 # À supprimer avec elle si le serveur Render passe en payant.
 #
 # Réveil du serveur avant chaque quiz en direct (Render gratuit s'endort après 15 min sans visite).
@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Réveiller le serveur
         env:
-          SITE_URL: ${{ vars.APP_URL || 'https://quizparty-3g8q.onrender.com' }}
+          SITE_URL: ${{ vars.APP_URL || 'https://lorebound-quiz.onrender.com' }}
         run: |
           for i in 1 2 3; do
             curl -fsS --max-time 90 "$SITE_URL/health" && exit 0

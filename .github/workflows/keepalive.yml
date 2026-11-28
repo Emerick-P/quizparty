@@ -15,7 +15,7 @@ jobs:
       - name: Réveiller le serveur
         run: |
           for i in 1 2 3 4 5 6; do
-            if curl -fsS --max-time 60 "${{ vars.APP_URL || 'https://quizparty-3g8q.onrender.com' }}/health"; then exit 0; fi
+            if curl -fsS --max-time 60 "${{ vars.APP_URL || 'https://lorebound-quiz.onrender.com' }}/health"; then exit 0; fi
             sleep 20
           done
           exit 1
