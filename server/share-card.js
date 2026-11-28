@@ -120,22 +120,6 @@ function cellGrid(cells, modes, cx, y, width, height) {
   const top = y + (height - (rows * s + (rows - 1) * gap)) / 2;
   return cells.map((c, i) => cell(c, modes[i], Math.round(left + (i % cols) * (s + gap)), Math.round(top + Math.floor(i / cols) * (s + gap)), s)).join('');
 }
-function legend(cx, y, size) {
-  const items = [['fast', 'Rapide'], ['slow', 'Trouvé'], ['miss', 'Raté']];
-  const gap = size * 1.4, space = size * 0.45;
-  const widths = items.map(([, label]) => size + space + measure(glyphs(label, 'semi'), 'semi', size));
-  let x = cx - (widths.reduce((a, b) => a + b, 0) + gap * 2) / 2;
-  return items.map(([k, label], i) => {
-    const b = size * 0.15, top = y - size * 0.85;
-    const mark = k === 'fast' ? `<rect x="${x}" y="${top}" width="${size}" height="${size}" rx="${size * 0.22}" fill="${C.fast}"/>`
-      : k === 'slow' ? `<rect x="${x + b / 2}" y="${top + b / 2}" width="${size - b}" height="${size - b}" rx="${size * 0.2}" fill="none" stroke="${C.slow}" stroke-width="${b}"/>`
-      : `<path d="M${x + size * 0.12} ${top + size * 0.88}L${x + size * 0.88} ${top + size * 0.12}" stroke="${C.miss}" stroke-width="${size * 0.2}" stroke-linecap="round"/>`;
-    const out = mark + text(label, x + size + space, y, size, { style: 'semi', fill: C.muted });
-    x += widths[i] + gap;
-    return out;
-  }).join('');
-}
-
 const svg = (w, h, body) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="${C.bg}"/>${body}</svg>`;
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
 
@@ -180,8 +164,7 @@ export function storyCard({ heading, score, correct, rounds, cells, modes, site 
     + text(heading, 150, 600, 58, { style: 'semi', fill: C.muted, max: 780 })
     + text(fmt(score), 140, 830, 220, { style: 'mono', fill: C.lime, max: 800 })
     + text(`${score > 1 ? 'points' : 'point'}, ${correct} trouvée${correct > 1 ? 's' : ''} sur ${rounds}`, 150, 930, 56, { style: 'semi', fill: C.muted, max: 780 })
-    + cellGrid(cells, modes, 540, 990, 790, 340)
-    + legend(540, 1420, 38)
+    + cellGrid(cells, modes, 540, 990, 790, 440)
     + `<rect x="100" y="1535" width="880" height="170" rx="36" fill="${C.lime}"/>`
     + text('Fais mieux que moi', 540, 1643, 68, { fill: C.ink, anchor: 'middle' })
     + text(site, 540, 1790, 40, { style: 'mono', fill: C.muted, anchor: 'middle', max: 880 }));
