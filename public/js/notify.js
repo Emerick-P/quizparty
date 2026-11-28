@@ -27,36 +27,22 @@ const WEEK_DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'
 const DAYS_TEXT = { '0123456': 'tous les jours', 12345: 'en semaine', 123456: 'du lundi au samedi', '06': 'samedi et dimanche', 0: 'le dimanche', 6: 'le samedi' };
 const hourText = (hm) => hm.replace(/^0/, '').replace(':00', ' h').replace(':', ' h ');
 const daysText = (days) => DAYS_TEXT[[...days].sort().join('')] || days.map((d) => WEEK_DAYS[d]).join(', ');
-const ALL_OF = { midi: 'Toutes les Pause déj', brunch: 'Tous les Brunch', soir: 'Tous les Apéro', nuit: 'Tous les Hardcore', finale: 'Toutes les finales' };
-/** Un créneau par format : { id, name, tagline, when: « en semaine à 12 h 45 » }. */
+const ALL_OF = { midi: 'Toutes les Pause déj', soir: 'Tous les Apéro', nuit: 'Tous les Hardcore', finale: 'Toutes les finales' };
+const DIFFICULTY = { easy: 'Facile', mixed: 'Variée', hard: 'Difficile', ramp: 'Croissante' };
+/** Un créneau par format : { id, name, diff, about, rounds, when: « tous les jours à 12 h 45 » }. */
 function liveFormats() {
   const out = new Map();
   for (const e of notify.program) {
     const when = `${daysText(e.days)} à ${hourText(e.time)}`;
     const f = out.get(e.id);
     if (f) f.when += ` · ${when}`;
-    else out.set(e.id, { id: e.id, name: e.name, tagline: e.tagline, when });
+    else out.set(e.id, { ...e, when });
   }
   return [...out.values()];
 }
-/** Écran bas (petit téléphone, paysage) : un simple lien à côté du titre, sans ligne en plus. */
-function programLink() {
-  if (!notify.program.length) return '';
-  return `<button class="l-week-short" data-action="sheet" data-value="week">${live.info?.weekend ? 'En semaine, ça change' : 'Le week-end change'} ›</button>`;
-}
-/** Sous les tuiles : ce qui change entre la semaine et le week-end (le détail est dans le programme). */
-function programTeaser() {
-  const weekend = live.info?.weekend;
-  const other = notify.program.filter((e) => (weekend ? e.days.includes(1) : e.days.every((d) => d === 0 || d === 6)));
-  const names = other.map((e) => {
-    const name = e.name.replace(/^La /, 'la ');
-    const day = !weekend && e.days.length === 1 ? ` ${WEEK_DAYS[e.days[0]]}` : '';
-    return `${name}${day} à ${hourText(e.time)}`;
-  }).join(', ');
-  if (!notify.program.length) return '';
-  const text = !names ? 'Les horaires de la semaine' : weekend ? `En semaine : ${names}` : `Le week-end change : ${names}`;
-  return `<button class="l-week" data-action="sheet" data-value="week">${ico('calendar')}<span>${esc(text)}</span><b>Programme ›</b></button>`;
-}
+/** À côté du titre « Quiz en direct » : le programme (chaque direct expliqué, avec sa cloche). */
+const programLink = () => (notify.program.length
+  ? `<button class="l-prog" data-action="sheet" data-value="week">${ico('calendar')} Programme ›</button>` : '');
 
 // ---- abonnement du navigateur
 /** Autorisation du navigateur. À appeler tout de suite dans le geste du joueur (exigence des navigateurs). */
@@ -272,17 +258,17 @@ function notifyDevice(main) {
   return `<p class="sh-note">Tes choix sont sur ton compte, mais cet appareil ne les reçoit pas encore.</p>
     <button class="btn ${main ? 'primary' : ''} nf-back" data-action="notifyhere">${ico('bell')} Activer sur cet appareil</button>`;
 }
-/** Une ligne à cocher (toute la ligne se touche). mark : 'check' (case) ou 'bell' (cloche). */
-function notifyRow(value, on, title, sub, mark = 'check') {
+/** Une ligne à cocher (toute la ligne se touche). mark : 'check' (case) ou 'bell' (cloche) ; more : HTML en plus. */
+function notifyRow(value, on, title, sub, mark = 'check', more = '') {
   return `<button class="nf-row" role="checkbox" aria-checked="${on}" data-key="nf:${value}" data-action="notifyset" data-value="${value}" data-on="${on ? 0 : 1}">
-    <span class="nf-txt"><b>${esc(title)}</b><small>${esc(sub)}</small></span>
+    <span class="nf-txt"><b>${esc(title)}</b><small>${esc(sub)}</small>${more}</span>
     <span class="nf-mark nf-${mark}" aria-hidden="true">${mark === 'bell' ? ico('bell') : on ? ico('check') : ''}</span></button>`;
 }
 const capital = (text) => text.replace(/^./, (c) => c.toUpperCase());
-const everyRow = (mark) => notifyRow('every', notifyPrefs().every, 'Tous les directs', 'En semaine et le week-end', mark);
-const formatRows = (mark) => liveFormats().map((f) => {
+const everyRow = (mark) => notifyRow('every', notifyPrefs().every, 'Tous les directs', 'Chaque jour, finale comprise', mark);
+const formatRows = () => liveFormats().map((f) => {
   const p = notifyPrefs();
-  return notifyRow(`format:${f.id}`, p.every || p.formats.includes(f.id), f.name, capital(f.when), mark);
+  return notifyRow(`format:${f.id}`, p.every || p.formats.includes(f.id), f.name, capital(f.when));
 }).join('');
 /** Mini-feuille d'une cloche : un bouton par choix (ce direct, tout son créneau, tous les directs). */
 function bellBody() {
@@ -306,20 +292,26 @@ function bellBody() {
     <div class="nf-list">
       ${s.status === 'upcoming' ? choice('slot', 'Ce direct seulement', `${s.name}, ${liveDay(s)} à ${liveTime(s.startsAt)}`) : ''}
       ${f ? choice('format', ALL_OF[f.id] || `Tous les « ${f.name} »`, capital(f.when)) : ''}
-      ${choice('every', 'Tous les directs', 'En semaine et le week-end')}
+      ${choice('every', 'Tous les directs', 'Chaque jour, finale comprise')}
     </div>
     ${back}`;
 }
-/** Programme de la semaine, avec une cloche par créneau (ceux du week-end compris). */
+/** Programme des directs : chacun expliqué (surtout sa difficulté), avec sa cloche. */
 function programBody() {
   if (!live.info) loadLive();
   else notifySync();
   const blocked = notify.key ? notifyBlocked() : '';
   const bells = !!notify.key && (!!account.user || (notifyShown() && !blocked));
-  return `<p class="sh-note">Les mêmes questions pour tout le monde, au même instant. La salle d’attente ouvre quelques minutes avant.${bells ? ' Touche un créneau pour être prévenu.' : ''}</p>
+  const p = notifyPrefs();
+  const rows = liveFormats().map((f) => {
+    const sub = `${capital(f.when)} · ${f.rounds} questions`;
+    const level = `<small class="nf-level"><b>${DIFFICULTY[f.diff] || ''}</b> : ${esc(f.about)}</small>`;
+    return bells ? notifyRow(`format:${f.id}`, p.every || p.formats.includes(f.id), f.name, sub, 'bell', level)
+      : `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(sub)}</small>${level}</span></div>`;
+  }).join('');
+  return `<p class="sh-note nf-intro">Les mêmes questions pour tout le monde, au même instant.${bells ? ' Touche un direct pour être prévenu.' : ''}</p>
     ${bells ? notifyDevice(false) : ''}
-    <div class="nf-list nf-program">${bells ? formatRows('bell') + everyRow('bell')
-    : liveFormats().map((f) => `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(capital(f.when))}</small></span></div>`).join('')}</div>
+    <div class="nf-list nf-program">${rows}${bells ? everyRow('bell') : ''}</div>
     ${bells ? '' : blocked}`;
 }
 /** Section « Notifications » du profil : une coche par créneau. */
@@ -337,7 +329,7 @@ function notifySection() {
     <h3>Notifications</h3>
     <p class="sh-note small">Un message par direct coché, à l’ouverture de sa salle d’attente. Rien d’autre.${where}</p>
     ${notifyDevice(false)}${here}
-    ${blocked && !signedIn ? blocked : `<div class="nf-list">${everyRow('check')}${formatRows('check')}</div>`}
+    ${blocked && !signedIn ? blocked : `<div class="nf-list">${everyRow('check')}${formatRows()}</div>`}
   </div>`;
 }
 

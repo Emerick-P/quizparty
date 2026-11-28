@@ -1,5 +1,5 @@
 // Test des notifications des quiz en direct (sans base de données, faux service de notification local) :
-// - programme de la semaine (week-end différent) ;
+// - programme (mêmes directs chaque jour, finale le dimanche) ;
 // - abonnement : choix enregistrés et relus, adresses inconnues refusées, plus rien de coché = ligne effacée ;
 // - à l'ouverture de la salle d'attente : une seule notification par appareil concerné, chiffrée et lisible
 //   par lui, aucune pour les autres ; abonnement expiré effacé ; rappel ponctuel oublié une fois servi ;
@@ -28,7 +28,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // ---- Programme
 const program = weekProgram();
 assert.deepEqual(program.map((e) => [e.id, e.time, e.days.join('')]), [
-  ['midi', '12:45', '12345'], ['soir', '18:30', '1234560'], ['nuit', '22:00', '123456'], ['brunch', '11:00', '60'], ['finale', '21:00', '0'],
+  ['midi', '12:45', '1234560'], ['soir', '18:30', '123456'], ['nuit', '22:00', '123456'], ['finale', '21:00', '0'],
 ]);
 console.log('✓ programme de la semaine');
 
@@ -84,7 +84,7 @@ try {
   const info = await c.emit('live:info');
   assert.equal(info.pushKey, keys.publicKey, 'clé publique donnée au navigateur');
   assert.ok(!JSON.stringify(info).includes(keys.privateKey), 'jamais la clé privée');
-  assert.ok(info.program.length && typeof info.weekend === 'boolean', 'programme de la semaine');
+  assert.ok(info.program.length && info.program.every((e) => e.about && e.rounds), 'programme expliqué');
   const id = info.next.id;
 
   const [soir, tous, midi, ponctuel, gone, retire] = ['soir', 'tous', 'midi', 'ponctuel', 'gone', 'retire'].map(device);

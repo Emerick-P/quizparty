@@ -1,5 +1,5 @@
 // Test du quiz en direct (sans base de données, joueurs invités) :
-// - heures de Paris (changements d'heure), créneaux de la semaine et du week-end ;
+// - heures de Paris (changements d'heure), créneaux de chaque jour (finale le dimanche) ;
 // - salle d'attente : ouverte quelques minutes avant, fermée avant l'heure, plus d'entrée après le départ ;
 // - départ à l'heure pile pour tous : mêmes questions, mêmes startsAt/endsAt, fin de question identique
 //   même si tout le monde a répondu ;
@@ -24,8 +24,8 @@ assert.equal(new Date(parisTime('2026-11-27', 12, 45)).toISOString(), '2026-11-2
 assert.equal(new Date(parisTime('2026-07-01', 22, 0)).toISOString(), '2026-07-01T20:00:00.000Z', 'été : UTC+2');
 assert.equal(new Date(parisTime('2026-03-29', 12, 45)).toISOString(), '2026-03-29T10:45:00.000Z', 'jour du passage à l’heure d’été');
 assert.deepEqual(slotsOf('2026-11-27').map((s) => s.time), ['12:45', '18:30', '22:00'], 'vendredi');
-assert.deepEqual(slotsOf('2026-11-28').map((s) => s.time), ['11:00', '18:30', '22:00'], 'samedi');
-assert.deepEqual(slotsOf('2026-11-29').map((s) => [s.time, s.format]).at(-1), ['21:00', 'finale'], 'dimanche : finale');
+assert.deepEqual(slotsOf('2026-11-28').map((s) => s.time), ['12:45', '18:30', '22:00'], 'samedi : comme les autres jours');
+assert.deepEqual(slotsOf('2026-11-29').map((s) => [s.time, s.format]), [['12:45', 'midi'], ['21:00', 'finale']], 'dimanche : la finale remplace l’Apéro et le Hardcore');
 process.env.LIVE_EVENTS = JSON.stringify([{ day: '2026-11-27', time: '20:00', format: 'soir', name: 'Spécial Zelda', tagline: 'Un direct à thème', theme: 'zelda' }]);
 const evs = slotsOf('2026-11-27');
 assert.deepEqual(evs.map((s) => s.time), ['12:45', '18:30', '20:00', '22:00'], 'direct exceptionnel inséré dans la journée');

@@ -51,12 +51,12 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/live.js (475 l.)
+### server/live.js (478 l.)
 Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
 
-LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, weekProgram, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
+LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, WEEK_SLOTS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, weekProgram, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
 
-LIVE_FORMATS : midi, brunch, soir, nuit, finale
+LIVE_FORMATS : midi, soir, nuit, finale
 
 DEFAULT_SLOTS : week, sat, sun
 
@@ -225,7 +225,7 @@ actions : tab, pickHue, pickLook
 
 SHEETS : name, create, join, live, bell, week, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
 
-### public/js/live.js (148 l.)
+### public/js/live.js (147 l.)
 Quiz en direct.
 
 live, liveTime, liveDay, LIVE_KEY, liveResult, loadLive, liveStrip, liveBody, liveResultBody, liveWait, liveEnd
@@ -254,10 +254,10 @@ Connexion temps réel : socket, horloge serveur (façon NTP), send(), état glob
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
 
-### public/js/notify.js (354 l.)
+### public/js/notify.js (346 l.)
 Notifications des directs (cloches, profil) et programme de la semaine.
 
-NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyDevice, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
+NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, DIFFICULTY, liveFormats, programLink, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyDevice, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
 
 actions : notifyset, notifyhere, notifyoff, notifybell, bell
 

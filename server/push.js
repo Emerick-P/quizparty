@@ -5,7 +5,7 @@ import { store as defaultStore } from './store.js';
 /**
  * Notifications du navigateur (Web Push) pour les quiz en direct.
  *
- * - Choix : tous les directs, certains créneaux (format : midi, brunch, soir, nuit, finale) ou des directs
+ * - Choix : tous les directs, certains créneaux (format : midi, soir, nuit, finale) ou des directs
  *   précis (id du créneau).
  * - Compte connecté : les choix sont ceux du compte (table push_accounts), les mêmes sur tous ses appareils.
  *   La permission se donne appareil par appareil : chaque appareil activé = une ligne rattachée au compte.

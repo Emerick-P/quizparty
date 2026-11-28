@@ -9,7 +9,7 @@ create table if not exists public.push_subscriptions (
   p256dh      text not null,             -- clés de chiffrement de l'appareil
   auth        text not null,
   every_live  boolean not null default false,   -- « Tous les directs »
-  formats     jsonb not null default '[]'::jsonb,  -- créneaux cochés : midi, brunch, soir, nuit, finale
+  formats     jsonb not null default '[]'::jsonb,  -- créneaux cochés : midi, soir, nuit, finale
   slots       jsonb not null default '[]'::jsonb   -- directs précis : « 2026-11-28T18:30 »
 );
 alter table public.push_subscriptions enable row level security;

@@ -29,18 +29,21 @@ const PARTS = ['quiz', 'vraifaux', 'estimation', 'covers', 'pitch', 'emoji']; //
  * 'ramp' = de plus en plus dur (finale).
  */
 export const LIVE_FORMATS = {
-  midi: { name: 'Pause déj', tagline: 'Court et grand public, le temps d’un café', rounds: 10, duration: 15, level: 'easy', diff: 'easy' },
-  brunch: { name: 'Brunch', tagline: 'Court et grand public, pour lancer le week-end', rounds: 10, duration: 15, level: 'easy', diff: 'easy' },
-  soir: { name: 'Apéro', tagline: 'Tous les jeux mélangés, difficulté variée', rounds: 15, duration: 15, level: 'easy', diff: 'mixed' },
-  nuit: { name: 'Hardcore', tagline: 'Les questions les plus dures, pour les vrais', rounds: 15, duration: 15, level: 'hard', diff: 'hard' },
-  finale: { name: 'La finale', tagline: 'La grande du dimanche, de plus en plus dure', rounds: 20, duration: 15, level: 'hard', diff: 'ramp' },
+  midi: { name: 'Pause déj', tagline: 'Court et grand public, le temps d’un café', about: 'des questions grand public, le temps d’un café', rounds: 10, duration: 15, level: 'easy', diff: 'easy' },
+  soir: { name: 'Apéro', tagline: 'Tous les jeux mélangés, difficulté variée', about: 'du simple au corsé, tous les jeux mélangés', rounds: 15, duration: 15, level: 'easy', diff: 'mixed' },
+  nuit: { name: 'Hardcore', tagline: 'Les questions les plus dures, pour les vrais', about: 'les questions les plus dures, pour les vrais', rounds: 15, duration: 15, level: 'hard', diff: 'hard' },
+  finale: { name: 'La finale', tagline: 'La grande du dimanche, de plus en plus dure', about: 'de plus en plus dure, la plus longue de la semaine', rounds: 20, duration: 15, level: 'hard', diff: 'ramp' },
 };
 
-/** Créneaux (heure de Paris) : semaine, samedi, dimanche. Modifiables par LIVE_SLOTS='{"week":[["12:45","midi"],…]}'. */
+/**
+ * Créneaux (heure de Paris) : les mêmes du lundi au samedi ; le dimanche, la finale remplace l’Apéro et le Hardcore.
+ * Modifiables par LIVE_SLOTS='{"week":[["12:45","midi"],…]}' (week, sat, sun).
+ */
+const WEEK_SLOTS = [['12:45', 'midi'], ['18:30', 'soir'], ['22:00', 'nuit']];
 const DEFAULT_SLOTS = {
-  week: [['12:45', 'midi'], ['18:30', 'soir'], ['22:00', 'nuit']],
-  sat: [['11:00', 'brunch'], ['18:30', 'soir'], ['22:00', 'nuit']],
-  sun: [['11:00', 'brunch'], ['18:30', 'soir'], ['21:00', 'finale']],
+  week: WEEK_SLOTS,
+  sat: WEEK_SLOTS,
+  sun: [WEEK_SLOTS[0], ['21:00', 'finale']],
 };
 function slotTable() {
   try { return process.env.LIVE_SLOTS ? { ...DEFAULT_SLOTS, ...JSON.parse(process.env.LIVE_SLOTS) } : DEFAULT_SLOTS; } catch { return DEFAULT_SLOTS; }
@@ -119,7 +122,8 @@ export function weekProgram() {
     for (const [hm, id] of (wd === 0 ? table.sun : wd === 6 ? table.sat : table.week)) {
       if (!LIVE_FORMATS[id]) continue;
       const key = `${id}@${hm}`;
-      if (!list.has(key)) list.set(key, { id, time: hm.slice(0, 5), name: LIVE_FORMATS[id].name, tagline: LIVE_FORMATS[id].tagline, days: [] });
+      const { name, about, diff, rounds, duration } = formatOf(id);
+      if (!list.has(key)) list.set(key, { id, time: hm.slice(0, 5), name, about, diff, rounds, duration, days: [] });
       list.get(key).days.push(wd);
     }
   }
@@ -435,8 +439,7 @@ export class Live {
     const day = dayOf(t);
     const today = slotsOf(day).map((s) => publicSlot(s, t));
     const upcoming = [...today.filter((s) => s.startsAt > t), ...slotsOf(addDay(day, 1)).map((s) => publicSlot(s, t))].slice(0, 4);
-    const weekend = [0, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay());
-    return { next: publicSlot(next, t), upcoming, today, program: weekProgram(), weekend };
+    return { next: publicSlot(next, t), upcoming, today, program: weekProgram() };
   }
 
   /** Mes directs d'aujourd'hui (compte connecté) : { id du créneau : { score, correct, rounds } }. Rien pour un invité. */

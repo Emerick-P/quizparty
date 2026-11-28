@@ -53,7 +53,6 @@ function liveStrip() {
   return `<section class="l-strip" aria-label="Quiz en direct">
     <div class="l-head"><h3 class="l-h">${ico('zap')} Quiz en direct</h3>${i ? programLink() : ''}</div>
     <div class="l-row">${i ? list.map(tile).join('') : '<span class="muted l-load">Chargement…</span>'}</div>
-    ${i ? programTeaser() : ''}
   </section>`;
 }
 actions.liveslot = (btn) => { live.focus = btn.dataset.value; openSheet('live'); };

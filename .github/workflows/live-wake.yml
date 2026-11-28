@@ -7,15 +7,14 @@
 # direct a deux réveils, environ 45 et 22 min avant le départ, et chacun en heure d'hiver (UTC+1) et d'été
 # (UTC+2). Une fois réveillé, le serveur se garde éveillé jusqu'à la fin du direct (Live.keepAwake dans
 # server/live.js). Si les deux ont plus de 17 min de retard, la notification part en retard ou saute.
-# Coût : environ 360 minutes d'Actions par mois (2 000 gratuites pour un dépôt privé).
+# Coût : environ 350 minutes d'Actions par mois (2 000 gratuites pour un dépôt privé).
 name: Réveil avant le direct
 on:
   schedule:
-    - cron: '3,23 10,11 * * 1-5'   # 12 h 45 en semaine
-    - cron: '47 15,16 * * *'       # 18 h 30 tous les jours (premier réveil)
-    - cron: '8 16,17 * * *'        # 18 h 30 tous les jours (second réveil)
+    - cron: '3,23 10,11 * * *'     # 12 h 45 tous les jours
+    - cron: '47 15,16 * * 1-6'     # 18 h 30, du lundi au samedi (premier réveil)
+    - cron: '8 16,17 * * 1-6'      # 18 h 30, du lundi au samedi (second réveil)
     - cron: '17,38 19,20 * * 1-6'  # 22 h, du lundi au samedi
-    - cron: '17,38 8,9 * * 0,6'    # 11 h le week-end
     - cron: '17,38 18,19 * * 0'    # 21 h le dimanche (finale)
   workflow_dispatch:
 permissions: {}

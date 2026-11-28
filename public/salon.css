@@ -1003,15 +1003,10 @@ html { overflow-x: clip; }
 .l-bell.on { color: var(--accent-text); }
 .l-bell.on .ic path:first-child, .nf-row[aria-checked="true"] .nf-bell .ic path:first-child { fill: currentColor; }
 .l-tile.cut + .l-bell { color: var(--lime-ink); }
-.l-week { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px; padding: 6px 0; background: none; border: 0; color: var(--muted); font: inherit; font-size: .8rem; line-height: 1.35; text-align: left; cursor: pointer; }
-.l-week .ic { width: 15px; height: 15px; color: var(--accent-text); }
-.l-week span { flex: 1; min-width: 0; text-wrap: balance; }
-.l-week b { color: var(--accent-text); font-weight: 600; white-space: nowrap; }
 .l-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .l-head .l-h { margin: 0; }
-.l-week-short { display: none; margin: -8px 0; padding: 8px 0; background: none; border: 0; color: var(--accent-text); font: inherit; font-size: .8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
-/* Écran bas : l'accueil doit tenir sans défiler */
-@media (max-height: 659px) { .l-week { display: none; } .l-week-short { display: block; } }
+.l-prog { display: inline-flex; align-items: center; gap: 6px; margin: -8px 0; padding: 8px 0; background: none; border: 0; color: var(--accent-text); font: inherit; font-size: .85rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.l-prog .ic { width: 15px; height: 15px; }
 /* Téléphone étroit : l'heure et la cloche tiennent sur la même ligne */
 @media (max-width: 400px) {
   .l-cell > .l-tile { padding-left: 9px; padding-right: 9px; }
@@ -1035,7 +1030,9 @@ button.nf-row { cursor: pointer; }
 .nf-bell { color: var(--muted); }
 .nf-row[aria-checked="true"] .nf-bell { color: var(--accent-text); }
 .pf-notif .nf-list { gap: 6px; }
-/* Programme : cinq créneaux et « Tous les directs » sur un petit écran, sans défiler */
+/* Programme : chaque direct expliqué, sur un petit écran sans défiler */
+.nf-level { color: var(--muted); }
+.nf-level b { font-size: inherit; color: var(--text); }
 .sh[data-key="sh:week"] { max-height: 96dvh; gap: 8px; }
 .sh[data-key="sh:week"] .sh-head h2 { font-size: 1.4rem; }
 .sh[data-key="sh:week"] .sh-body { gap: 8px; }
@@ -1049,6 +1046,9 @@ button.nf-row { cursor: pointer; }
   .sh[data-key="sh:week"], .sh[data-key="sh:bell"] { max-width: 720px; max-height: 96dvh; gap: 8px; }
   .sh[data-key="sh:week"] .sh-head h2, .sh[data-key="sh:bell"] .sh-head h2 { font-size: 1.3rem; }
   .nf-row { padding: 6px 10px; }
+  [data-key="sh:week"] .nf-intro { display: none; }
+  .sh[data-key="sh:week"] .nf-row { padding: 4px 10px; }
+  .sh[data-key="sh:week"] .nf-txt small { font-size: .76rem; line-height: 1.25; }
 }
 
 /* Carte vedette « Ta bande » en tête du choix du jeu */
