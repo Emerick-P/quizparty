@@ -189,13 +189,26 @@ export class RoomManager {
     });
     // Quiz en direct : prochains créneaux, entrée dans la salle d'attente (voir live.js)
     on('live:info', () => ({ ok: true, ...this.live.info(), pushKey: this.push.publicKey }));
-    // Notifications des directs : choix d'un appareil, retrouvés par son abonnement (invités compris)
+    // Notifications des directs : choix du compte (les mêmes sur tous ses appareils) ou, en invité, de l'appareil
     let pushSaves = { since: 0, n: 0 };
-    on('push:get', async ({ subscription }) => ({ ok: true, prefs: await this.push.get(subscription) }));
-    on('push:save', async ({ subscription, prefs, previous }) => {
+    const pushLimit = () => {
       if (Date.now() - pushSaves.since > 60_000) pushSaves = { since: Date.now(), n: 0 };
       if (++pushSaves.n > PUSH_SAVES_PER_MIN) throw new Error('Trop de changements, attends une minute');
-      return { ok: true, prefs: await this.push.save(subscription, prefs, previous) };
+    };
+    // account : le navigateur se sait connecté. Juste après une reconnexion, on attend que le compte soit
+    // revérifié plutôt que d'enregistrer ses choix comme ceux d'un invité.
+    const pushUser = (account) => {
+      if (account && !socket.data.user) throw new Error('Connexion au compte en cours, réessaie dans un instant');
+      return account ? socket.data.user : null;
+    };
+    on('push:get', async ({ subscription, account }) => ({ ok: true, ...(await this.push.get(pushUser(account), subscription)) }));
+    on('push:save', async ({ subscription, prefs, previous, account }) => {
+      pushLimit();
+      return { ok: true, ...(await this.push.save(pushUser(account), subscription, prefs, previous)) };
+    });
+    on('push:off', async ({ subscription }) => {
+      pushLimit();
+      await this.push.off(subscription);
     });
     on('live:mine', async () => ({ ok: true, results: await this.live.mine(socket.data.user?.id ?? null) }));
     on('live:join', ({ name }) => {

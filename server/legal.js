@@ -66,9 +66,10 @@ export function privacyPage(email) {
 
 <h2>Notifications des quiz en direct</h2>
 <ul>
-  <li>Seulement si tu les actives avec une cloche : on garde l’adresse technique que ton navigateur nous donne pour t’écrire, ses clés de chiffrement et les directs que tu as cochés. Rien d’autre, et ce n’est pas relié à ton compte.</li>
+  <li>Seulement si tu les actives avec une cloche : on garde l’adresse technique que ton navigateur nous donne pour t’écrire, ses clés de chiffrement et les directs que tu as cochés. Rien d’autre.</li>
+  <li>En invité, c’est lié à l’appareil seulement. Avec un compte, les directs cochés sont gardés sur ton compte (pour les retrouver partout) et chaque appareil activé y est rattaché.</li>
   <li>Les messages passent par le service de notification de ton navigateur (Google, Apple, Mozilla ou Microsoft), chiffrés. On ne t’envoie que l’annonce des directs choisis, jamais de publicité.</li>
-  <li>Tout est effacé quand tu décoches tout, ou quand ton navigateur signale que l’abonnement n’existe plus.</li>
+  <li>L’adresse d’un appareil est effacée quand un invité décoche tout, quand tu désactives les notifications sur cet appareil (Profil), quand tu supprimes ton compte ou quand ton navigateur signale que l’abonnement n’existe plus. Les choix d’un compte partent avec le compte.</li>
 </ul>
 
 <h2>Où sont les données</h2>

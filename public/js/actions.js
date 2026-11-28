@@ -214,6 +214,7 @@ const actions = {
     store.del(AUTH_KEY);
     account.user = null;
     await send('auth:clear');
+    notifyAccountChanged(); // cet appareil garde ses rappels, en invité
     ui.sheet = null;
     toast('Déconnecté : tu joues en invité');
     render();
@@ -248,6 +249,7 @@ const actions = {
     store.del(AUTH_KEY);
     account.user = null;
     await send('auth:clear');
+    notifyDrop(); // le compte n'existe plus : ses rappels non plus
     ui.sheet = null;
     toast('Ton compte a été supprimé. Tu joues en invité.');
     render();

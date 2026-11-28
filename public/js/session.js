@@ -53,6 +53,7 @@ async function accountSync() {
   if (r.user) {
     account.user = r.user;
     account.ready = true; // le serveur connaît le compte : les requêtes de compte (cote, stats) peuvent partir
+    notifyAccountChanged(); // choix de notifications du compte (notify.js)
     if (!state) { homeUi.at = 0; render(); }
     if (r.user.look != null) store.set(LOOK_KEY, r.user.look); // l'image du compte suit le joueur partout
     if (r.user.steam) store.set(STEAM_KEY, r.user.steam); // le profil Steam aussi
@@ -85,6 +86,7 @@ function accountLost() {
   store.del(AUTH_KEY);
   account.user = null;
   send('auth:clear');
+  notifyAccountChanged();
   toast('Session expirée : reconnecte-toi pour retrouver ton compte');
   render();
 }

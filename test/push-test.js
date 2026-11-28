@@ -3,7 +3,8 @@
 // - abonnement : choix enregistrés et relus, adresses inconnues refusées, plus rien de coché = ligne effacée ;
 // - à l'ouverture de la salle d'attente : une seule notification par appareil concerné, chiffrée et lisible
 //   par lui, aucune pour les autres ; abonnement expiré effacé ; rappel ponctuel oublié une fois servi ;
-// - pas de doublon après un redémarrage du serveur.
+// - pas de doublon après un redémarrage du serveur ;
+// - compte connecté : mêmes choix sur tous ses appareils, chaque appareil activé à part, déconnexion.
 // Usage : node test/push-test.js (inclus dans npm test)
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -16,6 +17,8 @@ import { io } from 'socket.io-client';
 import ece from 'http_ece';
 import { generateVAPIDKeys } from 'web-push';
 import { weekProgram } from '../server/live.js';
+import { createPush } from '../server/push.js';
+import { createStore } from '../server/store.js';
 
 const PORT = 3994;
 const URL_ = `http://localhost:${PORT}`;
@@ -110,6 +113,7 @@ try {
   await save(apres, { formats: ['midi'] }, { previous: avant.sub.endpoint });
   assert.equal((await c.emit('push:get', { subscription: avant.sub })).prefs, null);
   assert.equal(received.length, 0, 'rien avant l’ouverture');
+  assert.match((await c.emit('push:get', { account: true })).error, /Connexion au compte/, 'compte annoncé mais pas vérifié : refusé');
   console.log('✓ abonnements : enregistrés, filtrés, effacés');
 
   await sleep(Math.max(0, at - OPEN_MS - Date.now() + 2000));
@@ -137,6 +141,41 @@ try {
   await sleep(1500);
   assert.equal(received.length, 4, 'pas de doublon après un redémarrage');
   console.log('✓ redémarrage : pas de doublon');
+
+  // ---- Compte connecté (module seul, sans Supabase)
+  const push = createPush({
+    formats: ['midi', 'soir'], store: createStore({ SUBMISSIONS_DIR: path.join(tmp, 'comptes') }),
+    env: { VAPID_PUBLIC_KEY: keys.publicKey, VAPID_PRIVATE_KEY: keys.privateKey, VAPID_SUBJECT: 'https://example.org', PUSH_TEST_ORIGIN: ORIGIN },
+  });
+  const lea = { id: 'u-lea' };
+  const [pc, mobile, voisin] = ['pc', 'mobile', 'voisin'].map(device);
+  const once = '2099-01-01T18:30';
+  const soirOnly = { every: false, formats: ['soir'], slots: [] };
+  const none = { every: false, formats: [], slots: [] };
+  assert.deepEqual(await push.get(lea), { prefs: null, here: false }, 'rien au départ');
+  assert.deepEqual(await push.save(lea, pc.sub, soirOnly), { prefs: soirOnly, here: true });
+  assert.deepEqual(await push.get(lea, mobile.sub), { prefs: soirOnly, here: false }, 'choix retrouvés sur le mobile, pas encore activé');
+  assert.equal((await push.save(lea, mobile.sub, soirOnly)).here, true, 'mobile activé');
+  assert.deepEqual(await push.save(lea, undefined, { ...soirOnly, slots: [once] }), { prefs: { ...soirOnly, slots: [once] }, here: false }, 'réglage sans activer l’appareil');
+  assert.deepEqual((await push.get(lea, pc.sub)).prefs.slots, [once], 'changement vu partout');
+  assert.deepEqual(await push.get(null, pc.sub), { prefs: null, here: false }, 'en invité, rien du compte');
+  await push.save(null, voisin.sub, { every: true });
+  received.length = 0;
+  await push.notify({ id: once, name: 'Apéro', time: '18:30', format: 'soir', startsAt: Date.now() + 60_000 });
+  assert.deepEqual(received.map((r) => r.path).sort(), ['/mobile', '/pc', '/voisin'], 'chaque appareil activé, une fois');
+  assert.deepEqual((await push.get(lea)).prefs, soirOnly, 'rappel ponctuel du compte oublié une fois servi');
+  // Tout décoché : les appareils restent inscrits (les choix peuvent revenir d'un autre appareil)
+  await push.save(lea, undefined, none);
+  assert.deepEqual(await push.get(lea, pc.sub), { prefs: none, here: true });
+  received.length = 0;
+  await push.notify({ id: '2099-01-02T18:30', name: 'Apéro', time: '18:30', format: 'soir', startsAt: Date.now() + 60_000 });
+  assert.deepEqual(received.map((r) => r.path), ['/voisin'], 'compte sans choix : plus rien pour ses appareils');
+  // « Désactiver ici » sur le mobile ; déconnexion sur le PC (il garde ses rappels, en invité)
+  await push.off(mobile.sub);
+  assert.equal((await push.get(lea, mobile.sub)).here, false);
+  assert.deepEqual(await push.save(null, pc.sub, soirOnly), { prefs: soirOnly, here: true });
+  assert.deepEqual(await push.get(lea, pc.sub), { prefs: none, here: false }, 'appareil détaché du compte');
+  console.log('✓ compte : choix partagés, activation par appareil, déconnexion');
   console.log('✓ notifications : tout est bon');
 } catch (err) {
   failed = true;

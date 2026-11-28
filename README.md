@@ -192,10 +192,12 @@ démarrage et une fois par jour, et `.github/workflows/keepalive.yml` réveille 
 Une cloche sur chaque tuile de direct, dans le programme de la semaine et dans le Profil. Un appareil reçoit
 une seule notification par direct choisi, quand la salle d'attente ouvre (5 min avant). Sur iPhone, seulement
 avec l'app installée sur l'écran d'accueil.
+Avec un compte, les choix suivent le compte (table `push_accounts`) et chaque appareil s'active à part
+(« Activer sur cet appareil », « Désactiver ici » dans le Profil). En invité, tout reste sur l'appareil.
 
 1. Clés (une seule fois) : `npm run vapid -- --env` pour le PC, `npm run vapid` pour Render (copier les deux
    lignes dans Environment). Sans clés, la fonction est invisible. En changer annule les abonnements.
-2. Base : `supabase/migrations/2026-11-28-notifications.sql` (table `push_subscriptions`).
+2. Base : `supabase/migrations/2026-11-28-notifications.sql` (tables `push_subscriptions` et `push_accounts`).
 3. Le serveur doit être debout à l'ouverture de la salle d'attente : l'anti-veille (voir « Mettre en ligne »)
    s'en charge. En secours, `.github/workflows/live-wake.yml` le réveille environ 45 et 22 min avant (GitHub ne
    garantit pas l'heure de ses tâches).

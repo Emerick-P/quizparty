@@ -3,20 +3,23 @@
 'use strict';
 
 // =====================================================================  notifications des directs
-// Une seule notification par direct, à l'ouverture de la salle d'attente. Les choix sont ceux de l'appareil
-// (invités compris) ; le serveur les retrouve grâce à l'abonnement du navigateur (server/push.js).
-// L'autorisation du navigateur n'est demandée qu'au premier appui sur une cloche ou une coche.
-const NOTIFY_KEY = 'quizparty:notify'; // { endpoint, prefs }
+// Une seule notification par direct, à l'ouverture de la salle d'attente (server/push.js).
+// Compte connecté : les choix sont ceux du compte, les mêmes sur tous ses appareils ; chaque appareil doit en
+// plus être activé (autorisation du navigateur). Invité : les choix sont ceux de l'appareil.
+// L'autorisation n'est demandée qu'au premier appui sur une cloche ou une coche, ou sur « Activer ».
+const NOTIFY_KEY = 'quizparty:notify'; // { endpoint, prefs, account, here }
 const NO_PREFS = { every: false, formats: [], slots: [] };
-// key : clé publique du serveur (absente = notifications désactivées) ; program : créneaux de la semaine
-const notify = { key: null, program: [], prefs: store.get(NOTIFY_KEY)?.prefs ?? NO_PREFS, slot: null, busy: false, synced: false };
+// key : clé publique du serveur (absente = notifications désactivées) ; program : créneaux de la semaine ;
+// prefs : mes choix ; here : cet appareil est inscrit ; at : dernière mise d'accord avec le serveur
+const notify = { key: null, program: [], prefs: store.get(NOTIFY_KEY)?.prefs ?? NO_PREFS, here: !!store.get(NOTIFY_KEY)?.here, slot: null, busy: false, at: 0 };
 const NOTIFY_OK = !SCREEN && window.isSecureContext && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const NOTIFY_IOS = IOS && !STANDALONE; // iPhone : seulement dans l'app installée sur l'écran d'accueil
 /** Cloches affichées : le serveur sait envoyer et l'appareil peut recevoir (ou iPhone, pour dire comment). */
 const notifyShown = () => !!notify.key && (NOTIFY_OK || NOTIFY_IOS);
 const notifyAllowed = () => NOTIFY_OK && !NOTIFY_IOS && Notification.permission === 'granted';
-/** Mes choix tels qu'ils comptent : sans l'autorisation du navigateur, rien n'est actif. */
-const notifyPrefs = () => (notifyAllowed() ? notify.prefs : NO_PREFS);
+const hasChoices = (p) => !!(p && (p.every || p.formats?.length || p.slots?.length));
+/** Mes choix affichés : ceux du compte ; en invité, ceux de l'appareil (rien sans l'autorisation du navigateur). */
+const notifyPrefs = () => (account.user || notifyAllowed() ? notify.prefs : NO_PREFS);
 const notifyCovers = (s) => { const p = notifyPrefs(); return p.every || p.formats.includes(s.format) || p.slots.includes(s.id); };
 
 // ---- programme de la semaine
@@ -72,29 +75,74 @@ async function notifySubscription() {
   if (old && String(new Uint8Array(old)) !== String(key)) { await sub.unsubscribe(); sub = null; } // clés du serveur changées
   return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
 }
-async function notifySave(sub, prefs) {
-  const r = await send('push:save', { subscription: sub.toJSON(), prefs, previous: store.get(NOTIFY_KEY)?.endpoint });
-  if (r.error) throw Object.assign(new Error(r.error), { shown: true });
-  notify.prefs = r.prefs ?? NO_PREFS;
-  store.set(NOTIFY_KEY, { endpoint: sub.endpoint, prefs: notify.prefs });
+/** Retient sur l'appareil mes choix et son inscription. */
+function notifyRemember(sub, prefs, here) {
+  notify.prefs = prefs;
+  notify.here = here;
+  store.set(NOTIFY_KEY, { endpoint: sub?.endpoint ?? store.get(NOTIFY_KEY)?.endpoint, prefs, account: !!account.user, here });
 }
-/** Au chargement : remet le serveur d'accord avec l'appareil (adresse changée, ligne perdue). */
-async function notifySync() {
+function notifyForget() {
+  store.del(NOTIFY_KEY);
+  notify.prefs = NO_PREFS;
+  notify.here = false;
+}
+const notifyError = (message) => Object.assign(new Error(message), { shown: true }); // message prêt à afficher
+async function notifyFetch(sub) {
+  const r = await send('push:get', { subscription: sub?.toJSON(), account: !!account.user });
+  if (r.error) throw notifyError(r.error);
+  return r;
+}
+/** sub : cet appareil, à inscrire ; sans lui (compte seulement), seuls les choix du compte changent. */
+async function notifySave(sub, prefs) {
+  const r = await send('push:save', { subscription: sub?.toJSON(), prefs, previous: store.get(NOTIFY_KEY)?.endpoint, account: !!account.user });
+  if (r.error) throw notifyError(r.error);
+  notifyRemember(sub, r.prefs ?? NO_PREFS, sub ? r.here : notify.here);
+}
+/**
+ * Remet l'écran, l'appareil et le serveur d'accord : choix du compte changés ailleurs, adresse de l'appareil
+ * changée, connexion, déconnexion. Au plus toutes les 30 s, sauf force.
+ */
+async function notifySync(force) {
+  // Compte retenu sur l'appareil mais pas encore confirmé par le serveur : on attend (accountSync rappelle)
+  if (!notify.key || notify.busy || (store.get(AUTH_KEY) && !account.ready)) return;
+  if (!force && Date.now() - notify.at < 30_000) return;
+  const signedIn = !!account.user;
   const saved = store.get(NOTIFY_KEY);
-  if (notify.synced || !saved || !notify.key || !notifyAllowed()) return;
-  notify.synced = true;
+  if (!signedIn && !saved) return;
+  notify.at = Date.now();
+  // Cet appareil recevait déjà (en invité, ou pour le compte) : son inscription est entretenue
+  const receiving = !!saved && (saved.account ? !!saved.here : hasChoices(saved.prefs));
   try {
-    const sub = await notifySubscription();
-    const r = await send('push:get', { subscription: sub.toJSON() });
-    if (r.error) throw new Error(r.error);
-    const p = saved.prefs;
-    if (!r.prefs && (p?.every || p?.formats?.length || p?.slots?.length)) await notifySave(sub, p);
-    else {
-      notify.prefs = r.prefs ?? NO_PREFS;
-      store.set(NOTIFY_KEY, { endpoint: sub.endpoint, prefs: notify.prefs });
+    const sub = receiving && notifyAllowed() ? await notifySubscription() : null;
+    if (!signedIn && saved.account) {
+      // Déconnexion : un appareil activé garde les mêmes rappels, en invité ; sinon on oublie les choix du compte
+      if (sub) await notifySave(sub, saved.prefs);
+      else notifyForget();
+    } else if (signedIn) {
+      const r = await notifyFetch(sub);
+      // Premier passage en compte : les choix de l'appareil servent au compte qui n'en a pas encore
+      if (sub && !r.here) await notifySave(sub, r.prefs ?? saved.prefs);
+      else notifyRemember(sub, r.prefs ?? NO_PREFS, r.here);
+    } else if (sub) {
+      const r = await notifyFetch(sub);
+      if (!r.prefs) await notifySave(sub, saved.prefs);
+      else notifyRemember(sub, r.prefs, r.here);
     }
     render();
-  } catch { notify.synced = false; }
+  } catch { notify.at = 0; }
+}
+/** Connexion, déconnexion, session expirée (session.js, actions.js). */
+function notifyAccountChanged() {
+  notify.at = 0;
+  if (notify.key) notifySync(true);
+  else loadLive(); // la réponse rappelle notifySync
+}
+/** Compte supprimé : plus rien sur cet appareil. */
+async function notifyDrop() {
+  notifyForget();
+  if (!NOTIFY_OK) return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  await (await reg?.pushManager.getSubscription())?.unsubscribe();
 }
 /** Appelé par loadLive() à chaque réponse du serveur. */
 function notifyInfo(info) {
@@ -102,6 +150,8 @@ function notifyInfo(info) {
   notify.program = info.program || [];
   notifySync();
 }
+// Retour sur la page : les choix du compte ont pu changer sur un autre appareil
+document.addEventListener('visibilitychange', () => { if (!document.hidden && account.user) notifySync(true); });
 
 /** Les choix après avoir coché ou décoché « every » ou « format:<id> » (profil, programme). */
 function notifyWith(prefs, value, on) {
@@ -112,27 +162,60 @@ function notifyWith(prefs, value, on) {
   return { every: split ? false : prefs.every, formats: on ? [...formats, id] : formats, slots: prefs.slots };
 }
 /**
- * Change mes choix (change : anciens choix → nouveaux), après l'autorisation du navigateur.
+ * Change mes choix (change : anciens choix → nouveaux). adds : on demande à être prévenu, il faut donc
+ * l'autorisation de cet appareil (avec un compte, on peut quand même régler ses choix sans elle).
  * done : appelé dès que le changement est affiché (ex. fermer la mini-feuille).
  */
-async function notifyChange(change, done) {
-  if (notify.busy) return;
-  if ((await notifyAsk()) !== 'granted') return render();
+async function notifyChange(change, { adds = true, done } = {}) {
+  if (notify.busy) return false;
+  const signedIn = !!account.user;
+  // notifyAsk en premier : le navigateur n'accepte la demande que pendant le geste
+  const allowed = adds ? (await notifyAsk()) === 'granted' : notifyAllowed();
+  if (!signedIn && !allowed) return render();
   const before = notify.prefs;
   notify.prefs = change(before); // affiché tout de suite, annulé si l'enregistrement échoue
   notify.busy = true;
   if (done) done(); else render();
+  let ok = false;
   try {
-    await notifySave(await notifySubscription(), notify.prefs);
+    const sub = allowed && (!signedIn || adds || notify.here) ? await notifySubscription() : null;
+    // Compte : on repart de la dernière version, les choix ont pu changer sur un autre appareil
+    const prefs = signedIn ? change((await notifyFetch()).prefs ?? NO_PREFS) : notify.prefs;
+    await notifySave(sub, prefs);
+    ok = !!sub;
   } catch (err) {
     notify.prefs = before;
     toast(err.shown ? err.message : 'Ton navigateur n’a pas pu activer les notifications');
   }
   notify.busy = false;
   render();
+  return ok;
 }
 /** Une coche du profil ou une cloche du programme. */
-actions.notifyset = (btn) => notifyChange((p) => notifyWith(p, btn.dataset.value, btn.dataset.on === '1'));
+actions.notifyset = (btn) => {
+  const on = btn.dataset.on === '1';
+  notifyChange((p) => notifyWith(p, btn.dataset.value, on), { adds: on });
+};
+/** « Activer sur cet appareil » : il reçoit ensuite les mêmes notifications que mes autres appareils. */
+actions.notifyhere = async () => {
+  if (await notifyChange((p) => p)) toast('Cet appareil recevra tes notifications');
+};
+actions.notifyoff = async () => {
+  if (notify.busy) return;
+  notify.busy = true;
+  try {
+    const sub = await notifySubscription();
+    const r = await send('push:off', { subscription: sub.toJSON() });
+    if (r.error) throw notifyError(r.error);
+    await sub.unsubscribe();
+    notifyRemember(null, notify.prefs, false);
+    toast('Cet appareil ne recevra plus de notification');
+  } catch (err) {
+    toast(err.shown ? err.message : 'Impossible de désactiver pour le moment');
+  }
+  notify.busy = false;
+  render();
+};
 /**
  * Les trois choix d'une cloche s'emboîtent (ce direct, tout son créneau, tous les directs) : en prendre un
  * remplace les autres pour ce direct. level null : ne plus être prévenu.
@@ -150,7 +233,7 @@ actions.notifybell = (btn) => {
   const s = bellSlot();
   if (!s) return;
   const level = btn.getAttribute('aria-pressed') === 'true' ? null : btn.dataset.value;
-  notifyChange((p) => bellPrefs(p, s, level), closeSheet);
+  notifyChange((p) => bellPrefs(p, s, level), { adds: !!level, done: closeSheet });
 };
 
 // ---- affichage
@@ -162,8 +245,10 @@ function bellButton(s) {
 }
 actions.bell = (btn) => {
   notify.slot = btn.dataset.value;
-  notifyAsk();
+  // Des choix déjà faits sur le compte : la feuille propose « Activer sur cet appareil » avant toute demande
+  if (!account.user || !hasChoices(notify.prefs)) notifyAsk();
   openSheet('bell');
+  if (account.user) notifySync(true);
 };
 /** Pourquoi on ne peut rien cocher (iPhone hors app, notifications bloquées, navigateur sans support), sinon ''. */
 function notifyBlocked() {
@@ -174,6 +259,18 @@ function notifyBlocked() {
   if (!NOTIFY_OK) return '<p class="sh-note">Ce navigateur ne permet pas les notifications.</p>';
   if (Notification.permission === 'denied') return '<p class="sh-note">Les notifications sont bloquées pour QuizParty : autorise-les dans les réglages de ton navigateur, puis reviens ici.</p>';
   return '';
+}
+/**
+ * Avec un compte : pourquoi cet appareil ne reçoit rien (bloqué, iPhone…) ou le bouton pour l'activer.
+ * main : le bouton est l'action principale de l'écran.
+ */
+function notifyDevice(main) {
+  if (!account.user) return '';
+  const blocked = notifyBlocked();
+  if (blocked) return blocked;
+  if (!hasChoices(notify.prefs) || (notify.here && notifyAllowed())) return '';
+  return `<p class="sh-note">Tes choix sont sur ton compte, mais cet appareil ne les reçoit pas encore.</p>
+    <button class="btn ${main ? 'primary' : ''} nf-back" data-action="notifyhere">${ico('bell')} Activer sur cet appareil</button>`;
 }
 /** Une ligne à cocher (toute la ligne se touche). mark : 'check' (case) ou 'bell' (cloche). */
 function notifyRow(value, on, title, sub, mark = 'check') {
@@ -194,7 +291,7 @@ function bellBody() {
   if (!s) return '<p class="muted">Ce direct est passé.</p>';
   const back = '<button class="btn nf-back" data-action="sheetclose">Retour</button>';
   const blocked = notifyBlocked();
-  if (blocked) return blocked + back;
+  if (blocked && !account.user) return blocked + back;
   const p = notifyPrefs();
   const f = liveFormats().find((x) => x.id === s.format);
   const level = p.every ? 'every' : p.formats.includes(s.format) ? 'format' : p.slots.includes(s.id) ? 'slot' : null;
@@ -205,6 +302,7 @@ function bellBody() {
       <span class="nf-mark" aria-hidden="true">${on ? ico('check') : ''}</span></button>`;
   };
   return `<p class="sh-note">Une notification quand la salle d’attente ouvre, ${Math.round((s.startsAt - s.opensAt) / 60000)} min avant le départ.</p>
+    ${notifyDevice(true)}
     <div class="nf-list">
       ${s.status === 'upcoming' ? choice('slot', 'Ce direct seulement', `${s.name}, ${liveDay(s)} à ${liveTime(s.startsAt)}`) : ''}
       ${f ? choice('format', ALL_OF[f.id] || `Tous les « ${f.name} »`, capital(f.when)) : ''}
@@ -215,22 +313,31 @@ function bellBody() {
 /** Programme de la semaine, avec une cloche par créneau (ceux du week-end compris). */
 function programBody() {
   if (!live.info) loadLive();
+  else notifySync();
   const blocked = notify.key ? notifyBlocked() : '';
-  const bells = notifyShown() && !blocked;
+  const bells = !!notify.key && (!!account.user || (notifyShown() && !blocked));
   return `<p class="sh-note">Les mêmes questions pour tout le monde, au même instant. La salle d’attente ouvre quelques minutes avant.${bells ? ' Touche un créneau pour être prévenu.' : ''}</p>
+    ${bells ? notifyDevice(false) : ''}
     <div class="nf-list nf-program">${bells ? formatRows('bell') + everyRow('bell')
     : liveFormats().map((f) => `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(capital(f.when))}</small></span></div>`).join('')}</div>
-    ${blocked}`;
+    ${bells ? '' : blocked}`;
 }
 /** Section « Notifications » du profil : une coche par créneau. */
 function notifySection() {
   if (!live.info) loadLive();
+  else notifySync();
   if (!notify.key) return '';
   const blocked = notifyBlocked();
+  const signedIn = !!account.user;
+  const where = signedIn ? ' Tes choix suivent ton compte sur tous tes appareils.'
+    : ` Réglage propre à cet appareil${account.cfg?.enabled ? ' : connecte-toi pour le retrouver sur les autres' : ''}.`;
+  const here = signedIn && notify.here && notifyAllowed()
+    ? '<p class="sh-note small">Activées sur cet appareil. <button class="link" type="button" data-action="notifyoff">Désactiver ici</button></p>' : '';
   return `<div class="acc pf-notif">
     <h3>Notifications</h3>
-    <p class="sh-note small">Un message par direct coché, à l’ouverture de sa salle d’attente. Rien d’autre. Réglage propre à cet appareil.</p>
-    ${blocked || `<div class="nf-list">${everyRow('check')}${formatRows('check')}</div>`}
+    <p class="sh-note small">Un message par direct coché, à l’ouverture de sa salle d’attente. Rien d’autre.${where}</p>
+    ${notifyDevice(false)}${here}
+    ${blocked && !signedIn ? blocked : `<div class="nf-list">${everyRow('check')}${formatRows('check')}</div>`}
   </div>`;
 }
 

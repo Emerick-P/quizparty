@@ -46,7 +46,7 @@ feedback : file, add, list
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
 
-### server/legal.js (146 l.)
+### server/legal.js (147 l.)
 Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
@@ -60,10 +60,10 @@ LIVE_FORMATS : midi, brunch, soir, nuit, finale
 
 DEFAULT_SLOTS : week, sat, sun
 
-### server/push.js (167 l.)
+### server/push.js (206 l.)
 Notifications du navigateur (Web Push) pour les quiz en direct.
 
-TABLE, SENT_KEY, MAX_ROWS, BATCH, RETRY_MS, MAX_SLOTS, PUSH_HOSTS, SLOT_ID, parisFmt, parisNow, idOf, bytes, wants, prefsOf, createPush
+TABLE, ACCOUNTS, SENT_KEY, MAX_ROWS, BATCH, RETRY_MS, MAX_SLOTS, PUSH_HOSTS, SLOT_ID, parisFmt, parisNow, idOf, bytes, NONE, wants, prefsOf, columnsOf, isEmpty, createPush
 
 ### server/rating.js (355 l.)
 Cote des joueurs (type Glicko-2), calculée surtout contre la cote des QUESTIONS.
@@ -77,7 +77,7 @@ RATING : start, rd, vol, tau, minRd, maxRd, placement, question, weights, versus
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (336 l.)
+### server/rooms.js (349 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, PUSH_SAVES_PER_MIN, RoomManager
@@ -174,7 +174,7 @@ Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (280 l.)
+### public/js/actions.js (282 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
 getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
@@ -254,12 +254,12 @@ Connexion temps réel : socket, horloge serveur (façon NTP), send(), état glob
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
 
-### public/js/notify.js (247 l.)
+### public/js/notify.js (354 l.)
 Notifications des directs (cloches, profil) et programme de la semaine.
 
-NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifySave, notifySync, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
+NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyDevice, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
 
-actions : notifyset, notifybell, bell
+actions : notifyset, notifyhere, notifyoff, notifybell, bell
 
 ### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).
@@ -280,7 +280,7 @@ Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
 
-### public/js/session.js (184 l.)
+### public/js/session.js (186 l.)
 Compte (Discord/Google), écran télé, événements du serveur, reprise de session, phase affichée.
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase

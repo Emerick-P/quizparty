@@ -5,14 +5,18 @@ import { store as defaultStore } from './store.js';
 /**
  * Notifications du navigateur (Web Push) pour les quiz en direct.
  *
- * - Un appareil = un abonnement (adresse donnée par son navigateur) + ses choix : tous les directs, certains
- *   créneaux (format : midi, brunch, soir, nuit, finale) ou des directs précis (id du créneau).
+ * - Choix : tous les directs, certains créneaux (format : midi, brunch, soir, nuit, finale) ou des directs
+ *   précis (id du créneau).
+ * - Compte connecté : les choix sont ceux du compte (table push_accounts), les mêmes sur tous ses appareils.
+ *   La permission se donne appareil par appareil : chaque appareil activé = une ligne rattachée au compte.
+ * - Invité : chaque appareil (abonnement donné par son navigateur) porte ses propres choix.
  * - Une seule notification par direct et par appareil, à l'ouverture de la salle d'attente (Live.plan).
  *   Rien d'autre n'est jamais envoyé.
  * - Sans VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY (voir .env.example) : désactivé, aucune cloche à l'écran.
- * - Table Supabase push_subscriptions (voir supabase/schema.sql) ; sans Supabase, fichier local.
+ * - Tables Supabase push_subscriptions et push_accounts (voir supabase/schema.sql) ; sans Supabase, fichiers locaux.
  */
-const TABLE = 'push_subscriptions';
+const TABLE = 'push_subscriptions'; // un appareil
+const ACCOUNTS = 'push_accounts'; // les choix d'un compte
 const SENT_KEY = 'push_sent'; // table meta : derniers directs déjà annoncés (pas de doublon après un redémarrage)
 const MAX_ROWS = 1000;
 const BATCH = 20;
@@ -28,8 +32,11 @@ const parisFmt = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris', ye
 const parisNow = (t = Date.now()) => parisFmt.format(new Date(t)).replace(' ', 'T');
 const idOf = (endpoint) => crypto.createHash('sha256').update(endpoint).digest('hex');
 const bytes = (s) => (typeof s === 'string' && /^[\w-]+={0,2}$/.test(s) ? Buffer.from(s, 'base64url').length : 0);
-const wants = (row, slot) => row.every_live || row.formats?.includes(slot.format) || row.slots?.includes(slot.id);
-const prefsOf = (row) => (row ? { every: !!row.every_live, formats: row.formats ?? [], slots: row.slots ?? [] } : null);
+const NONE = { every: false, formats: [], slots: [] };
+const wants = (row, slot) => !!row && (row.every_live || row.formats?.includes(slot.format) || row.slots?.includes(slot.id));
+const prefsOf = (row) => ({ every: !!row.every_live, formats: row.formats ?? [], slots: row.slots ?? [] });
+const columnsOf = (p) => ({ every_live: p.every, formats: p.formats, slots: p.slots, updated_at: new Date().toISOString() });
+const isEmpty = (p) => !p.every && !p.formats.length && !p.slots.length;
 
 export function createPush({ formats = [], store = defaultStore, env = process.env } = {}) {
   const publicKey = (env.VAPID_PUBLIC_KEY || '').trim();
@@ -95,25 +102,49 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
     enabled,
     publicKey: enabled ? publicKey : null,
 
-    async get(subscription) {
-      if (!enabled) return null;
-      const { endpoint } = cleanSubscription(subscription);
-      return db(async () => prefsOf(await store.get(TABLE, idOf(endpoint))));
+    /**
+     * Mes choix et l'état de cet appareil. user : compte connecté, ou null (invité).
+     * prefs : les choix (du compte, ou de l'appareil), null si rien d'enregistré ;
+     * here : cet appareil est inscrit pour cette personne. subscription facultatif.
+     */
+    async get(user, subscription) {
+      if (!enabled) return { prefs: null, here: false };
+      const id = subscription ? idOf(cleanSubscription(subscription).endpoint) : null;
+      return db(async () => {
+        const row = id ? await store.get(TABLE, id) : null;
+        const here = !!row && (row.user_id ?? null) === (user?.id ?? null);
+        const saved = user ? await store.get(ACCOUNTS, user.id) : here ? row : null;
+        return { prefs: saved ? cleanPrefs(prefsOf(saved)) : null, here };
+      });
     },
 
-    /** Enregistre les choix d'un appareil. Plus rien de coché : la ligne est effacée. */
-    async save(subscription, prefs, previous) {
+    /**
+     * Enregistre les choix. Avec un compte : sur le compte, et l'appareil donné (facultatif) y est rattaché.
+     * En invité : sur l'appareil ; plus rien de coché, sa ligne est effacée.
+     */
+    async save(user, subscription, prefs, previous) {
       if (!enabled) throw new Error('Notifications indisponibles pour le moment');
-      const sub = cleanSubscription(subscription);
+      const sub = subscription || !user ? cleanSubscription(subscription) : null;
       const p = cleanPrefs(prefs);
-      const id = idOf(sub.endpoint);
+      const id = sub ? idOf(sub.endpoint) : null;
       await db(async () => {
         // L'adresse de l'appareil a changé : l'ancienne ligne ne sert plus
-        if (typeof previous === 'string' && previous && previous !== sub.endpoint) await store.remove(TABLE, idOf(previous));
-        if (!p.every && !p.formats.length && !p.slots.length) return store.remove(TABLE, id);
-        return store.upsert(TABLE, { id, ...sub, every_live: p.every, formats: p.formats, slots: p.slots, updated_at: new Date().toISOString() });
+        if (sub && typeof previous === 'string' && previous && previous !== sub.endpoint) await store.remove(TABLE, idOf(previous));
+        if (user) {
+          await store.upsert(ACCOUNTS, { id: user.id, ...columnsOf(p) });
+          // Rattaché au compte : la ligne reste même sans rien de coché, les choix peuvent revenir d'un autre appareil
+          if (sub) await store.upsert(TABLE, { id, ...sub, user_id: user.id, ...columnsOf(NONE) });
+        } else if (isEmpty(p)) await store.remove(TABLE, id);
+        else await store.upsert(TABLE, { id, ...sub, user_id: null, ...columnsOf(p) });
       });
-      return p;
+      return { prefs: p, here: !!sub && (!!user || !isEmpty(p)) };
+    },
+
+    /** « Désactiver sur cet appareil » : il ne reçoit plus rien. */
+    async off(subscription) {
+      if (!enabled) return;
+      const { endpoint } = cleanSubscription(subscription);
+      await db(() => store.remove(TABLE, idOf(endpoint)));
     },
 
     /**
@@ -127,7 +158,9 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
         let done = [];
         try { done = JSON.parse(await store.getMeta(SENT_KEY)) || []; } catch (err) { if (!(err instanceof SyntaxError)) throw err; }
         if (done.includes(slot.id)) return;
-        const rows = (await store.query(TABLE, { limit: MAX_ROWS })).filter((r) => wants(r, slot));
+        const accounts = new Map((await store.query(ACCOUNTS, { limit: MAX_ROWS })).map((a) => [a.id, a]));
+        // Appareil d'un compte : les choix du compte ; appareil d'invité : les siens
+        const rows = (await store.query(TABLE, { limit: MAX_ROWS })).filter((r) => wants(r.user_id ? accounts.get(r.user_id) : r, slot));
         // Marqué avant l'envoi : mieux vaut une notification perdue qu'une envoyée deux fois
         await store.setMeta(SENT_KEY, JSON.stringify([...done, slot.id].slice(-30)));
         if (!rows.length) return;
@@ -139,6 +172,7 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
         });
         const ttl = Math.max(30, Math.ceil((slot.startsAt - Date.now()) / 1000)); // après le départ, inutile de la livrer
         let ok = 0, gone = 0;
+        const served = new Set(); // comptes prévenus sur au moins un appareil
         for (let i = 0; i < rows.length; i += BATCH) {
           await Promise.all(rows.slice(i, i + BATCH).map(async (row) => {
             try {
@@ -146,6 +180,7 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
               if (status === 404 || status === 410) { gone++; await store.remove(TABLE, row.id); return; }
               if (status >= 300) return console.error(`[notifications] refus ${status} (${new URL(row.endpoint).hostname})`);
               ok++;
+              if (row.user_id) return served.add(row.user_id);
               if (!row.slots?.includes(slot.id)) return;
               // Rappel ponctuel servi : on l'oublie, et la ligne avec s'il ne reste rien
               const slots = row.slots.filter((x) => x !== slot.id);
@@ -155,6 +190,10 @@ export function createPush({ formats = [], store = defaultStore, env = process.e
               console.error('[notifications] envoi :', err.message);
             }
           }));
+        }
+        for (const id of served) { // rappel ponctuel d'un compte : oublié une fois ses appareils prévenus
+          const { slots } = accounts.get(id);
+          if (slots?.includes(slot.id)) await store.update(ACCOUNTS, id, { slots: slots.filter((x) => x !== slot.id) });
         }
         console.log(`[notifications] ${slot.id} : ${ok}/${rows.length} envoyée(s)${gone ? `, ${gone} abonnement(s) expiré(s)` : ''}`);
       } catch (err) {
