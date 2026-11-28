@@ -7,7 +7,9 @@
 // Compte connecté : les choix sont ceux du compte, les mêmes sur tous ses appareils ; chaque appareil doit en
 // plus être activé (autorisation du navigateur). Invité : les choix sont ceux de l'appareil.
 // L'autorisation n'est demandée qu'au premier appui sur une cloche ou une coche, ou sur « Activer ».
+// Compte avec des rappels sur un appareil pas encore activé : une popup le propose, une seule fois par appareil.
 const NOTIFY_KEY = 'quizparty:notify'; // { endpoint, prefs, account, here }
+const NOTIFY_ASKED_KEY = 'quizparty:notify-asked'; // popup montrée ou activation refusée ici : plus jamais proposée seule
 const NO_PREFS = { every: false, formats: [], slots: [] };
 // key : clé publique du serveur (absente = notifications désactivées) ; program : créneaux de la semaine ;
 // prefs : mes choix ; here : cet appareil est inscrit ; at : dernière mise d'accord avec le serveur
@@ -18,6 +20,10 @@ const NOTIFY_IOS = IOS && !STANDALONE; // iPhone : seulement dans l'app install�
 const notifyShown = () => !!notify.key && (NOTIFY_OK || NOTIFY_IOS);
 const notifyAllowed = () => NOTIFY_OK && !NOTIFY_IOS && Notification.permission === 'granted';
 const hasChoices = (p) => !!(p && (p.every || p.formats?.length || p.slots?.length));
+/** Cet appareil reçoit bien les notifications. */
+const notifyHere = () => notify.here && notifyAllowed();
+/** Des rappels actifs sur le compte, que cet appareil ne reçoit pas (rien pendant un enregistrement). */
+const notifyAway = () => !!account.user && notifyShown() && !notify.busy && hasChoices(notify.prefs) && !notifyHere();
 /** Mes choix affichés : ceux du compte ; en invité, ceux de l'appareil (rien sans l'autorisation du navigateur). */
 const notifyPrefs = () => (account.user || notifyAllowed() ? notify.prefs : NO_PREFS);
 const notifyCovers = (s) => { const p = notifyPrefs(); return p.every || p.formats.includes(s.format) || p.slots.includes(s.id); };
@@ -115,7 +121,19 @@ async function notifySync(force) {
       else notifyRemember(sub, r.prefs, r.here);
     }
     render();
+    notifyOffer();
   } catch { notify.at = 0; }
+}
+/**
+ * Popup « Activer les rappels sur cet appareil ? » : compte avec des rappels, appareil pas activé et pas bloqué
+ * (sur iPhone, seulement dans l'app installée). Seulement sur l'accueil au repos : jamais par-dessus une partie,
+ * une autre fenêtre, une invitation dans un salon ou une saisie. Montrée une fois, elle ne revient pas.
+ */
+function notifyOffer() {
+  if (!notifyAway() || NOTIFY_IOS || Notification.permission === 'denied' || store.get(NOTIFY_ASKED_KEY)) return;
+  if (displayPhase() !== 'home' || ui.sheet || proposeOpen() || urlCode() || document.activeElement?.matches('input, textarea')) return;
+  store.set(NOTIFY_ASKED_KEY, true);
+  openSheet('nfask');
 }
 /** Connexion, déconnexion, session expirée (session.js, actions.js). */
 function notifyAccountChanged() {
@@ -157,6 +175,7 @@ async function notifyChange(change, { adds = true, done } = {}) {
   const signedIn = !!account.user;
   // notifyAsk en premier : le navigateur n'accepte la demande que pendant le geste
   const allowed = adds ? (await notifyAsk()) === 'granted' : notifyAllowed();
+  if (adds && !allowed) store.set(NOTIFY_ASKED_KEY, true); // refusé ici : pas de popup ensuite
   if (!signedIn && !allowed) return render();
   const before = notify.prefs;
   notify.prefs = change(before); // affiché tout de suite, annulé si l'enregistrement échoue
@@ -186,6 +205,12 @@ actions.notifyset = (btn) => {
 actions.notifyhere = async () => {
   if (await notifyChange((p) => p)) toast('Cet appareil recevra tes notifications');
 };
+/** « Activer » de la popup. Refus dans le navigateur : elle reste et explique comment revenir dessus. */
+actions.notifyyes = async () => {
+  if ((await notifyAsk()) !== 'granted') return render();
+  if (ui.sheet === 'nfask') closeSheet();
+  actions.notifyhere();
+};
 actions.notifyoff = async () => {
   if (notify.busy) return;
   notify.busy = true;
@@ -195,6 +220,7 @@ actions.notifyoff = async () => {
     if (r.error) throw notifyError(r.error);
     await sub.unsubscribe();
     notifyRemember(null, notify.prefs, false);
+    store.set(NOTIFY_ASKED_KEY, true); // choix explicite : pas de popup ensuite
     toast('Cet appareil ne recevra plus de notification');
   } catch (err) {
     toast(err.shown ? err.message : 'Impossible de désactiver pour le moment');
@@ -227,7 +253,8 @@ actions.notifybell = (btn) => {
 function bellButton(s) {
   if (!notifyShown()) return '';
   const on = notifyCovers(s);
-  return `<button class="l-bell ${on ? 'on' : ''}" data-action="bell" data-value="${s.id}" aria-pressed="${on}" aria-label="Me prévenir : ${esc(s.name)}, ${liveTime(s.startsAt)}">${ico('bell')}</button>`;
+  const away = on && notifyAway();
+  return `<button class="l-bell ${on ? 'on' : ''} ${away ? 'away' : ''}" data-action="bell" data-value="${s.id}" aria-pressed="${on}" aria-label="Me prévenir : ${esc(s.name)}, ${liveTime(s.startsAt)}${away ? ' (actif sur ton compte, pas sur cet appareil)' : ''}">${ico('bell')}</button>`;
 }
 actions.bell = (btn) => {
   notify.slot = btn.dataset.value;
@@ -243,20 +270,33 @@ function notifyBlocked() {
       <button class="btn" data-action="sheet" data-value="getapp">${ico('download')} Installer l’app</button>`;
   }
   if (!NOTIFY_OK) return '<p class="sh-note">Ce navigateur ne permet pas les notifications.</p>';
-  if (Notification.permission === 'denied') return '<p class="sh-note">Les notifications sont bloquées pour QuizParty : autorise-les dans les réglages de ton navigateur, puis reviens ici.</p>';
+  if (Notification.permission === 'denied') return `<p class="sh-note">Les notifications sont bloquées pour QuizParty sur cet appareil. Pour les réautoriser, ${notifyUnblock()}, puis reviens ici.</p>`;
   return '';
 }
+/** Où réautoriser des notifications bloquées, selon l'appareil. */
+const notifyUnblock = () => (IOS ? 'ouvre Réglages › Notifications › QuizParty'
+  : STANDALONE && TOUCH ? 'fais un appui long sur l’icône QuizParty et ouvre « Infos sur l’appli » › Notifications'
+  : `${STANDALONE ? 'ouvre QuizParty dans ton navigateur, ' : ''}touche l’icône à gauche de l’adresse du site et autorise « Notifications »`);
 /**
- * Avec un compte : pourquoi cet appareil ne reçoit rien (bloqué, iPhone…) ou le bouton pour l'activer.
- * main : le bouton est l'action principale de l'écran.
+ * Avec un compte : dit que cet appareil ne reçoit pas les rappels du compte, avec pourquoi (bloqué, iPhone…)
+ * ou le bouton pour l'activer. main : le bouton est l'action principale de l'écran.
  */
-function notifyDevice(main) {
+function notifyDevice(main, label = 'Activer sur cet appareil') {
   if (!account.user) return '';
+  const away = hasChoices(notify.prefs) && !notifyHere();
+  const status = away ? '<p class="sh-note nf-status">Actif sur ton compte, pas sur cet appareil.</p>' : '';
   const blocked = notifyBlocked();
-  if (blocked) return blocked;
-  if (!hasChoices(notify.prefs) || (notify.here && notifyAllowed())) return '';
-  return `<p class="sh-note">Tes choix sont sur ton compte, mais cet appareil ne les reçoit pas encore.</p>
-    <button class="btn ${main ? 'primary' : ''} nf-back" data-action="notifyhere">${ico('bell')} Activer sur cet appareil</button>`;
+  const act = blocked || (away ? `<button class="btn ${main ? 'primary' : ''} nf-back" data-action="notifyhere">${ico('bell')} ${label}</button>` : '');
+  return status || act ? `<div class="nf-device ${away && !blocked ? 'nf-act' : ''}">${status}${act}</div>` : '';
+}
+/** Popup proposée par notifyOffer ; si le navigateur vient de bloquer, elle explique comment revenir dessus. */
+function notifyAskBody() {
+  const blocked = notifyBlocked();
+  if (blocked) return `${blocked}<button class="btn nf-back" data-action="sheetclose">Compris</button>`;
+  return `<p class="sh-note">Tes rappels des quiz en direct sont actifs sur ton compte, mais cet appareil ne te préviendra pas tant qu’il n’est pas activé.</p>
+    <button class="btn primary nf-back" data-action="notifyyes">${ico('bell')} Activer</button>
+    <button class="btn nf-back" data-action="sheetclose">Plus tard</button>
+    <p class="sh-note small">Cette question ne reviendra pas : tu peux activer cet appareil quand tu veux, depuis une cloche ou ton profil.</p>`;
 }
 /** Une ligne à cocher (toute la ligne se touche). mark : 'check' (case) ou 'bell' (cloche) ; more : HTML en plus. */
 function notifyRow(value, on, title, sub, mark = 'check', more = '') {
@@ -310,8 +350,8 @@ function programBody() {
       : `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(sub)}</small>${level}</span></div>`;
   }).join('');
   return `<p class="sh-note nf-intro">Les mêmes questions pour tout le monde, au même instant.${bells ? ' Touche un direct pour être prévenu.' : ''}</p>
-    ${bells ? notifyDevice(false) : ''}
-    <div class="nf-list nf-program">${rows}${bells ? everyRow('bell') : ''}</div>
+    ${bells ? notifyDevice(false, 'Activer ici') : ''}
+    <div class="nf-list nf-program ${notifyAway() ? 'away' : ''}">${rows}${bells ? everyRow('bell') : ''}</div>
     ${bells ? '' : blocked}`;
 }
 /** Section « Notifications » du profil : une coche par créneau. */
@@ -323,7 +363,7 @@ function notifySection() {
   const signedIn = !!account.user;
   const where = signedIn ? ' Tes choix suivent ton compte sur tous tes appareils.'
     : ` Réglage propre à cet appareil${account.cfg?.enabled ? ' : connecte-toi pour le retrouver sur les autres' : ''}.`;
-  const here = signedIn && notify.here && notifyAllowed()
+  const here = signedIn && notifyHere()
     ? '<p class="sh-note small">Activées sur cet appareil. <button class="link" type="button" data-action="notifyoff">Désactiver ici</button></p>' : '';
   return `<div class="acc pf-notif">
     <h3>Notifications</h3>

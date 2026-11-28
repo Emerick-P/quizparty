@@ -1003,6 +1003,25 @@ html { overflow-x: clip; }
 .l-bell.on { color: var(--accent-text); }
 .l-bell.on .ic path:first-child, .nf-row[aria-checked="true"] .nf-bell .ic path:first-child { fill: currentColor; }
 .l-tile.cut + .l-bell { color: var(--lime-ink); }
+/* Rappel actif sur le compte mais pas sur cet appareil : cloche vide avec un point */
+.l-bell.away .ic path:first-child, .nf-list.away .nf-row[aria-checked="true"] .nf-bell .ic path:first-child { fill: none; }
+.nf-list.away .nf-row[aria-checked="true"] .nf-bell { position: relative; }
+.l-bell.away::after, .nf-list.away .nf-row[aria-checked="true"] .nf-bell::after { content: ''; position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--warn-text); }
+.l-bell.away::after { top: 7px; right: 7px; }
+.nf-list.away .nf-row[aria-checked="true"] .nf-bell::after { top: 1px; right: 1px; }
+.l-tile.cut + .l-bell.away::after { background: currentColor; }
+.nf-device { display: flex; flex-direction: column; gap: 8px; }
+.nf-status { color: var(--warn-text); font-weight: 600; }
+/* Programme : état et bouton sur une ligne, pour tenir sans défiler */
+.sh[data-key="sh:week"] .nf-act { flex-direction: row; align-items: center; }
+.sh[data-key="sh:week"] .nf-act > .sh-note { flex: 1; line-height: 1.3; }
+.sh[data-key="sh:week"] .nf-act > .btn { flex: none; width: auto; }
+.sh[data-key="sh:week"] .nf-device > .btn { padding-top: 8px; padding-bottom: 8px; }
+/* Appareil bloqué ou iPhone : l'explication suffit, en plus petit */
+.sh[data-key="sh:week"] .nf-device:not(.nf-act) > .nf-status { display: none; }
+.sh[data-key="sh:week"] .nf-device > .sh-note:not(.nf-status) { font-size: .8rem; line-height: 1.3; }
+@media (max-height: 700px) { .sh[data-key="sh:week"] .sh-body:has(.nf-device) .nf-intro { display: none; } }
+.sh[data-key="sh:nfask"] .sh-head h2 { font-size: 1.35rem; line-height: 1.2; text-wrap: balance; }
 .l-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .l-head .l-h { margin: 0; }
 .l-prog { display: inline-flex; align-items: center; gap: 6px; margin: -8px 0; padding: 8px 0; background: none; border: 0; color: var(--accent-text); font: inherit; font-size: .85rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
@@ -1049,6 +1068,10 @@ button.nf-row { cursor: pointer; }
   [data-key="sh:week"] .nf-intro { display: none; }
   .sh[data-key="sh:week"] .nf-row { padding: 4px 10px; }
   .sh[data-key="sh:week"] .nf-txt small { font-size: .76rem; line-height: 1.25; }
+  /* État de l'appareil : texte et bouton sur une ligne */
+  .nf-device { flex-direction: row; align-items: center; }
+  .nf-device > .sh-note { flex: 1; }
+  .nf-device > .btn { flex: none; }
 }
 
 /* Carte vedette « Ta bande » en tête du choix du jeu */

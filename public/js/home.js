@@ -226,6 +226,7 @@ const SHEETS = {
   live: { phase: 'home', page: true, render: () => ({ title: 'Quiz en direct', body: liveBody() }) },
   bell: { phase: 'home', render: () => ({ title: 'Me prévenir', body: bellBody() }) },
   week: { phase: 'home', render: () => ({ title: 'Programme des directs', body: programBody() }) },
+  nfask: { phase: 'home', render: () => ({ title: 'Activer les rappels sur cet appareil ?', body: notifyAskBody() }) },
   daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   defis: { phase: 'home', page: true, render: () => ({ title: 'Défis entre potes', body: potesBody() }) },
   defi: { phase: 'home', page: true, render: () => ({ title: 'Défi entre potes', body: poteBody() }) },

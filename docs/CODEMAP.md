@@ -216,14 +216,14 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (366 l.)
+### public/js/home.js (367 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 WIDE_MQ, wide, ui, modeGroups, bandeFeature, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, steamProfileBlock, accountBlock
 
 actions : tab, pickHue, pickLook
 
-SHEETS : name, create, join, live, bell, week, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
+SHEETS : name, create, join, live, bell, week, nfask, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
 
 ### public/js/live.js (147 l.)
 Quiz en direct.
@@ -254,12 +254,12 @@ Connexion temps réel : socket, horloge serveur (façon NTP), send(), état glob
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
 
-### public/js/notify.js (346 l.)
+### public/js/notify.js (386 l.)
 Notifications des directs (cloches, profil) et programme de la semaine.
 
-NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, DIFFICULTY, liveFormats, programLink, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyDevice, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
+NOTIFY_KEY, NOTIFY_ASKED_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyHere, notifyAway, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, DIFFICULTY, liveFormats, programLink, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyOffer, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyUnblock, notifyDevice, notifyAskBody, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
 
-actions : notifyset, notifyhere, notifyoff, notifybell, bell
+actions : notifyset, notifyhere, notifyyes, notifyoff, notifybell, bell
 
 ### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).

@@ -194,6 +194,9 @@ une seule notification par direct choisi, quand la salle d'attente ouvre (5 min 
 avec l'app installée sur l'écran d'accueil.
 Avec un compte, les choix suivent le compte (table `push_accounts`) et chaque appareil s'active à part
 (« Activer sur cet appareil », « Désactiver ici » dans le Profil). En invité, tout reste sur l'appareil.
+Un appareil pas encore activé alors que le compte a des rappels le propose une seule fois sur l'accueil (jamais si
+les notifications sont bloquées, ni sur iPhone hors app installée) ; ensuite les cloches (point orange), le
+programme et le Profil l'indiquent.
 
 1. Clés (une seule fois) : `npm run vapid -- --env` pour le PC, `npm run vapid` pour Render (copier les deux
    lignes dans Environment). Sans clés, la fonction est invisible. En changer annule les abonnements.
