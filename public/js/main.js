@@ -15,9 +15,16 @@ if (potesUrl) {
   history.replaceState(null, '', location.pathname);
   setTimeout(() => { if (!state) actions.defiopen({ dataset: { value: potesUrl.toUpperCase() } }); }, 0);
 }
+// Notification d'un direct touchée alors que QuizParty était fermé (…/?direct=<créneau>)
+const directUrl = !SCREEN && new URLSearchParams(location.search).get('direct');
+if (typeof directUrl === 'string') {
+  history.replaceState(null, '', location.pathname);
+  setTimeout(() => { if (!state) openDirect(directUrl); }, 0);
+}
 socket.connect();
 render();
 requestAnimationFrame(frame);
+if (!SCREEN && store.get(NOTIFY_KEY)) loadLive(); // abonnement aux directs remis d'accord avec le serveur
 // Arrivée par le QR code « L'app sur ton téléphone » : on ouvre directement la fenêtre d'installation
 if (new URLSearchParams(location.search).has('install')) {
   history.replaceState(null, '', location.pathname);

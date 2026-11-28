@@ -2,7 +2,7 @@
 // la connexion « avec Google ». Adresse de contact : variable CONTACT_EMAIL (jamais écrite dans le code).
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const UPDATED = '27 novembre 2026';
+const UPDATED = '28 novembre 2026';
 
 function page(title, body) {
   return `<!DOCTYPE html>
@@ -62,6 +62,13 @@ export function privacyPage(email) {
 <ul>
   <li>Les signalements (⚑) et les propositions de questions sont enregistrés avec ton pseudo et, si tu es connecté, ton identifiant de compte, pour pouvoir corriger le jeu.</li>
   <li>Si tu lies ton profil Steam, le jeu lit ses informations publiques (jeux, succès) pendant la partie. Elles ne sont pas conservées.</li>
+</ul>
+
+<h2>Notifications des quiz en direct</h2>
+<ul>
+  <li>Seulement si tu les actives avec une cloche : on garde l’adresse technique que ton navigateur nous donne pour t’écrire, ses clés de chiffrement et les directs que tu as cochés. Rien d’autre, et ce n’est pas relié à ton compte.</li>
+  <li>Les messages passent par le service de notification de ton navigateur (Google, Apple, Mozilla ou Microsoft), chiffrés. On ne t’envoie que l’annonce des directs choisis, jamais de publicité.</li>
+  <li>Tout est effacé quand tu décoches tout, ou quand ton navigateur signale que l’abonnement n’existe plus.</li>
 </ul>
 
 <h2>Où sont les données</h2>

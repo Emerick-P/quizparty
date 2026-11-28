@@ -1,6 +1,6 @@
 # Plan du code (généré par `npm run codemap`, ne pas modifier à la main)
 
-Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → daily → challenges → live → views → render → main.
+Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → daily → challenges → live → notify → views → render → main.
 
 ### server/auth.js (183 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
@@ -46,19 +46,24 @@ feedback : file, add, list
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
 
-### server/legal.js (139 l.)
+### server/legal.js (146 l.)
 Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/live.js (455 l.)
+### server/live.js (475 l.)
 Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
 
-LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
+LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, weekProgram, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
 
 LIVE_FORMATS : midi, brunch, soir, nuit, finale
 
 DEFAULT_SLOTS : week, sat, sun
+
+### server/push.js (167 l.)
+Notifications du navigateur (Web Push) pour les quiz en direct.
+
+TABLE, SENT_KEY, MAX_ROWS, BATCH, RETRY_MS, MAX_SLOTS, PUSH_HOSTS, SLOT_ID, parisFmt, parisNow, idOf, bytes, wants, prefsOf, createPush
 
 ### server/rating.js (355 l.)
 Cote des joueurs (type Glicko-2), calculée surtout contre la cote des QUESTIONS.
@@ -72,10 +77,10 @@ RATING : start, rd, vol, tau, minRd, maxRd, placement, question, weights, versus
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (325 l.)
+### server/rooms.js (336 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
-ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
+ALPHABET, EMPTY_ROOM_TTL_MS, PUSH_SAVES_PER_MIN, RoomManager
 
 ### server/stats.js (200 l.)
 Stats des joueurs connectés (comptes Supabase).
@@ -87,7 +92,7 @@ Profils Steam des joueurs (API Steam Web, gratuite, profils publics seulement).
 
 API, KEY, CACHE_MS, TIMEOUT_MS, PRIVACY_URL, cache, steamEnabled, gameImage, parseProfile, call, loadProfile, ACH_GAMES, appCache, appAchievements, pool, inFlight, loadAchievements, fetchAchievements
 
-### server/store.js (193 l.)
+### server/store.js (198 l.)
 Stockage des soumissions des amis et des signalements ⚑ de l'hôte.
 
 ROOT, BUCKET, supabaseBackend, localBackend, createStore, store
@@ -183,12 +188,12 @@ DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, 
 
 actions : defis, defiset, deficreate, defiopen, defiplay, defishare, defihome
 
-### public/js/core.js (125 l.)
+### public/js/core.js (126 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
 app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
 
-ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, music, grid, shuffle
+ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, bell, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, music, grid, shuffle
 
 MODE_ART : quiz, covers, sounds, bande
 
@@ -211,26 +216,26 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (363 l.)
+### public/js/home.js (366 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 WIDE_MQ, wide, ui, modeGroups, bandeFeature, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, steamProfileBlock, accountBlock
 
 actions : tab, pickHue, pickLook
 
-SHEETS : name, create, join, live, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
+SHEETS : name, create, join, live, bell, week, daily, defis, defi, getapp, tvinfo, games, settings, players, steam, scores, account, look, menu, stats, ranking, more
 
-### public/js/live.js (145 l.)
+### public/js/live.js (148 l.)
 Quiz en direct.
 
 live, liveTime, liveDay, LIVE_KEY, liveResult, loadLive, liveStrip, liveBody, liveResultBody, liveWait, liveEnd
 
 actions : liveslot, livejoin, livehome
 
-### public/js/main.js (26 l.)
+### public/js/main.js (33 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
 
-potesUrl
+potesUrl, directUrl
 
 ### public/js/media.js (235 l.)
 Jaquettes pixelisées, sons (« Quel jeu fait ce bruit ? »).
@@ -248,6 +253,13 @@ actions : navhome, sheet, sheetclose, soon, propose, go, pick, leaveok, leavecan
 Connexion temps réel : socket, horloge serveur (façon NTP), send(), état global (state, pending).
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
+
+### public/js/notify.js (222 l.)
+Notifications des directs (cloches, profil) et programme de la semaine.
+
+NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifySave, notifySync, notifyInfo, notifyWith, bellButton, notifyBlocked, notifyRow, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
+
+actions : notifyset, bell
 
 ### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).
@@ -326,6 +338,9 @@ ROOT, PORT, LOCAL, children, findCloudflared, serverIsUp, waitForServer, stopAll
 
 ### scripts/submissions.js (46 l.)
 Propositions des amis : npm run submissions [-- options]
+
+### scripts/vapid.js (25 l.)
+Clés VAPID des notifications des directs : une paire par site, à faire une seule fois (en changer annule
 
 ### public/proposer.js (199 l.)
 Page « Proposer » : formulaire de soumission des amis (aucune dépendance).

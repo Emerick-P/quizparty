@@ -21,7 +21,8 @@ Client francophone : code, commentaires, textes et messages en français.
   `index.js` (HTTP, routes) → `rooms.js` (salons, événements socket) → `room.js` (moteur : phases, chrono, scores)
   → `games/<type>.js` (un module par type de manche, déclaré dans `KINDS`). Les modes sont dans `MODES` de `games/index.js`.
   Supabase (`store.js`, `auth.js`, `stats.js`, `daily.js`) est facultatif : sans variables d'env, tout reste en local.
-- **Client** (`public/js/`) : 17 **scripts classiques, pas des modules**, chargés avec `defer` dans l'ordre d'`index.html`.
+  Notifications des directs (`push.js`, côté client `notify.js` et `sw.js`) : facultatives aussi (clés `VAPID_*`).
+- **Client** (`public/js/`) : une vingtaine de **scripts classiques, pas des modules**, chargés avec `defer` dans l'ordre d'`index.html`.
   Ils partagent leurs déclarations de premier niveau (`state`, `render`, `actions`…) sans import.
   - Un nouveau fichier s'ajoute dans `index.html`, à sa place dans l'ordre.
   - Au chargement, ne rien lancer d'asynchrone (fetch, socket, timer qui appelle `render`) : ça va dans `main.js`,

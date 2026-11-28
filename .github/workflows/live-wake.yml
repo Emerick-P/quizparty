@@ -1,16 +1,19 @@
 # Réveil du serveur avant chaque quiz en direct (Render gratuit s'endort après 15 min sans visite).
-# GitHub lance ces tâches en heure UTC, parfois avec quelques minutes de retard : chaque créneau a deux
-# lignes (heure d'hiver UTC+1 et heure d'été UTC+2), environ 20 min avant le départ (heure de Paris).
-# Une fois réveillé, le serveur se garde éveillé jusqu'à la fin du direct (Live.keepAwake dans server/live.js).
-# Coût : environ 150 minutes d'Actions par mois (2 000 gratuites pour un dépôt privé).
+# La notification des abonnés part à l'ouverture de la salle d'attente, 5 min avant le départ : le serveur
+# doit donc être debout à ce moment-là. GitHub lance ces tâches en heure UTC, souvent avec du retard : chaque
+# direct a deux réveils, environ 45 et 22 min avant le départ, et chacun en heure d'hiver (UTC+1) et d'été
+# (UTC+2). Une fois réveillé, le serveur se garde éveillé jusqu'à la fin du direct (Live.keepAwake dans
+# server/live.js). Si les deux ont plus de 17 min de retard, la notification part en retard ou saute.
+# Coût : environ 360 minutes d'Actions par mois (2 000 gratuites pour un dépôt privé).
 name: Réveil avant le direct
 on:
   schedule:
-    - cron: '25 10,11 * * 1-5'  # 12 h 45 en semaine
-    - cron: '10 16,17 * * *'    # 18 h 30 tous les jours
-    - cron: '40 19,20 * * 1-6'  # 22 h, du lundi au samedi
-    - cron: '40 8,9 * * 0,6'    # 11 h le week-end
-    - cron: '40 18,19 * * 0'    # 21 h le dimanche (finale)
+    - cron: '3,23 10,11 * * 1-5'   # 12 h 45 en semaine
+    - cron: '47 15,16 * * *'       # 18 h 30 tous les jours (premier réveil)
+    - cron: '8 16,17 * * *'        # 18 h 30 tous les jours (second réveil)
+    - cron: '17,38 19,20 * * 1-6'  # 22 h, du lundi au samedi
+    - cron: '17,38 8,9 * * 0,6'    # 11 h le week-end
+    - cron: '17,38 18,19 * * 0'    # 21 h le dimanche (finale)
   workflow_dispatch:
 permissions: {}
 jobs:

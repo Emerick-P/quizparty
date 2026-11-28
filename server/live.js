@@ -111,6 +111,20 @@ export function slotsOf(day) {
     return { id: `${day}T${hm}${extra ? '-evt' : ''}`, day, time: hm, format, startsAt, opensAt: startsAt - LIVE_OPEN_MS, ...(extra ? { event: true, name: extra.name, tagline: extra.tagline, theme: extra.theme } : {}) };
   }).sort((a, b) => a.startsAt - b.startsAt);
 }
+/** Programme de la semaine : une entrée par créneau (format et heure), avec ses jours (0 = dimanche). */
+export function weekProgram() {
+  const table = slotTable();
+  const list = new Map();
+  for (const wd of [1, 2, 3, 4, 5, 6, 0]) {
+    for (const [hm, id] of (wd === 0 ? table.sun : wd === 6 ? table.sat : table.week)) {
+      if (!LIVE_FORMATS[id]) continue;
+      const key = `${id}@${hm}`;
+      if (!list.has(key)) list.set(key, { id, time: hm.slice(0, 5), name: LIVE_FORMATS[id].name, tagline: LIVE_FORMATS[id].tagline, days: [] });
+      list.get(key).days.push(wd);
+    }
+  }
+  return [...list.values()];
+}
 /** Prochain créneau pas encore parti (celui dont la salle d'attente est peut-être ouverte). */
 export function nextSlot(t = Date.now()) {
   const day = dayOf(t);
@@ -388,7 +402,10 @@ export class Live {
     if (!s) return;
     const wait = Math.min(Math.max(0, s.opensAt - Date.now()), 6 * 3600_000); // re-planifié toutes les 6 h au plus
     this.timer = setTimeout(() => {
-      if (Date.now() >= s.opensAt) this.open(s);
+      if (Date.now() >= s.opensAt) {
+        this.open(s);
+        this.manager.push?.notify(publicSlot(s)); // une seule notification par direct (voir push.js)
+      }
       setTimeout(() => this.plan(), 1000).unref?.();
     }, wait);
     this.timer.unref?.();
@@ -418,7 +435,8 @@ export class Live {
     const day = dayOf(t);
     const today = slotsOf(day).map((s) => publicSlot(s, t));
     const upcoming = [...today.filter((s) => s.startsAt > t), ...slotsOf(addDay(day, 1)).map((s) => publicSlot(s, t))].slice(0, 4);
-    return { next: publicSlot(next, t), upcoming, today };
+    const weekend = [0, 6].includes(new Date(`${day}T12:00:00Z`).getUTCDay());
+    return { next: publicSlot(next, t), upcoming, today, program: weekProgram(), weekend };
   }
 
   /** Mes directs d'aujourd'hui (compte connecté) : { id du créneau : { score, correct, rounds } }. Rien pour un invité. */
@@ -448,7 +466,9 @@ export class Live {
     if (!url) return;
     const t = Date.now();
     const s = nextSlot(t - 30 * 60_000); // le créneau en cours (fin ≈ 30 min après le départ) ou le prochain
-    const near = s && t > s.opensAt - 20 * 60_000 && t < s.startsAt + 30 * 60_000;
+    // Éveillé dès 45 min avant la salle d'attente : la notification doit partir à l'heure, même si GitHub
+    // (live-wake.yml) réveille le serveur en avance pour couvrir ses propres retards
+    const near = s && t > s.opensAt - 45 * 60_000 && t < s.startsAt + 30 * 60_000;
     if (near || this.rooms.size) fetch(`${url}/health`).catch(() => {});
   }
 }

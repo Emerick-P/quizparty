@@ -186,6 +186,19 @@ Commandes : `npm run submissions` (en attente), `npm run submissions -- --all`,
 Pause d'un projet Supabase gratuit après 7 jours sans activité : le serveur interroge Supabase à chaque
 démarrage et une fois par jour, et `.github/workflows/keepalive.yml` réveille le serveur tous les 3 jours.
 
+## Notifications des quiz en direct
+
+Une cloche sur chaque tuile de direct, dans le programme de la semaine et dans le Profil. Un appareil reçoit
+une seule notification par direct choisi, quand la salle d'attente ouvre (5 min avant). Sur iPhone, seulement
+avec l'app installée sur l'écran d'accueil.
+
+1. Clés (une seule fois) : `npm run vapid -- --env` pour le PC, `npm run vapid` pour Render (copier les deux
+   lignes dans Environment). Sans clés, la fonction est invisible. En changer annule les abonnements.
+2. Base : `supabase/migrations/2026-11-28-notifications.sql` (table `push_subscriptions`).
+3. Le serveur doit être debout à l'ouverture de la salle d'attente : `.github/workflows/live-wake.yml` le
+   réveille environ 45 et 22 min avant. GitHub ne garantit pas l'heure de ses tâches : un très gros retard peut
+   faire sauter une notification.
+
 ## Structure
 
 ```
@@ -201,7 +214,7 @@ data/sounds/     sons du mode « Quel jeu fait ce bruit ? »
 .cache/images/   jaquettes téléchargées (non versionné)
 public/
   index.html, *.css  page unique et habillages (ordre des CSS : voir CLAUDE.md)
-  js/             client en 17 petits scripts (synchro d'horloge, rendu des écrans…) ; plan : docs/CODEMAP.md
+  js/             client en petits scripts (synchro d'horloge, rendu des écrans…) ; plan : docs/CODEMAP.md
 test/             tests bout-en-bout multi-joueurs (sync-test.js, cover-test.js, pitch-test.js, emoji-test.js…) quiz-text-test.js et vérification de la banque (questions-test.js)
 scripts/covers.js  rapport des jaquettes (npm run covers)
 deploy/           installation et mise à jour sur une VM (install.sh, update.sh)

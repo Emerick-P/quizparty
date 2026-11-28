@@ -995,6 +995,57 @@ html { overflow-x: clip; }
 .cote-alone p { text-wrap: balance; margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.4; max-width: 30ch; }
 .ab-end .login-top { padding: 7px; }
 
+/* ---------- Notifications des directs et programme de la semaine (notify.js) */
+.l-cell { position: relative; display: flex; flex: 1 0 104px; min-width: 0; scroll-snap-align: start; }
+.l-cell > .l-tile { flex: 1; width: 100%; }
+.l-bell { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; background: none; border: 0; color: var(--muted); cursor: pointer; }
+.l-bell .ic { width: 16px; height: 16px; }
+.l-bell.on { color: var(--accent-text); }
+.l-bell.on .ic path:first-child, .nf-row[aria-checked="true"] .nf-bell .ic path:first-child { fill: currentColor; }
+.l-tile.cut + .l-bell { color: var(--lime-ink); }
+.l-week { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 6px; padding: 6px 0; background: none; border: 0; color: var(--muted); font: inherit; font-size: .8rem; line-height: 1.35; text-align: left; cursor: pointer; }
+.l-week .ic { width: 15px; height: 15px; color: var(--accent-text); }
+.l-week span { flex: 1; min-width: 0; text-wrap: balance; }
+.l-week b { color: var(--accent-text); font-weight: 600; white-space: nowrap; }
+.l-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.l-head .l-h { margin: 0; }
+.l-week-short { display: none; margin: -8px 0; padding: 8px 0; background: none; border: 0; color: var(--accent-text); font: inherit; font-size: .8rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+/* Écran bas : l'accueil doit tenir sans défiler */
+@media (max-height: 659px) { .l-week { display: none; } .l-week-short { display: block; } }
+/* Téléphone étroit : l'heure et la cloche tiennent sur la même ligne */
+@media (max-width: 400px) {
+  .l-cell > .l-tile { padding-left: 9px; padding-right: 9px; }
+  .l-cell .l-tile b { font-size: .96rem; }
+  .l-bell { width: 30px; }
+}
+.nf-list { display: flex; flex-direction: column; gap: 8px; }
+.nf-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; text-align: left; font: inherit; color: var(--text); background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--r-ctl); }
+button.nf-row { cursor: pointer; }
+.nf-row:disabled { cursor: default; opacity: .65; }
+.nf-txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.nf-txt b { font-weight: 600; font-size: .95rem; }
+.nf-txt small { color: var(--muted); font-size: .8rem; line-height: 1.3; }
+.nf-mark { display: grid; place-items: center; width: 24px; height: 24px; flex: none; }
+.nf-check { border: 2px solid var(--line); border-radius: 6px; }
+.nf-row[aria-checked="true"] .nf-check { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); }
+.nf-bell { color: var(--muted); }
+.nf-row[aria-checked="true"] .nf-bell { color: var(--accent-text); }
+.pf-notif .nf-list { gap: 6px; }
+/* Programme : cinq créneaux et « Tous les directs » sur un petit écran, sans défiler */
+.sh[data-key="sh:week"] { max-height: 96dvh; gap: 8px; }
+.sh[data-key="sh:week"] .sh-head h2 { font-size: 1.4rem; }
+.sh[data-key="sh:week"] .sh-body { gap: 8px; }
+.sh[data-key="sh:week"] .nf-list { gap: 6px; }
+.sh[data-key="sh:week"] .nf-row { padding: 6px 12px; }
+@media (orientation: landscape) and (max-height: 520px) {
+  .l-head { margin-bottom: 4px; }
+  [data-key="sh:week"] .nf-list, [data-key="sh:bell"] .nf-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  [data-key="sh:week"] .sh-body, [data-key="sh:bell"] .sh-body { gap: 8px; }
+  .sh[data-key="sh:week"], .sh[data-key="sh:bell"] { max-width: 720px; max-height: 96dvh; gap: 8px; }
+  .sh[data-key="sh:week"] .sh-head h2, .sh[data-key="sh:bell"] .sh-head h2 { font-size: 1.3rem; }
+  .nf-row { padding: 6px 10px; }
+}
+
 /* Carte vedette « Ta bande » en tête du choix du jeu */
 .pick-feat { display: flex; flex-direction: column; gap: 8px; }
 .pick.feat { display: flex; flex-direction: row; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 14px; border-color: var(--mc); }

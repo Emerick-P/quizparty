@@ -20,6 +20,7 @@ async function loadLive() {
   if (r.error) return;
   live.info = r;
   live.mine = m && !m.error ? m.results : null;
+  notifyInfo(r); // cloches et programme (notify.js)
   // Rechargé à chaque changement : ouverture de la salle d'attente, départ, fin du direct
   clearTimeout(live.timer);
   const t = now();
@@ -45,12 +46,14 @@ function liveStrip() {
       : s.status === 'running' ? 'En cours'
       : s.status === 'done' ? (r ? `${fmtPts(r.score)} pts` : 'Terminé')
       : s.when !== 'aujourd’hui' ? esc(s.when) : `<span data-until="${s.startsAt}" data-mode="eta"></span>`;
-    return `<button class="l-tile ${s.status} ${s.id === feat ? 'feat' : ''} ${s.status === 'open' && !dailyTodo ? 'cut' : ''} ${s.event ? 'evt' : ''} ${s.status === 'done' ? (r ? 'played' : 'missed') : ''}" data-key="lt:${s.id}" data-action="liveslot" data-value="${s.id}">
-      <b>${liveTime(s.startsAt)}${s.event ? '<i class="l-evt">événement</i>' : ''}</b><span class="l-name">${esc(s.name)}</span><span class="l-tag">${esc(s.tagline)}</span><small>${sub}</small></button>`;
+    // La cloche est un bouton à part, posé sur la tuile (un bouton ne peut pas en contenir un autre)
+    return `<div class="l-cell" data-key="lt:${s.id}"><button class="l-tile ${s.status} ${s.id === feat ? 'feat' : ''} ${s.status === 'open' && !dailyTodo ? 'cut' : ''} ${s.event ? 'evt' : ''} ${s.status === 'done' ? (r ? 'played' : 'missed') : ''}" data-action="liveslot" data-value="${s.id}">
+      <b>${liveTime(s.startsAt)}${s.event ? '<i class="l-evt">événement</i>' : ''}</b><span class="l-name">${esc(s.name)}</span><span class="l-tag">${esc(s.tagline)}</span><small>${sub}</small></button>${bellButton(s)}</div>`;
   };
   return `<section class="l-strip" aria-label="Quiz en direct">
-    <h3 class="l-h">${ico('zap')} Quiz en direct</h3>
+    <div class="l-head"><h3 class="l-h">${ico('zap')} Quiz en direct</h3>${i ? programLink() : ''}</div>
     <div class="l-row">${i ? list.map(tile).join('') : '<span class="muted l-load">Chargement…</span>'}</div>
+    ${i ? programTeaser() : ''}
   </section>`;
 }
 actions.liveslot = (btn) => { live.focus = btn.dataset.value; openSheet('live'); };

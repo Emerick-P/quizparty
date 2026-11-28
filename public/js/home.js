@@ -224,6 +224,8 @@ const SHEETS = {
       <button class="btn primary big" type="submit">Rejoindre</button>
     </form>` }) },
   live: { phase: 'home', page: true, render: () => ({ title: 'Quiz en direct', body: liveBody() }) },
+  bell: { phase: 'home', render: () => ({ title: 'Me prévenir', body: bellBody() }) },
+  week: { phase: 'home', render: () => ({ title: 'Programme des directs', body: programBody() }) },
   daily: { phase: 'home', page: true, render: () => ({ title: 'Défi du jour', body: dailyBody() }) },
   defis: { phase: 'home', page: true, render: () => ({ title: 'Défis entre potes', body: potesBody() }) },
   defi: { phase: 'home', page: true, render: () => ({ title: 'Défi entre potes', body: poteBody() }) },
@@ -318,6 +320,7 @@ function profileBody() {
   </form>
   <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
   ${steamProfileBlock(u)}
+  ${notifySection()}
   ${u ? `<div class="acc">
     <h3>Compte</h3>
     <button class="btn danger-btn" data-action="deleteAccount">Supprimer mon compte</button>

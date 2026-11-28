@@ -3,12 +3,14 @@ import { stats } from './stats.js';
 import { cleanLook, defaultLook, photoOf } from './avatars.js';
 import { Room, cleanName } from './room.js';
 import { Daily, startDaily } from './daily.js';
-import { Live } from './live.js';
+import { Live, LIVE_FORMATS } from './live.js';
+import { createPush } from './push.js';
 import { Challenges, challengeModes, startChallenge, CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DEFAULTS, CHALLENGE_DAYS } from './challenges.js';
 
 // Pas de I ni O pour éviter les confusions avec 1 et 0
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const EMPTY_ROOM_TTL_MS = 10 * 60 * 1000;
+const PUSH_SAVES_PER_MIN = 40; // par connexion : large pour cocher des cases, étroit pour un robot
 
 export class RoomManager {
   constructor(io, { auth } = {}) {
@@ -18,6 +20,7 @@ export class RoomManager {
     this.pins = new Map(); // code à 4 chiffres affiché par un écran télé en attente → socket
     this.daily = new Daily(); // défi du jour (voir daily.js)
     this.challenges = new Challenges(); // défis entre potes (voir challenges.js)
+    this.push = createPush({ formats: Object.keys(LIVE_FORMATS) }); // notifications des directs (voir push.js)
     this.live = new Live(this); // quiz en direct (voir live.js)
     setInterval(() => this.sweep(), 60_000).unref();
   }
@@ -185,7 +188,15 @@ export class RoomManager {
       return startDaily(this, socket, n, this.daily);
     });
     // Quiz en direct : prochains créneaux, entrée dans la salle d'attente (voir live.js)
-    on('live:info', () => ({ ok: true, ...this.live.info() }));
+    on('live:info', () => ({ ok: true, ...this.live.info(), pushKey: this.push.publicKey }));
+    // Notifications des directs : choix d'un appareil, retrouvés par son abonnement (invités compris)
+    let pushSaves = { since: 0, n: 0 };
+    on('push:get', async ({ subscription }) => ({ ok: true, prefs: await this.push.get(subscription) }));
+    on('push:save', async ({ subscription, prefs, previous }) => {
+      if (Date.now() - pushSaves.since > 60_000) pushSaves = { since: Date.now(), n: 0 };
+      if (++pushSaves.n > PUSH_SAVES_PER_MIN) throw new Error('Trop de changements, attends une minute');
+      return { ok: true, prefs: await this.push.save(subscription, prefs, previous) };
+    });
     on('live:mine', async () => ({ ok: true, results: await this.live.mine(socket.data.user?.id ?? null) }));
     on('live:join', ({ name }) => {
       const n = cleanName(name);

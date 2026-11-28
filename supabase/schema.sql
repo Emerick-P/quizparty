@@ -312,3 +312,19 @@ alter table public.game_results drop constraint if exists game_results_source_ch
 alter table public.game_results add constraint game_results_source_check check (source in ('party', 'daily', 'challenge', 'live'));
 alter table public.answers drop constraint if exists answers_source_check;
 alter table public.answers add constraint answers_source_check check (source in ('party', 'daily', 'challenge', 'live'));
+
+-- Notifications des quiz en direct (migration 2026-11-28-notifications.sql) : un abonnement du navigateur par appareil et ses choix.
+-- Nouvelle table seulement : aucune donnée existante modifiée. RLS sans règle = seul le serveur y accède.
+create table if not exists public.push_subscriptions (
+  id          text primary key,          -- empreinte de l'adresse de l'abonnement
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now(),
+  endpoint    text not null,             -- adresse donnée par le navigateur (Google, Mozilla, Apple, Microsoft)
+  p256dh      text not null,             -- clés de chiffrement de l'appareil
+  auth        text not null,
+  every_live  boolean not null default false,   -- « Tous les directs »
+  formats     jsonb not null default '[]'::jsonb,  -- créneaux cochés : midi, brunch, soir, nuit, finale
+  slots       jsonb not null default '[]'::jsonb   -- directs précis : « 2026-11-28T18:30 »
+);
+alter table public.push_subscriptions enable row level security;
+grant select, insert, update, delete on public.push_subscriptions to service_role;

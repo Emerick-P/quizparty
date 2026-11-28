@@ -178,8 +178,13 @@ function localBackend(dir) {
       return fs.readFileSync(path.join(dir, 'files', name));
     },
     async replaceAll() {},
-    async getMeta() { return null; },
-    async setMeta() {},
+    async getMeta(key) {
+      return read('meta').find((r) => r.key === key)?.value ?? null;
+    },
+    async setMeta(key, value) {
+      fs.mkdirSync(dir, { recursive: true });
+      write('meta', [...read('meta').filter((r) => r.key !== key), { key, value }]);
+    },
     async ping() {},
   };
 }
