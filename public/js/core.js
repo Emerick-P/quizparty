@@ -24,6 +24,8 @@ const MODE_GROUPS = [
   { name: 'Lettres et mélange', ids: ['crossword', 'mix'] },
   { name: 'Entre amis', ids: ['bande'] },
 ];
+// Nom de l'app dans les textes partagés : celui que le serveur pose dans la page (server/brand.js)
+const APP_NAME = document.querySelector('meta[property="og:site_name"]')?.content || 'QuizParty';
 /** Icônes au trait (dessin façon lucide, 24×24, trait 1,75) : ico('tv') rend un <svg> qui prend la couleur du texte. */
 const ICONS = {
   tv: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="m17 2-5 5-5-5"/>',

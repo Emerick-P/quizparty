@@ -224,6 +224,12 @@ try {
   assert.equal(rowA.finished, true);
   assert.equal(rowA.score, endA.players[0].score);
   assert.equal(rowA.grid, endA.daily.grid);
+  // Partage : le lien avec le jeton montre le score, l'image de score est servie ; sans jeton, aperçu du jour
+  const shared = await (await fetch(`${URL}/?defi=${encodeURIComponent(endA.daily.share)}`)).text();
+  assert.match(shared, /og:title" content="Alice a fait [\d\s\u202f]+ points?"/);
+  assert.equal((await fetch(`${URL}/partage/apercu/${encodeURIComponent(endA.daily.share)}.png`)).status, 200);
+  assert.equal((await fetch(`${URL}/partage/story/${encodeURIComponent(endA.daily.share)}.png`)).status, 200);
+  assert.match(await (await fetch(`${URL}/?defi`)).text(), new RegExp(`og:title" content="Défi du jour n°${endA.daily.number}"`));
   // Stats : les réponses du défi partent dans la table commune (source 'daily', session = le jour)
   await new Promise((r) => setTimeout(r, 200));
   const ansA = T('answers').filter((x) => x.user_id === USERS['tok-alice-aaaaaaaaaaaaaaaaaaaaaaaa'].id);
@@ -238,6 +244,7 @@ try {
   assert.equal(again.played.score, rowA.score);
   info = await A.emit('daily:info');
   assert.equal(info.played.grid, rowA.grid);
+  assert.equal(info.played.share, endA.daily.share, 'même jeton depuis l’accueil qu’à la fin de la partie');
   assert.equal(info.streak, 1);
   assert.equal(info.leaderboard.length, 1);
   // Un invité qui a joué peut voir le classement

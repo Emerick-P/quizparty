@@ -16,6 +16,7 @@ import { createAuth } from './auth.js';
 import { AVATAR_EMOJIS, AVATAR_HUES } from './avatars.js';
 import { installLegal } from './legal.js';
 import { Room } from './room.js';
+import { installShare, previewTags } from './share.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,11 +54,14 @@ const version = (file) => {
     return '0';
   }
 };
-function sendIndex(_req, res, screen = false) {
+async function sendIndex(req, res, screen = false) {
+  // Aperçu du lien (image, titre) selon l'adresse ; en cas de souci, la page part sans
+  const preview = screen ? '' : await previewTags(req, rooms, siteOrigin(req)).catch((err) => { console.error('[partage]', err.message); return ''; });
   let html = fs
     .readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
     .replace(/"\/((?:js\/)?[\w-]+\.(?:js|css))"/g, (_m, f) => `"/${f}?v=${version(f)}"`);
   if (screen) html = html.replace('</head>', `  <link rel="stylesheet" href="/tv.css?v=${version('tv.css')}">\n</head>`);
+  if (preview) html = html.replace('</head>', () => `${preview}</head>`);
   res.set('Cache-Control', 'no-store');
   res.type('html').send(html);
 }
@@ -133,6 +137,7 @@ mediaRoute('sfx', sounds, 'audio/mpeg');
 
 const rooms = new RoomManager(io, { auth });
 io.on('connection', (socket) => rooms.handleConnection(socket));
+installShare(app, { rooms, siteOrigin });
 
 const PORT = Number(process.env.PORT) || 3000;
 // HOST=127.0.0.1 en ligne : seul Caddy peut joindre Node, tout passe par HTTPS

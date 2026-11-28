@@ -4,6 +4,7 @@ import { MODES, KINDS } from './games/index.js';
 import { stats, answerRow } from './stats.js';
 import { roundKey, priorOf } from './rating.js';
 import { cellOf, gridText } from './daily.js';
+import { scoreToken, modeOf } from './share.js';
 
 /**
  * Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
@@ -378,6 +379,10 @@ export class LiveRoom extends Room {
       correct: this.rounds.filter((x) => x.scored?.get(pid)?.correct).length,
       rounds: this.planned.length,
       account: !!mine?.user,
+      share: this.phase === 'end' && mine ? scoreToken({
+        type: 'direct', id: publicSlot(this.slot).name, at: this.slot.startsAt, score: mine.score,
+        correct: this.rounds.filter((x) => x.scored?.get(pid)?.correct).length, cells, modes: this.planned.map(modeOf), name: mine.name,
+      }) : null,
     };
     return v;
   }

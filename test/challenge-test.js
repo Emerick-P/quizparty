@@ -205,6 +205,12 @@ try {
   assert.equal((await A.emit('challenge:info', { code, device: DEV_H })).mine, true);
   assert.match((await B.emit('challenge:info', { code: 'ZZZZZZ' })).error, /introuvable/);
 
+  // Aperçu du lien : l'invitation, sans score ni classement
+  const page = await (await fetch(`${URL}/?c=${code.toLowerCase()}`)).text();
+  assert.match(page, /og:title" content="Alice te lance un d/);
+  assert.ok(page.includes(`/partage/apercu/defi-${code}.png`));
+  assert.equal((await fetch(`${URL}/partage/apercu/defi-${code}.png`)).status, 200);
+
   // ---- Bruno et un invité jouent : mêmes manches, même ordre ; on ne rejoint pas la partie d'un autre
   const sb = await B.emit('challenge:start', { code, name: 'Bruno', device: DEV_H });
   assert.ok(sb.ok, sb.error);
@@ -221,6 +227,7 @@ try {
   assert.equal(seenB.length, 5);
   assert.deepEqual(seenG, seenB, 'mêmes manches pour tous');
   const endB = await B.waitFor((s) => s.phase === 'end' && s.daily.leaderboard);
+  assert.equal(endB.daily.share, null, 'pas de score à partager pour un défi entre potes');
   assert.equal(endB.daily.me, `u:${USERS['tok-bruno-bbbbbbbbbbbbbbbbbbbbbbbb'].id}`);
   const endG = await G.waitFor((s) => s.phase === 'end' && s.daily.leaderboard?.length === 2);
   assert.ok(endG.daily.leaderboard.some((x) => x.guest && x.name === 'Gus'), 'invité au classement, marqué');

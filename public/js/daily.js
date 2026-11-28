@@ -54,14 +54,31 @@ function untilNext(at) {
   const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60;
   return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`;
 }
-function shareTextOf({ number, grid, score, streak }) {
-  return `QuizParty · Défi n°${number}\n${grid}\n${fmtPts(score)} pts${streak > 1 ? ` · 🔥 ${streak} jours` : ''}\n${location.origin}/?defi`;
+/** share : jeton signé du résultat (donné par le serveur), pour que l'aperçu du lien montre le score. */
+function shareTextOf({ number, grid, score, streak, share }) {
+  return `${APP_NAME} · Défi n°${number}\n${grid}\n${fmtPts(score)} pts${streak > 1 ? ` · 🔥 ${streak} jours` : ''}\n${location.origin}/?defi${share ? `=${encodeURIComponent(share)}` : ''}`;
 }
 async function shareDaily(text) {
   if (navigator.share && TOUCH) {
     try { await navigator.share({ text }); return; } catch (err) { if (err?.name === 'AbortError') return; }
   }
   try { await copyText(text); toast('Résultat copié : colle-le à tes potes !'); } catch { toast(text); }
+}
+// Image de score (format story) : chargée dès que son bouton s'affiche, pour que le partage parte au toucher
+const shareImages = new Map(); // jeton → Promise<File | null>
+function shareImageFile(token) {
+  if (!shareImages.has(token)) {
+    shareImages.set(token, fetch(`/partage/story/${encodeURIComponent(token)}.png`)
+      .then(async (r) => (r.ok ? new File([await r.blob()], `${APP_NAME.toLowerCase()}-score.png`, { type: 'image/png' }) : null))
+      .catch(() => null));
+  }
+  return shareImages.get(token);
+}
+/** Le bouton de partage habituel, avec « Partager l’image » à côté quand le résultat a un jeton. */
+function shareRow(button, token, text) {
+  if (!token) return button;
+  shareImageFile(token);
+  return `<div class="d-share">${button}<button class="btn" data-action="shareimage" data-token="${esc(token)}" data-value="${esc(text)}">${ico('image')} Partager l’image</button></div>`;
 }
 /** Classement du jour : les premiers, et ma ligne si je suis plus loin. */
 function dailyBoard(list, meId, max = 5) {
@@ -99,6 +116,7 @@ function dailyBody() {
   if (!i) { loadDaily(); return '<p class="muted">Chargement…</p>'; }
   const mine = dailyMine(), streak = dailyStreak();
   if (mine) {
+    const text = shareTextOf({ number: i.number, grid: mine.grid, score: mine.score, streak, share: mine.share });
     return `<div class="d-sheet">
       <div class="d-result">
         <small>Défi n°${i.number} · ${mine.correct}/${mine.rounds} trouvées</small>
@@ -107,7 +125,7 @@ function dailyBody() {
         ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
       ${ratingEnd()}
-      <button class="btn primary" data-action="dailyshare">${ico('share')} Partager mon résultat</button>
+      ${shareRow(`<button class="btn primary" data-action="dailyshare">${ico('share')} Partager mon résultat</button>`, mine.share, text)}
       <div class="d-col"><h3>Classement du jour</h3>
       ${dailyBoard(daily.board, i.me, 8)}</div>
       ${i.account ? '' : `<p class="sh-note">${account.cfg?.enabled ? '<button class="link" data-action="sheet" data-value="name">Connecte-toi</button> pour apparaître au classement et garder ta série sur tous tes appareils.' : ''}</p>`}
@@ -135,7 +153,7 @@ function rememberDaily(s) {
   if (old?.day === s.daily.day) return;
   const streak = old && old.day === prevDay(s.daily.day) ? (old.streak || 0) + 1 : 1;
   const me = s.players.find((p) => p.id === s.you);
-  store.set(DAILY_KEY, { day: s.daily.day, number: s.daily.number, score: me?.score ?? 0, grid: s.daily.grid, correct: s.daily.correct, rounds: s.daily.rounds, streak });
+  store.set(DAILY_KEY, { day: s.daily.day, number: s.daily.number, score: me?.score ?? 0, grid: s.daily.grid, correct: s.daily.correct, rounds: s.daily.rounds, streak, share: s.daily.share });
 }
 /** Correction et question du défi : la progression (une case par question). */
 const dailyProgress = () => (state.daily ? cellsHtml(state.daily.cells.map((c) => CELL_CLASS[c] ?? ''), 'prog') : '');
@@ -145,7 +163,7 @@ function dailyEnd() {
   const me = state.players.find((p) => p.id === state.you);
   const local = d.account ? null : store.get(DAILY_KEY);
   const streak = d.account ? d.streak : local?.day === d.day ? local.streak : 1;
-  const text = shareTextOf({ number: d.number, grid: d.grid, score: me?.score, streak });
+  const text = shareTextOf({ number: d.number, grid: d.grid, score: me?.score, streak, share: d.share });
   return `
     <main class="screen d-end">
       <div class="d-result">
@@ -155,7 +173,7 @@ function dailyEnd() {
         ${streak ? `<span class="d-streak">${ico('flame')} ${streak} jour${streak > 1 ? 's' : ''} d’affilée</span>` : ''}
       </div>
       ${ratingEnd()}
-      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
+      ${shareRow(`<button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>`, d.share, text)}
       <section class="card d-card">
         <h2>Classement du jour</h2>
         ${d.account ? (d.leaderboard ? dailyBoard(d.leaderboard, d.me) : '<p class="muted">Chargement…</p>') : `<p class="muted">En invité, tu n’es pas au classement.${account.cfg?.enabled ? ' Connecte-toi avant le défi de demain pour y être et garder ta série.' : ''}</p>${d.leaderboard ? dailyBoard(d.leaderboard, null, 3) : ''}`}
@@ -177,7 +195,26 @@ actions.dailystart = async () => {
 actions.dailyshare = (btn) => {
   if (btn.dataset.value) return shareDaily(btn.dataset.value);
   const i = daily.info, mine = dailyMine();
-  if (i && mine) shareDaily(shareTextOf({ number: i.number, grid: mine.grid, score: mine.score, streak: dailyStreak() }));
+  if (i && mine) shareDaily(shareTextOf({ number: i.number, grid: mine.grid, score: mine.score, streak: dailyStreak(), share: mine.share }));
+};
+/** Téléphone : feuille de partage (Instagram, WhatsApp…) avec l'image ; ailleurs, elle est téléchargée. */
+actions.shareimage = async (btn) => {
+  const { token, value } = btn.dataset;
+  const file = await shareImageFile(token);
+  if (!file) {
+    shareImages.delete(token); // nouvel essai au prochain toucher
+    return toast('Image indisponible, réessaie dans un instant');
+  }
+  const data = { files: [file], text: value };
+  if (TOUCH && navigator.canShare?.(data)) {
+    try { await navigator.share(data); return; } catch (err) { if (err?.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file);
+  a.download = file.name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
+  toast('Image téléchargée');
 };
 actions.dailyhome = async () => {
   await send('room:leave');

@@ -177,6 +177,9 @@ try {
   assert.equal(endA.daily.live.best, top, 'meilleur score du direct');
   assert.equal(endA.daily.cells.length, 6);
   assert.equal(endA.players.length, 1);
+  const shared = await (await fetch(`${URL}/?r=${encodeURIComponent(endA.daily.share)}`)).text();
+  assert.match(shared, /og:description" content="Direct .+ sur 6\./);
+  assert.equal((await fetch(`${URL}/partage/story/${encodeURIComponent(endA.daily.share)}.png`)).status, 200);
   assert.ok(logs.join('').includes('3 joueur(s)'), 'comptage dans les logs serveur seulement');
   info = await A.emit('live:info');
   assert.ok(info.next.startsAt > at, 'le créneau suivant est annoncé');

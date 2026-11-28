@@ -231,6 +231,11 @@ export class ChallengeRoom extends DailyRoom {
       .catch((err) => console.error('[défis] stats :', err.message));
   }
 
+  /** Pas de score à partager pour un défi entre potes : on partage son lien (classement caché avant de jouer). */
+  shareToken() {
+    return null;
+  }
+
   view(pid) {
     const v = super.view(pid);
     const c = this.challenge;

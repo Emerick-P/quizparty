@@ -416,12 +416,15 @@
 .d-end .d-card h2 { margin: 0 0 8px; font-size: 1.2rem; }
 .d-end .d-card p { margin: 0 0 6px; font-size: .9rem; }
 .d-end > .btn { width: 100%; }
+/* Résultat à partager : le texte et l'image côte à côte */
+.d-share { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.d-share > .btn { width: 100%; margin: 0; padding-inline: 8px; }
 @media (orientation: landscape) and (max-height: 560px) {
   .screen.d-end { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; max-width: 900px; column-gap: 16px; row-gap: 8px; }
   .d-end .d-result { grid-column: 1; grid-row: 1 / span 2; padding: 10px; }
   .d-end .d-result > b { font-size: 2.4rem; }
   .d-end .d-card { grid-column: 2; grid-row: 1 / span 3; }
-  .d-end > .btn.primary { grid-column: 1; grid-row: 3; }
+  .d-end > .btn.primary, .d-end > .d-share { grid-column: 1; grid-row: 3; }
   .d-end .d-next { grid-column: 1; grid-row: 4; }
   .d-end > .btn:not(.primary) { grid-column: 2; grid-row: 4; }
 }

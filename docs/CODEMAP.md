@@ -12,7 +12,12 @@ Images de profil : galerie maison (un emoji sur une couleur), la photo du compte
 
 AVATAR_EMOJIS, AVATAR_HUES, cleanLook, photoOf, defaultLook, lookView
 
-### server/challenges.js (270 l.)
+### server/brand.js (8 l.)
+Nom de l'app dans les aperçus de liens, les images de partage et les textes partagés.
+
+LOGO, APP_NAME
+
+### server/challenges.js (275 l.)
 Défis entre potes : un joueur connecté fige une série de questions et partage un lien (/?c=CODE).
 
 CHALLENGE_ROUNDS, CHALLENGE_DURATIONS, CHALLENGE_DAYS, CHALLENGE_DEFAULTS, EXCLUDED, ALPHABET, CODE_LEN, newCode, cleanCode, playerKey, ctxOf, challengeModes, publicResult, Challenges, ChallengeRoom, startChallenge
@@ -22,7 +27,7 @@ Copie EN LECTURE du contenu du jeu dans la table Supabase « content », pour qu
 
 ROOT, readJson, contentRows, syncContent
 
-### server/daily.js (432 l.)
+### server/daily.js (449 l.)
 Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
 
 DAILY_ROUNDS, DAILY_DURATION, DAILY_PARTS, NO_REPEAT_DAYS, TZ, dayFmt, dayKey, shiftDay, previousDay, nextDayAt, cellOf, CELL, gridText, recordStats, hasDb, unavailable, refreshImages, shuffleChoices, Daily, publicResult, DailyRoom, startDaily, openDaily
@@ -41,7 +46,7 @@ FEEDBACK_TYPES : accept, wrong, remove, other
 
 feedback : file, add, list
 
-### server/index.js (161 l.)
+### server/index.js (166 l.)
 
 
 __dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
@@ -51,7 +56,7 @@ Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
 
-### server/live.js (478 l.)
+### server/live.js (483 l.)
 Quiz en direct, en solo : à heure fixe (heure de Paris), tout le monde reçoit les mêmes questions au même instant.
 
 LIVE_TZ, LIVE_OPEN_MS, LIVE_MAX_PLAYERS, LIVE_REVEAL_MS, VERSUS_NEIGHBOURS, NO_REPEAT, PARTS, LIVE_FORMATS, WEEK_SLOTS, DEFAULT_SLOTS, slotTable, partsFmt, parisParts, parisTime, hmOf, dayOf, addDay, WEEKDAYS, whenOf, TEST_SLOT, eventTable, slotsOf, weekProgram, nextSlot, publicSlot, formatOf, buildLive, shuffled, hasChoices, LiveRoom, Live
@@ -81,6 +86,20 @@ COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTE
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, PUSH_SAVES_PER_MIN, RoomManager
+
+### server/share-card.js (195 l.)
+Dessin des images de partage « cartouche » : aperçu de lien (1200 × 630) et image de score en story
+
+require, C, MODE_ICONS, load, fonts, fontsOf, SPACES, glyphs, drawable, advance, measure, text, logo, cartridge, icon, cell, cellGrid, legend, svg, fmt, left, RIGHT, inviteCard, homeCard, scoreCard, storyCard, sharp, toPng
+
+C : bg, lime, keys
+
+MODE_ICONS : quiz, vraifaux, estimation, covers, pitch, emoji, sounds, bande, crossword
+
+### server/share.js (209 l.)
+Partage : aperçus des liens (balises Open Graph posées dans la page selon l'adresse) et images dessinées
+
+CACHE_MAX, LOOKUP_MS, MODE_CODES, KIND_MODES, CODE_MODES, CELL_CODES, CODE_CELLS, GRID_CELLS, secret, sign, modeOf, cellsOfGrid, scoreToken, readToken, parisWhen, headingOf, points, nameOr, withTimeout, describe, idOfQuery, esc, previewTags, installShare
 
 ### server/stats.js (200 l.)
 Stats des joueurs connectés (comptes Supabase).
@@ -188,10 +207,10 @@ DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, 
 
 actions : defis, defiset, deficreate, defiopen, defiplay, defishare, defihome
 
-### public/js/core.js (126 l.)
+### public/js/core.js (128 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
-app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
+app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, APP_NAME, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
 
 ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, bell, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, music, grid, shuffle
 
@@ -204,12 +223,12 @@ Mots croisés : grille, saisie, envoi des mots.
 
 CW_IDLE_MS, cw, cwCells, cwLetters, cwPlaying, cwLocked, cwFound, LETTERS, cwLabels, cwWord, cwSync, cwSetTyped, cwNext, cwChoose, cwFocus, cwWrong, cwSubmit, cwOnInput, cwGrid, cwClues, crosswordQuestion
 
-### public/js/daily.js (188 l.)
+### public/js/daily.js (225 l.)
 Défi du jour.
 
-DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, MOCK_DAILY, mockDaily, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, dailyBoard, dailyCard, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
+DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, MOCK_DAILY, mockDaily, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, shareImages, shareImageFile, shareRow, dailyBoard, dailyCard, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
 
-actions : dailystart, dailyshare, dailyhome
+actions : dailystart, dailyshare, shareimage, dailyhome
 
 ### public/js/device.js (110 l.)
 Appareil : écran télé (/tv), app installée (PWA), vibrations.
@@ -232,7 +251,7 @@ live, liveTime, liveDay, LIVE_KEY, liveResult, loadLive, liveStrip, liveBody, li
 
 actions : liveslot, livejoin, livehome
 
-### public/js/main.js (33 l.)
+### public/js/main.js (35 l.)
 Démarrage, une fois tous les scripts chargés (les tâches asynchrones ne partent qu'ici,
 
 potesUrl, directUrl

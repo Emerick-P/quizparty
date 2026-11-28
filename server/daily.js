@@ -4,6 +4,7 @@ import { MODES, KINDS } from './games/index.js';
 import { covers } from './images/index.js';
 import { store } from './store.js';
 import { stats, answerRow } from './stats.js';
+import { scoreToken, modeOf, cellsOfGrid } from './share.js';
 
 /**
  * Défi du jour : le même quiz figé pour tout le monde, de minuit à minuit (heure de Paris).
@@ -204,9 +205,16 @@ export class Daily {
       account: !!user,
       me: user?.id ?? null,
       streak,
-      played: mine ? publicResult(mine) : null,
+      played: mine ? { ...publicResult(mine), share: await this.shareOf(day, mine) } : null,
       leaderboard: mine ? await this.leaderboard(day) : null,
     };
+  }
+
+  /** Jeton de partage d'un résultat enregistré (null si le défi du jour est illisible). */
+  async shareOf(day, row) {
+    const c = await this.challenge(day).catch(() => null);
+    if (!c) return null;
+    return scoreToken({ type: 'jour', id: c.number, score: row.score, correct: row.correct, cells: cellsOfGrid(row.grid), modes: c.rounds.map(modeOf), name: row.name });
   }
 
   /** Classement pour un invité qui a déjà joué (son résultat est dans son navigateur). */
@@ -369,6 +377,14 @@ export class DailyRoom extends Room {
     super.destroy();
   }
 
+  /** Jeton du score à partager (aperçu du lien et image), une fois la partie finie. */
+  shareToken(cells) {
+    return scoreToken({
+      type: 'jour', id: this.challenge.number, score: this.score(), correct: this.log.filter((x) => x && x.correct).length,
+      cells, modes: this.challenge.rounds.map(modeOf), name: [...this.players.values()][0]?.name ?? this.playerName,
+    });
+  }
+
   view(pid) {
     const v = super.view(pid);
     const cells = this.cells();
@@ -386,6 +402,7 @@ export class DailyRoom extends Room {
         nextAt: nextDayAt(),
         leaderboard: this.phase === 'end' ? this.leaderboard : null,
         me: this.user?.id ?? null,
+        share: this.phase === 'end' ? this.shareToken(cells) : null,
       },
     };
   }

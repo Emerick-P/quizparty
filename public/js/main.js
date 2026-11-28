@@ -4,6 +4,8 @@
 
 if (!SCREEN) accountConfig().then(() => { if (account.cfg?.enabled) render(); });
 fetch('/api/avatars').then((r) => r.json()).then((x) => { Object.assign(looks, x); render(); }).catch(() => {});
+// Lien d'un score de direct (…/?r=<jeton>) : l'aperçu est fait par le serveur, on arrive sur l'accueil
+if (new URLSearchParams(location.search).has('r')) history.replaceState(null, '', location.pathname);
 // Lien partagé (…/?defi) : le défi s'ouvre directement
 if (!SCREEN && new URLSearchParams(location.search).has('defi')) {
   history.replaceState(null, '', location.pathname);

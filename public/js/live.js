@@ -115,7 +115,7 @@ function liveEnd() {
     store.set(LIVE_KEY, Object.fromEntries(keep.map((k) => [k, all[k]])));
     live.mine = null;
   }
-  const text = `QuizParty · Direct ${l.name} ${liveTime(l.startsAt)}\n${d.grid}\n${fmtPts(me?.score)} pts\n${location.origin}`;
+  const text = `${APP_NAME} · Direct ${l.name} ${liveTime(l.startsAt)}\n${d.grid}\n${fmtPts(me?.score)} pts\n${location.origin}${d.share ? `/?r=${encodeURIComponent(d.share)}` : ''}`;
   return `
     <main class="screen d-end">
       <div class="d-result">
@@ -125,7 +125,7 @@ function liveEnd() {
       </div>
       ${top}
       ${ratingEnd()}
-      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
+      ${shareRow(`<button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>`, d.share, text)}
       <button class="btn" data-action="livehome">Retour à l’accueil</button>
     </main>`;
 }

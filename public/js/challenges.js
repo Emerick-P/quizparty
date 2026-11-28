@@ -129,7 +129,7 @@ function poteBody() {
 function potesEnd() {
   const d = state.daily, c = d.challenge;
   const me = state.players.find((p) => p.id === state.you);
-  const text = `QuizParty · Défi de ${c.by}\n${d.grid}\n${fmtPts(me?.score)} pts\nÀ toi : ${potesLink(c.id)}`;
+  const text = `${APP_NAME} · Défi de ${c.by}\n${d.grid}\n${fmtPts(me?.score)} pts\nÀ toi : ${potesLink(c.id)}`;
   return `
     <main class="screen d-end">
       <div class="d-result">
@@ -186,7 +186,7 @@ actions.defiplay = async () => {
 actions.defishare = () => {
   const c = potes.info?.challenge;
   if (!c) return;
-  shareDaily(`${c.by} te lance un défi sur QuizParty : ${c.rounds} questions (${c.modeName}). Une seule tentative, classement commun !\n${potesLink(c.id)}`);
+  shareDaily(`${c.by} te lance un défi sur ${APP_NAME} : ${c.rounds} questions (${c.modeName}). Une seule tentative, classement commun !\n${potesLink(c.id)}`);
 };
 actions.defihome = async () => {
   const code = state?.daily?.challenge?.id;
