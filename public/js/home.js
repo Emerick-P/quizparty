@@ -18,6 +18,21 @@ function modeGroups() {
     .filter((g) => g.modes.length);
 }
 
+/** Carte vedette « Ta bande » en tête du choix du jeu : le mode propre à QuizParty (questions sur vos jeux Steam). */
+function bandeFeature() {
+  const m = state.options.modes.find((x) => x.id === 'bande');
+  if (!m) return '';
+  const linked = state.players.filter((p) => p.steam?.status === 'ok').length;
+  const mine = state.players.find((p) => p.id === state.you)?.steam?.status === 'ok';
+  const hint = m.unavailable || (linked ? `${linked} joueur${linked > 1 ? 's' : ''} lié${linked > 1 ? 's' : ''} sur ${state.players.length}` : 'Personne n’a encore lié Steam');
+  return `<div class="pick-feat">
+    <button class="pick feat ${state.settings.mode === 'bande' ? 'sel' : ''}" style="--mc:${modeArt('bande')[1]}" data-action="pick" data-value="bande" ${isHost() && !m.unavailable ? '' : 'disabled'}>
+      <span class="pick-ico" aria-hidden="true">${modeArt('bande')[0]}</span>
+      <span class="feat-txt"><b>${esc(m.name)}</b><small>Des questions sur vos vrais jeux Steam : qui y a passé le plus d’heures, qui n’a jamais lancé ce jeu…</small><small class="feat-n">${esc(hint)}</small></span></button>
+    ${mine ? '' : `<button class="btn small ghost" data-action="sheet" data-value="steam">${ico('gamepad')} Lier mon Steam</button>`}
+  </div>`;
+}
+
 // =====================================================================  accueil : deux onglets
 // Jouer = les salons entre potes. Compétition = tout ce qui compte pour la cote (défaut pour un compte connecté).
 // Le profil, les stats et le thème restent dans le menu de l'avatar. Un invité (ou un lien ?code=…) arrive sur Jouer.
@@ -221,7 +236,7 @@ const SHEETS = {
     </ol>
     <p class="sh-note">La télé affiche les questions, les images et les scores ; chacun répond sur son téléphone, l’hôte aussi. Sans télé, tout se joue sur les téléphones.</p>
     <button class="btn primary" data-action="sheetclose">Compris</button>` }) },
-  games: { phase: 'lobby', render: () => ({ title: 'Choisis le jeu', body: modeGroups().map((g) => `
+  games: { phase: 'lobby', render: () => ({ title: 'Choisis le jeu', body: bandeFeature() + modeGroups().map((g) => ({ ...g, modes: g.modes.filter((m) => m.id !== 'bande') })).filter((g) => g.modes.length).map((g) => `
     <div class="pick-group"><h3>${esc(g.name)}</h3><div class="pick-grid">
     ${g.modes.map((m) => `<button class="pick ${state.settings.mode === m.id ? 'sel' : ''} ${m.unavailable ? 'off' : ''}" style="--mc:${modeArt(m.id)[1]}" data-action="pick" data-value="${m.id}" ${isHost() && !m.unavailable ? '' : 'disabled'}>
       <span class="pick-ico" aria-hidden="true">${modeArt(m.id)[0]}</span><b>${esc(m.name)}</b><small>${esc(m.unavailable || m.description)}</small></button>`).join('')}
@@ -302,6 +317,7 @@ function profileBody() {
     <button class="btn primary" type="submit">Enregistrer</button>
   </form>
   <p class="sh-note">${u ? 'Enregistré sur ton compte : tu le retrouves sur tous tes appareils.' : 'Retenu sur cet appareil. Connecte-toi pour le garder sur tous tes appareils.'}${playing ? ' Il changera dans le salon à la fin de la partie.' : ''}</p>
+  ${steamProfileBlock(u)}
   ${u ? `<div class="acc">
     <h3>Compte</h3>
     <button class="btn danger-btn" data-action="deleteAccount">Supprimer mon compte</button>
@@ -309,6 +325,19 @@ function profileBody() {
   </div>` : `${accountBlock()}${state ? '<p class="sh-note small">Tu reviens dans ce salon juste après la connexion.</p>' : ''}`}
   <div class="sh-row"><span>Thème</span>${themeToggle()}</div>
   <p class="sh-note small pf-links"><a href="/confidentialite" target="_blank" rel="noopener">Confidentialité</a> · <a href="/conditions" target="_blank" rel="noopener">Conditions</a></p>`;
+}
+/** Profil : « Mon Steam » pour le mode « Ta bande ». Retenu sur l'appareil, et sur le compte si connecté. */
+function steamProfileBlock(u) {
+  const saved = store.get(STEAM_KEY) || '';
+  const me = state?.players?.find((p) => p.id === state.you)?.steam;
+  const live = me?.status === 'ok' ? `<p class="sh-note small">Lié : ${esc(me.name)}, ${me.games} jeu${me.games > 1 ? 'x' : ''}.</p>` : '';
+  return `<form class="sh-form pf-steam" data-form="steam-profile">
+    <label class="field"><span>Mon Steam <em class="muted">facultatif</em></span><input id="pf-steam" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(saved)}" enterkeyhint="done"></label>
+    ${live}
+    <button class="btn" type="submit">${ico('gamepad')} ${saved ? 'Mettre à jour' : 'Lier mon Steam'}</button>
+    ${saved ? '<button class="link" type="button" data-action="steamForget">Retirer mon Steam</button>' : ''}
+    <p class="sh-note small">Pour « Ta bande » : tes jeux et tes heures servent aux questions. ${u ? 'Retenu sur ton compte.' : 'Retenu sur cet appareil.'} Dans Steam : ton pseudo → Contacts → Ajouter un contact, copie « Votre code de contact ». Ton profil et tes jeux doivent être publics.</p>
+  </form>`;
 }
 function accountBlock() {
   const cfg = account.cfg;

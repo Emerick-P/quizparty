@@ -71,6 +71,8 @@ document.addEventListener('submit', (e) => {
     actions.join();
   } else if (e.target.matches('[data-form="steam"]')) {
     actions.steamLink();
+  } else if (e.target.matches('[data-form="steam-profile"]')) {
+    actions.steamSave();
   } else if (e.target.matches('[data-form="tvpin"]')) {
     const pin = $('#tv-pin').value.replace(/\D/g, '');
     if (pin.length !== 4) return toast('Le code de la télé fait 4 chiffres');

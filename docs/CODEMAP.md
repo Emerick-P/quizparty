@@ -2,7 +2,7 @@
 
 Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → daily → challenges → live → views → render → main.
 
-### server/auth.js (175 l.)
+### server/auth.js (183 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
 
 PROVIDERS, CACHE_MS, clip, profileOf, createAuth
@@ -72,7 +72,7 @@ RATING : start, rd, vol, tau, minRd, maxRd, placement, question, weights, versus
 
 COUNTDOWN_MS, REVEAL_MS, ANSWER_GRACE_MS, MAX_LATENCY_COMP_MS, LOBBY_REMOVE_AFTER_MS, HOST_HANDOFF_AFTER_MS, GUESSES_SHOWN, MAX_PLAYERS, SCREEN_GRACE_MS, OPTIONS, cleanName, shortId, Room
 
-### server/rooms.js (318 l.)
+### server/rooms.js (325 l.)
 Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, RoomManager
@@ -169,12 +169,12 @@ Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (253 l.)
+### public/js/actions.js (271 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
 getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
 
-actions : rvpage, theme, create, join, leave, getapp, installhide, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
+actions : rvpage, theme, create, join, leave, getapp, installhide, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamSave, steamForget, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
 ### public/js/challenges.js (197 l.)
 Défis entre potes.
@@ -211,10 +211,10 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (330 l.)
+### public/js/home.js (359 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
-WIDE_MQ, wide, ui, modeGroups, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, accountBlock
+WIDE_MQ, wide, ui, modeGroups, bandeFeature, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, steamProfileBlock, accountBlock
 
 actions : tab, pickHue, pickLook
 
@@ -249,7 +249,7 @@ Connexion temps réel : socket, horloge serveur (façon NTP), send(), état glob
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
 
-### public/js/propose.js (121 l.)
+### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).
 
 PROPOSE_PHASES, proposeButton, proposePanel, proposeOpen, openPropose, closePropose, updatePropose, recall, rememberGuess
@@ -268,7 +268,7 @@ Rendu : morph du DOM, swipe de la correction, chronos à chaque frame.
 
 sameNode, morphNode, morphChildren, render, SWIPE_HINT_KEY, swipeSeen, swipeHints, updateSwipe, updateTimers, frame
 
-### public/js/session.js (183 l.)
+### public/js/session.js (184 l.)
 Compte (Discord/Google), écran télé, événements du serveur, reprise de session, phase affichée.
 
 account, PROVIDER_LABEL, accountConfig, accountRefresh, accountSync, accountLost, tvConnect, steamAutoFor, autoLinkSteam, resume, enterRoom, leaveLocal, displayPhase

@@ -217,7 +217,7 @@ export class RoomManager {
       else if (user?.avatar && !socket.data.look) socket.data.look = defaultLook(user);
       this.roomOf(socket)?.setUser(socket.data.playerId, socket.data.user, user ? socket.data.look ?? null : null);
       if (!user) return { error: 'Session expirée, reconnecte-toi' };
-      return { ok: true, user: { name: user.name, avatar: user.avatar, photos: user.photos ?? {}, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null } };
+      return { ok: true, user: { name: user.name, avatar: user.avatar, photos: user.photos ?? {}, provider: user.provider, admin: user.admin, nickname: user.nickname ?? null, look: user.look ?? null, steam: user.steam ?? null } };
     });
     // Page Profil : nouveau pseudo. Gardé sur le compte (si connecté) ; appliqué tout de suite dans le salon
     // tant que la partie n'a pas commencé (pendant une partie, il servira au prochain salon).
@@ -248,6 +248,13 @@ export class RoomManager {
       if (socket.data.user) await this.auth.setLook(socket.data.user, l);
       this.roomOf(socket)?.setLook(socket.data.playerId, l);
       return { ok: true, look: l };
+    });
+    // Page Profil : profil Steam à garder sur le compte (texte collé par le joueur ; vide = retirer).
+    // Il n'est vérifié qu'en entrant dans un salon (steam:link). Invité : retenu sur l'appareil seulement.
+    on('profile:steam', async ({ profile }) => {
+      const p = String(profile ?? '').trim().slice(0, 200);
+      if (socket.data.user) await this.auth.setSteam(socket.data.user, p || null);
+      return { ok: true, profile: p };
     });
     on('auth:clear', () => {
       socket.data.user = null;

@@ -43,7 +43,7 @@ function liveStrip() {
     const r = s.status === 'done' ? liveResult(s.id) : null;
     const sub = s.status === 'open' ? `<span class="d-go" data-until="${s.startsAt}" data-mode="clock"></span>`
       : s.status === 'running' ? 'En cours'
-      : s.status === 'done' ? (r ? `${fmtPts(r.score)} pts` : 'Manqué')
+      : s.status === 'done' ? (r ? `${fmtPts(r.score)} pts` : 'Terminé')
       : s.when !== 'aujourd’hui' ? esc(s.when) : `<span data-until="${s.startsAt}" data-mode="eta"></span>`;
     return `<button class="l-tile ${s.status} ${s.id === feat ? 'feat' : ''} ${s.status === 'open' && !dailyTodo ? 'cut' : ''} ${s.event ? 'evt' : ''} ${s.status === 'done' ? (r ? 'played' : 'missed') : ''}" data-key="lt:${s.id}" data-action="liveslot" data-value="${s.id}">
       <b>${liveTime(s.startsAt)}${s.event ? '<i class="l-evt">événement</i>' : ''}</b><span class="l-name">${esc(s.name)}</span><span class="l-tag">${esc(s.tagline)}</span><small>${sub}</small></button>`;

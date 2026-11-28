@@ -141,14 +141,32 @@ const actions = {
     const profile = ($('#steam-input')?.value || '').trim();
     if (!profile) return toast('Colle l\'adresse de ton profil Steam');
     store.set(STEAM_KEY, profile);
+    if (account.user) send('profile:steam', { profile });
     const r = await send('steam:link', { profile });
     if (r.error) toast(r.error);
+  },
+  /** Page Profil : retient le profil Steam (appareil, et compte si connecté) ; il est vérifié en entrant dans un salon. */
+  async steamSave() {
+    const profile = ($('#pf-steam')?.value || '').trim();
+    if (!profile) return toast('Colle ton code de contact ou l\'adresse de ton profil Steam');
+    store.set(STEAM_KEY, profile);
+    const r = await send('profile:steam', { profile });
+    if (r.error) return toast(r.error);
+    toast('Steam retenu : il sera relié quand tu rejoins un salon');
+    render();
+  },
+  async steamForget() {
+    store.del(STEAM_KEY);
+    await send('profile:steam', { profile: '' });
+    if (state?.phase === 'lobby' || state?.phase === 'end') send('steam:unlink');
+    render();
   },
   steamHelp() { steamHelpOpen = true; render(); },
   steamHelpClose() { steamHelpOpen = false; render(); },
   noop() {},
   async steamUnlink() {
     store.del(STEAM_KEY);
+    if (account.user) send('profile:steam', { profile: '' });
     const r = await send('steam:unlink');
     if (r.error) toast(r.error);
   },

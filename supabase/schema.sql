@@ -204,6 +204,9 @@ grant select, insert, update, delete on public.daily_challenges, public.daily_re
 -- Image de profil choisie dans la page Profil : '' (initiale), 'photo' (photo Discord/Google), 'e:<emoji>:<couleur>' (galerie)
 alter table public.profiles add column if not exists avatar_look text;
 
+-- Profil Steam saisi dans la page Profil (code ami ou adresse), pour le mode « Ta bande »
+alter table public.profiles add column if not exists steam_input text;
+
 -- Défis entre potes (server/challenges.js) : un joueur fige une série de questions et partage un lien.
 -- challenges : le défi (manches figées), ouvert 7 jours. Plus tard, des ligues pourront regrouper des défis.
 create table if not exists public.challenges (

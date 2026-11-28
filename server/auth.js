@@ -99,6 +99,7 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
         const row = await store.get('profiles', user.id).catch(() => null);
         user.nickname = row?.nickname ?? null;
         user.look = row?.avatar_look ?? null;
+        user.steam = row?.steam_input ?? null;
         if (row?.role) user.role = row.role;
       }
       user.admin = user.role === 'admin' || admins.has(user.id); // ADMIN_USER_IDS : secours facultatif
@@ -115,6 +116,13 @@ export function createAuth(env = process.env, { fetch: f = globalThis.fetch } = 
       for (const v of cache.values()) if (v.user.id === user.id) v.user.look = look;
       user.look = look;
       if (store.name === 'supabase' && store.upsert) await store.upsert('profiles', { id: user.id, avatar_look: look });
+    },
+
+    /** Profil Steam du compte (code ami ou adresse, texte brut), gardé dans profiles.steam_input ; null pour le retirer. */
+    async setSteam(user, steam) {
+      for (const v of cache.values()) if (v.user.id === user.id) v.user.steam = steam;
+      user.steam = steam;
+      if (store.name === 'supabase' && store.upsert) await store.upsert('profiles', { id: user.id, steam_input: steam });
     },
 
     /** Pseudo du compte (page Profil), gardé dans profiles.nickname. */

@@ -55,6 +55,7 @@ async function accountSync() {
     account.ready = true; // le serveur connaît le compte : les requêtes de compte (cote, stats) peuvent partir
     if (!state) { homeUi.at = 0; render(); }
     if (r.user.look != null) store.set(LOOK_KEY, r.user.look); // l'image du compte suit le joueur partout
+    if (r.user.steam) store.set(STEAM_KEY, r.user.steam); // le profil Steam aussi
     store.set(AUTH_KEY, { ...s, user: r.user });
     // Pseudo : celui du compte s'il en a un ; sinon celui de l'appareil, enregistré sur le compte
     if (r.user.nickname) store.set(NAME_KEY, r.user.nickname);

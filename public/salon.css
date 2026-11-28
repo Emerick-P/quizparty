@@ -994,3 +994,13 @@ html { overflow-x: clip; }
 .cote-alone { align-items: center; justify-content: center; text-align: center; }
 .cote-alone p { text-wrap: balance; margin: 0; color: var(--muted); font-size: .92rem; line-height: 1.4; max-width: 30ch; }
 .ab-end .login-top { padding: 7px; }
+
+/* Carte vedette « Ta bande » en tête du choix du jeu */
+.pick-feat { display: flex; flex-direction: column; gap: 8px; }
+.pick.feat { display: flex; flex-direction: row; align-items: center; gap: 12px; width: 100%; min-height: 0; padding: 14px; border-color: var(--mc); }
+.pick.feat .pick-ico { margin: 0; flex: none; width: 48px; height: 48px; }
+.pick.feat .feat-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pick.feat b { font-size: 1.2rem; }
+.pick.feat .feat-n { color: var(--accent-text); font-family: var(--mono); font-size: .75rem; }
+.pick-feat .btn { align-self: flex-start; }
+.pick.feat:disabled:not(.sel) { opacity: .8; }
