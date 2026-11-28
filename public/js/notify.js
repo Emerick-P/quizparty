@@ -103,28 +103,25 @@ function notifyInfo(info) {
   notifySync();
 }
 
-/** Les choix après avoir coché ou décoché « every », « format:soir » ou « slot:<id> ». */
+/** Les choix après avoir coché ou décoché « every » ou « format:<id> » (profil, programme). */
 function notifyWith(prefs, value, on) {
-  const p = { every: prefs.every, formats: [...prefs.formats], slots: [...prefs.slots] };
-  const cut = value.indexOf(':');
-  const kind = cut < 0 ? value : value.slice(0, cut), id = value.slice(cut + 1);
-  if (kind === 'every') { p.every = on; return p; }
-  // Décocher un créneau alors que « Tous les directs » est coché : les autres restent
-  if (kind === 'format' && !on && p.every) { p.every = false; p.formats = liveFormats().map((f) => f.id); }
-  const key = kind === 'format' ? 'formats' : 'slots';
-  p[key] = p[key].filter((x) => x !== id);
-  if (on) p[key].push(id);
-  return p;
+  if (value === 'every') return { ...prefs, every: on };
+  const id = value.slice('format:'.length);
+  const split = prefs.every && !on; // décocher un créneau alors que « Tous les directs » est coché : les autres restent
+  const formats = (split ? liveFormats().map((f) => f.id) : prefs.formats).filter((x) => x !== id);
+  return { every: split ? false : prefs.every, formats: on ? [...formats, id] : formats, slots: prefs.slots };
 }
-actions.notifyset = async (btn) => {
+/**
+ * Change mes choix (change : anciens choix → nouveaux), après l'autorisation du navigateur.
+ * done : appelé dès que le changement est affiché (ex. fermer la mini-feuille).
+ */
+async function notifyChange(change, done) {
   if (notify.busy) return;
-  const { value } = btn.dataset, on = btn.dataset.on === '1';
-  const asked = notifyAsk();
-  if ((await asked) !== 'granted') return render();
+  if ((await notifyAsk()) !== 'granted') return render();
   const before = notify.prefs;
-  notify.prefs = notifyWith(before, value, on); // affiché tout de suite, annulé si l'enregistrement échoue
+  notify.prefs = change(before); // affiché tout de suite, annulé si l'enregistrement échoue
   notify.busy = true;
-  render();
+  if (done) done(); else render();
   try {
     await notifySave(await notifySubscription(), notify.prefs);
   } catch (err) {
@@ -133,6 +130,27 @@ actions.notifyset = async (btn) => {
   }
   notify.busy = false;
   render();
+}
+/** Une coche du profil ou une cloche du programme. */
+actions.notifyset = (btn) => notifyChange((p) => notifyWith(p, btn.dataset.value, btn.dataset.on === '1'));
+/**
+ * Les trois choix d'une cloche s'emboîtent (ce direct, tout son créneau, tous les directs) : en prendre un
+ * remplace les autres pour ce direct. level null : ne plus être prévenu.
+ */
+function bellPrefs(prefs, s, level) {
+  const p = { every: level === 'every', formats: prefs.formats.filter((f) => f !== s.format), slots: prefs.slots.filter((x) => x !== s.id) };
+  if (level === 'format') p.formats.push(s.format);
+  if (level === 'slot') p.slots.push(s.id);
+  return p;
+}
+/** Le direct de la mini-feuille ouverte. */
+const bellSlot = () => [...(live.info?.today ?? []), ...(live.info?.upcoming ?? [])].find((x) => x.id === notify.slot);
+/** Un des boutons de la mini-feuille : appliqué tout de suite, la feuille se ferme. Retoucher le choix actif le retire. */
+actions.notifybell = (btn) => {
+  const s = bellSlot();
+  if (!s) return;
+  const level = btn.getAttribute('aria-pressed') === 'true' ? null : btn.dataset.value;
+  notifyChange((p) => bellPrefs(p, s, level), closeSheet);
 };
 
 // ---- affichage
@@ -158,34 +176,41 @@ function notifyBlocked() {
   return '';
 }
 /** Une ligne à cocher (toute la ligne se touche). mark : 'check' (case) ou 'bell' (cloche). */
-function notifyRow(value, on, title, sub, { locked = false, mark = 'check' } = {}) {
-  return `<button class="nf-row" role="checkbox" aria-checked="${on}" data-key="nf:${value}" data-action="notifyset" data-value="${value}" data-on="${on ? 0 : 1}" ${locked ? 'disabled' : ''}>
+function notifyRow(value, on, title, sub, mark = 'check') {
+  return `<button class="nf-row" role="checkbox" aria-checked="${on}" data-key="nf:${value}" data-action="notifyset" data-value="${value}" data-on="${on ? 0 : 1}">
     <span class="nf-txt"><b>${esc(title)}</b><small>${esc(sub)}</small></span>
     <span class="nf-mark nf-${mark}" aria-hidden="true">${mark === 'bell' ? ico('bell') : on ? ico('check') : ''}</span></button>`;
 }
-const everyRow = (mark) => notifyRow('every', notifyPrefs().every, 'Tous les directs', 'En semaine et le week-end', { mark });
+const capital = (text) => text.replace(/^./, (c) => c.toUpperCase());
+const everyRow = (mark) => notifyRow('every', notifyPrefs().every, 'Tous les directs', 'En semaine et le week-end', mark);
 const formatRows = (mark) => liveFormats().map((f) => {
   const p = notifyPrefs();
-  return notifyRow(`format:${f.id}`, p.every || p.formats.includes(f.id), f.name, f.when.replace(/^./, (c) => c.toUpperCase()), { mark });
+  return notifyRow(`format:${f.id}`, p.every || p.formats.includes(f.id), f.name, capital(f.when), mark);
 }).join('');
-/** Mini-feuille d'une cloche : ce direct, tout son créneau, ou tous les directs. */
+/** Mini-feuille d'une cloche : un bouton par choix (ce direct, tout son créneau, tous les directs). */
 function bellBody() {
-  const i = live.info;
-  if (!i) { loadLive(); return '<p class="muted">Chargement…</p>'; }
-  const s = [...i.today, ...i.upcoming].find((x) => x.id === notify.slot);
+  if (!live.info) { loadLive(); return '<p class="muted">Chargement…</p>'; }
+  const s = bellSlot();
   if (!s) return '<p class="muted">Ce direct est passé.</p>';
+  const back = '<button class="btn nf-back" data-action="sheetclose">Retour</button>';
   const blocked = notifyBlocked();
-  if (blocked) return blocked;
+  if (blocked) return blocked + back;
   const p = notifyPrefs();
   const f = liveFormats().find((x) => x.id === s.format);
-  const whole = p.every || p.formats.includes(s.format);
+  const level = p.every ? 'every' : p.formats.includes(s.format) ? 'format' : p.slots.includes(s.id) ? 'slot' : null;
+  const choice = (value, title, sub) => {
+    const on = level === value;
+    return `<button class="nf-row nf-pick" aria-pressed="${on}" data-key="nf:${value}" data-action="notifybell" data-value="${value}">
+      <span class="nf-txt"><b>${esc(title)}</b><small>${esc(on ? 'Activé : touche pour retirer' : sub)}</small></span>
+      <span class="nf-mark" aria-hidden="true">${on ? ico('check') : ''}</span></button>`;
+  };
   return `<p class="sh-note">Une notification quand la salle d’attente ouvre, ${Math.round((s.startsAt - s.opensAt) / 60000)} min avant le départ.</p>
     <div class="nf-list">
-      ${s.status === 'upcoming' ? notifyRow(`slot:${s.id}`, whole || p.slots.includes(s.id), 'Ce direct seulement', whole ? 'Déjà compris ci-dessous' : `${s.name}, ${liveDay(s)} à ${liveTime(s.startsAt)}`, { locked: whole }) : ''}
-      ${f ? notifyRow(`format:${f.id}`, whole, ALL_OF[f.id] || `Tous les « ${f.name} »`, f.when.replace(/^./, (c) => c.toUpperCase())) : ''}
-      ${everyRow('check')}
+      ${s.status === 'upcoming' ? choice('slot', 'Ce direct seulement', `${s.name}, ${liveDay(s)} à ${liveTime(s.startsAt)}`) : ''}
+      ${f ? choice('format', ALL_OF[f.id] || `Tous les « ${f.name} »`, capital(f.when)) : ''}
+      ${choice('every', 'Tous les directs', 'En semaine et le week-end')}
     </div>
-    <button class="btn primary" data-action="sheetclose">C’est bon</button>`;
+    ${back}`;
 }
 /** Programme de la semaine, avec une cloche par créneau (ceux du week-end compris). */
 function programBody() {
@@ -194,7 +219,7 @@ function programBody() {
   const bells = notifyShown() && !blocked;
   return `<p class="sh-note">Les mêmes questions pour tout le monde, au même instant. La salle d’attente ouvre quelques minutes avant.${bells ? ' Touche un créneau pour être prévenu.' : ''}</p>
     <div class="nf-list nf-program">${bells ? formatRows('bell') + everyRow('bell')
-    : liveFormats().map((f) => `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(f.when.replace(/^./, (c) => c.toUpperCase()))}</small></span></div>`).join('')}</div>
+    : liveFormats().map((f) => `<div class="nf-row"><span class="nf-txt"><b>${esc(f.name)}</b><small>${esc(capital(f.when))}</small></span></div>`).join('')}</div>
     ${blocked}`;
 }
 /** Section « Notifications » du profil : une coche par créneau. */

@@ -1021,7 +1021,11 @@ html { overflow-x: clip; }
 .nf-list { display: flex; flex-direction: column; gap: 8px; }
 .nf-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; text-align: left; font: inherit; color: var(--text); background: var(--surf); border: 1px solid var(--card-border); border-radius: var(--r-ctl); }
 button.nf-row { cursor: pointer; }
-.nf-row:disabled { cursor: default; opacity: .65; }
+/* Mini-feuille d'une cloche : un bouton par choix, celui qui est actif est teinté citron */
+.nf-pick:active { transform: scale(.98); }
+.nf-pick[aria-pressed="true"] { border-color: var(--ring); background: color-mix(in srgb, var(--lime) 14%, var(--surf)); }
+.nf-pick .ic { color: var(--accent-text); }
+.sh-body > .btn.nf-back { text-align: center; }
 .nf-txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .nf-txt b { font-weight: 600; font-size: .95rem; }
 .nf-txt small { color: var(--muted); font-size: .8rem; line-height: 1.3; }
@@ -1039,7 +1043,8 @@ button.nf-row { cursor: pointer; }
 .sh[data-key="sh:week"] .nf-row { padding: 6px 12px; }
 @media (orientation: landscape) and (max-height: 520px) {
   .l-head { margin-bottom: 4px; }
-  [data-key="sh:week"] .nf-list, [data-key="sh:bell"] .nf-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  [data-key="sh:week"] .nf-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  [data-key="sh:bell"] .nf-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px; }
   [data-key="sh:week"] .sh-body, [data-key="sh:bell"] .sh-body { gap: 8px; }
   .sh[data-key="sh:week"], .sh[data-key="sh:bell"] { max-width: 720px; max-height: 96dvh; gap: 8px; }
   .sh[data-key="sh:week"] .sh-head h2, .sh[data-key="sh:bell"] .sh-head h2 { font-size: 1.3rem; }

@@ -254,12 +254,12 @@ Connexion temps réel : socket, horloge serveur (façon NTP), send(), état glob
 
 socket, clock, now, shownNow, sampleClock, syncClock, send, state, pending, renderedPhase, resuming
 
-### public/js/notify.js (222 l.)
+### public/js/notify.js (247 l.)
 Notifications des directs (cloches, profil) et programme de la semaine.
 
-NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifySave, notifySync, notifyInfo, notifyWith, bellButton, notifyBlocked, notifyRow, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
+NOTIFY_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, liveFormats, programLink, programTeaser, notifyAsk, keyBytes, notifySubscription, notifySave, notifySync, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
 
-actions : notifyset, bell
+actions : notifyset, notifybell, bell
 
 ### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).
