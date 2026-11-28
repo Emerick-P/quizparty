@@ -8,6 +8,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import { io } from 'socket.io-client';
+import { APP_NAME } from '../server/brand.js';
 import { scoreToken, readToken, cellsOfGrid } from '../server/share.js';
 import { storyCard, scoreCard, toPng } from '../server/share-card.js';
 
@@ -53,7 +54,7 @@ try {
   };
 
   const home = await tags('');
-  assert.equal(home['og:site_name'], 'QuizParty');
+  assert.equal(home['og:site_name'], APP_NAME);
   assert.equal(home['og:image'], `${URL}/partage/apercu/accueil.png`);
   assert.equal(home['twitter:card'], 'summary_large_image');
   assert.equal(await image(home['og:image']), 'png 1200x630');

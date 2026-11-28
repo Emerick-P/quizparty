@@ -24,7 +24,8 @@ Client francophone : code, commentaires, textes et messages en français.
   Notifications des directs (`push.js`, côté client `notify.js` et `sw.js`) : facultatives aussi (clés `VAPID_*`).
   Partage (`share.js`, dessin dans `share-card.js`) : aperçus de liens posés dans la page selon l'adresse, images
   `/partage/…` dessinées à la demande, scores portés par un jeton signé. Nom de l'app : `brand.js`, seul endroit à changer
-  pour les images et les textes partagés. Jamais de score dans un défi entre potes.
+  pour les images et les textes partagés (« LoreBound » ; le reste de l'app dit encore « QuizParty ») ; mascotte :
+  `server/assets/mascotte.svg`. Jamais de score dans un défi entre potes.
 - **Client** (`public/js/`) : une vingtaine de **scripts classiques, pas des modules**, chargés avec `defer` dans l'ordre d'`index.html`.
   Ils partagent leurs déclarations de premier niveau (`state`, `render`, `actions`…) sans import.
   - Un nouveau fichier s'ajoute dans `index.html`, à sa place dans l'ordre.

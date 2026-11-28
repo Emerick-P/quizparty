@@ -87,12 +87,10 @@ Pas de I ni O pour éviter les confusions avec 1 et 0
 
 ALPHABET, EMPTY_ROOM_TTL_MS, PUSH_SAVES_PER_MIN, RoomManager
 
-### server/share-card.js (178 l.)
+### server/share-card.js (202 l.)
 Dessin des images de partage « cartouche » : aperçu de lien (1200 × 630) et image de score en story
 
-require, C, MODE_ICONS, load, fonts, fontsOf, SPACES, glyphs, drawable, advance, measure, text, logo, cartridge, icon, cell, cellGrid, svg, fmt, left, RIGHT, inviteCard, homeCard, scoreCard, storyCard, sharp, toPng
-
-C : bg, lime, keys
+require, C, MODE_ICONS, load, fonts, fontsOf, SPACES, glyphs, drawable, advance, measure, text, TRACK, logo, mascotParts, mascotSource, mascot, cartridge, icon, cell, cellGrid, svg, fmt, left, RIGHT, perched, inviteCard, homeCard, scoreCard, storyCard, sharp, toPng
 
 MODE_ICONS : quiz, vraifaux, estimation, covers, pitch, emoji, sounds, bande, crossword
 

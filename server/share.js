@@ -129,7 +129,7 @@ async function describe(id, rooms) {
     id: 'accueil',
     title: `${APP_NAME}, le quiz jeu vidéo entre amis`,
     description: 'Tout le monde joue en même temps, sur son téléphone ou son PC. Questions, jaquettes, emojis et plus.',
-    card: () => homeCard({ title: ['Le quiz', 'jeu vidéo'], lines: ['Entre amis, en direct', 'Dans le navigateur'] }),
+    card: () => homeCard({ lines: ['Le quiz jeu vidéo', 'entre amis, en direct'] }),
   };
 }
 

@@ -11,11 +11,10 @@ import { LOGO } from './brand.js';
 
 const require = createRequire(import.meta.url);
 
-// Couleurs de l'habillage (public/plateau.css, thème Obscur) et des cases du résultat (public/salon.css)
+// Couleurs de l'habillage (public/plateau.css, thème Obscur), du logo et des cases du résultat (public/salon.css)
 const C = {
-  bg: '#141517', card: '#1f2124', deep: '#17181b', line: '#33363c', text: '#f1f1ee', muted: '#9a9da4', off: '#4a4e56',
-  lime: '#d6f45b', ink: '#14160b', fast: '#4cc38a', slow: '#ffbe2e', miss: '#ff6a47',
-  keys: ['#ff6a47', '#4f8cff', '#ffbe2e', '#a46bff'],
+  bg: '#141517', card: '#1b1d20', deep: '#121315', line: '#33363c', text: '#f2f1ea', muted: '#9a9da4', off: '#4a4e56',
+  lime: '#d6f45b', ink: '#14160b', outline: '#1b1030', fast: '#4cc38a', slow: '#ffbe2e', miss: '#ff6a47',
 };
 
 // Icônes au trait des modes : mêmes dessins que ICONS (public/js/core.js)
@@ -63,24 +62,48 @@ export const drawable = (text) => glyphs(text, 'bold').some(Boolean);
 const advance = (g, style, size) => (g ? (g.glyph.advanceWidth / g.font.unitsPerEm) * size : size * (style === 'mono' ? 0.3 : 0.26));
 const measure = (list, style, size) => list.reduce((w, g) => w + advance(g, style, size), 0);
 /** Texte en tracés. max : largeur à ne pas dépasser (la taille est réduite pour tenir). */
-function text(str, x, y, size, { style = 'bold', fill = C.text, anchor = 'start', max } = {}) {
+function text(str, x, y, size, { style = 'bold', fill = C.text, anchor = 'start', max, track = 0 } = {}) {
   const list = glyphs(str, style);
   let s = size;
-  const w = measure(list, style, s);
-  if (max && w > max) s *= max / w;
-  const width = measure(list, style, s);
+  const widthAt = (at) => measure(list, style, at) + track * at * Math.max(0, list.length - 1);
+  if (max && widthAt(s) > max) s *= max / widthAt(s);
+  const width = widthAt(s);
   let at = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x;
   let d = '';
   for (const g of list) {
     if (g) d += g.glyph.getPath(at, y, s).toPathData(1);
-    at += advance(g, style, s);
+    at += advance(g, style, s) + track * s;
   }
   return `<path d="${d}" fill="${fill}"/>`;
 }
-function logo(x, y, size, anchor = 'start') {
-  const w = LOGO.map((part) => measure(glyphs(part, 'bold'), 'bold', size));
-  const from = anchor === 'middle' ? x - (w[0] + w[1]) / 2 : x;
-  return text(LOGO[0], from, y, size) + (LOGO[1] ? text(LOGO[1], from + w[0], y, size, { fill: C.lime }) : '');
+const TRACK = -0.02; // interlettrage du nom dans le logo
+/** Le nom : premier morceau clair, second citron. */
+function logo(x, y, size) {
+  const first = glyphs(LOGO[0], 'bold');
+  const w = measure(first, 'bold', size) + TRACK * size * first.length;
+  return text(LOGO[0], x, y, size, { track: TRACK }) + text(LOGO[1], x + w, y, size, { fill: C.lime, track: TRACK });
+}
+
+// ---------------------------------------------------------------- mascotte
+let mascotParts = null;
+/** Le dessin livré (assets/mascotte.svg, 256 × 256), et le tracé de son corps pour le contour. */
+function mascotSource() {
+  if (!mascotParts) {
+    const file = fs.readFileSync(new URL('./assets/mascotte.svg', import.meta.url), 'utf8');
+    const inner = file.slice(file.indexOf('>') + 1, file.lastIndexOf('</svg>')).replace(/<(metadata|style)[\s\S]*?<\/\1>/g, '');
+    const shape = /<clipPath[^>]*><path ([^>]*?)\/>/.exec(inner)?.[1];
+    mascotParts = { inner, shape };
+  }
+  return mascotParts;
+}
+/**
+ * La mascotte : corps entre x + 12 % et x + 88 % de size, bas à 87 %. Elle regarde vers la gauche : on la place
+ * à droite de ce qu'elle lit. outline : fin contour sombre, quand elle chevauche un fond clair.
+ */
+function mascot(x, y, size, { outline = false } = {}) {
+  const { inner, shape } = mascotSource();
+  const edge = outline && shape ? `<path ${shape} fill="none" stroke="${C.outline}" stroke-width="7" stroke-linejoin="round"/>` : '';
+  return `<svg x="${x}" y="${y}" width="${size}" height="${size}" viewBox="0 0 256 256" overflow="visible">${edge}${inner}</svg>`;
 }
 
 // ---------------------------------------------------------------- pièces
@@ -125,46 +148,47 @@ const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n);
 
 // ---------------------------------------------------------------- aperçus de liens (1200 × 630)
 /** Colonne de gauche : logo, titre sur deux lignes, précisions. */
-const left = (title, lines) => logo(72, 105, 52)
+const left = (title, lines) => logo(72, 105, 54)
   + title.map((t, i) => text(t, 68, 265 + i * 98, 90, { max: 520 })).join('')
   + lines.map((t, i) => text(t, 72, 480 + i * 54, 36, { style: 'semi', fill: C.muted, max: 520 })).join('');
-const RIGHT = { x: 640, y: 70, w: 490, h: 490 };
+const RIGHT = { x: 640, y: 170, w: 490, h: 410 };
+/** La mascotte perchée sur la cartouche, tournée vers le titre. */
+const perched = (options) => mascot(RIGHT.x + 210, RIGHT.y - 167, 220, options);
 
 /** Invitation : cartouche citron avec un code (salon, défi entre potes) ou un numéro (Défi du jour). */
 export function inviteCard({ title, lines, label, value, code = true }) {
   const { x, y, w, h } = RIGHT;
   return svg(1200, 630, left(title, lines) + cartridge(x, y, w, h, { lime: true })
-    + text(label, x + w / 2, y + 230, 44, { style: 'semi', fill: C.ink, anchor: 'middle', max: w - 80 })
-    + text(value, x + w / 2, y + 370, 130, { style: code ? 'mono' : 'bold', fill: C.ink, anchor: 'middle', max: w - 80 }));
+    + text(label, x + w / 2, y + 185, 44, { style: 'semi', fill: C.ink, anchor: 'middle', max: w - 80 })
+    + text(value, x + w / 2, y + 325, 130, { style: code ? 'mono' : 'bold', fill: C.ink, anchor: 'middle', max: w - 80 })
+    + perched({ outline: true }));
 }
-/** Accueil : les quatre touches de réponse dans la cartouche. */
-export function homeCard({ title, lines }) {
-  const { x, y, w, h } = RIGHT;
-  const s = 150;
-  const keys = C.keys.map((color, i) => {
-    const kx = x + w / 2 - s - 12 + (i % 2) * (s + 24), ky = y + 135 + Math.floor(i / 2) * (s + 24);
-    return `<rect x="${kx}" y="${ky}" width="${s}" height="${s}" rx="26" fill="${color}"/>` + text('ABCD'[i], kx + s / 2, ky + s / 2 + 30, 84, { style: 'mono', fill: C.ink, anchor: 'middle' });
-  }).join('');
-  return svg(1200, 630, left(title, lines) + cartridge(x, y, w, h) + keys);
+/** Accueil : le nom en grand et la mascotte qui le lit (la bannière du logo). */
+export function homeCard({ lines }) {
+  return svg(1200, 630, logo(72, 300, 128)
+    + lines.map((t, i) => text(t, 76, 400 + i * 62, 46, { style: 'semi', fill: C.muted, max: 640 })).join('')
+    + mascot(700, 60, 500));
 }
 /** Résultat partagé : score et cases dans la cartouche. */
 export function scoreCard({ title, lines, score, cells, modes }) {
   const { x, y, w, h } = RIGHT;
   return svg(1200, 630, left(title, lines) + cartridge(x, y, w, h)
-    + text(fmt(score), x + w / 2, y + 230, 130, { style: 'mono', fill: C.lime, anchor: 'middle', max: w - 70 })
-    + text(score > 1 ? 'points' : 'point', x + w / 2, y + 288, 36, { style: 'semi', fill: C.muted, anchor: 'middle' })
-    + cellGrid(cells, modes, x + w / 2, y + 312, w - 90, 150));
+    + text(fmt(score), x + w / 2, y + 195, 124, { style: 'mono', fill: C.lime, anchor: 'middle', max: w - 70 })
+    + text(score > 1 ? 'points' : 'point', x + w / 2, y + 245, 34, { style: 'semi', fill: C.muted, anchor: 'middle' })
+    + cellGrid(cells, modes, x + w / 2, y + 262, w - 90, 130)
+    + perched());
 }
 
 // ---------------------------------------------------------------- image de score en story (1080 × 1920)
 // Les 250 px du haut et du bas restent sans information utile : les applis y posent leurs boutons.
 export function storyCard({ heading, score, correct, rounds, cells, modes, site }) {
-  return svg(1080, 1920, logo(540, 285, 96, 'middle')
-    + cartridge(70, 370, 940, 1120, { cut: 140, r: 40 })
-    + text(heading, 150, 600, 58, { style: 'semi', fill: C.muted, max: 780 })
-    + text(fmt(score), 140, 830, 220, { style: 'mono', fill: C.lime, max: 800 })
-    + text(`${score > 1 ? 'points' : 'point'}, ${correct} trouvée${correct > 1 ? 's' : ''} sur ${rounds}`, 150, 930, 56, { style: 'semi', fill: C.muted, max: 780 })
-    + cellGrid(cells, modes, 540, 990, 790, 440)
+  return svg(1080, 1920, logo(80, 400, 116)
+    + cartridge(70, 460, 940, 1035, { cut: 140, r: 40 })
+    + mascot(690, 224, 320)
+    + text(heading, 150, 685, 58, { style: 'semi', fill: C.muted, max: 780 })
+    + text(fmt(score), 140, 910, 220, { style: 'mono', fill: C.lime, max: 800 })
+    + text(`${score > 1 ? 'points' : 'point'}, ${correct} trouvée${correct > 1 ? 's' : ''} sur ${rounds}`, 150, 1008, 56, { style: 'semi', fill: C.muted, max: 780 })
+    + cellGrid(cells, modes, 540, 1050, 790, 400)
     + `<rect x="100" y="1535" width="880" height="170" rx="36" fill="${C.lime}"/>`
     + text('Fais mieux que moi', 540, 1643, 68, { fill: C.ink, anchor: 'middle' })
     + text(site, 540, 1790, 40, { style: 'mono', fill: C.muted, anchor: 'middle', max: 880 }));
