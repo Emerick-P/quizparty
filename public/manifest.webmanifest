@@ -1,6 +1,6 @@
 {
-  "name": "QuizParty",
-  "short_name": "QuizParty",
+  "name": "%APP%",
+  "short_name": "%APP%",
   "description": "Le quiz jeu vidéo entre potes, en temps réel.",
   "lang": "fr",
   "start_url": "/?app=1",

@@ -95,7 +95,7 @@ function poteBody() {
   if (!r) { loadPote(); return '<p class="muted">Chargement…</p>'; }
   if (r.error) return `<div class="d-sheet"><p class="muted d-empty">${esc(r.error)}. Le lien est peut-être incomplet.</p><button class="btn" data-action="defis">Voir mes défis</button></div>`;
   const c = r.challenge;
-  const share = !r.closed ? `<button class="btn ${r.played ? '' : r.mine ? 'primary' : ''}" data-action="defishare">${ico('share')} ${r.mine && !r.played ? 'Envoyer le lien à mes potes' : 'Partager le défi'}</button>` : '';
+  const share = !r.closed ? shareRow(potesText(c), { cls: `btn ${r.played || r.mine ? 'primary' : ''}` }) : '';
   const head = `<div class="d-intro p-intro">
       <span class="d-num">${r.mine ? 'Ton défi' : `Défi de ${esc(c.by)}`}</span>
       <ul class="d-rules">
@@ -125,11 +125,12 @@ function poteBody() {
   </div>`;
 }
 
+/** Phrase et lien d'un défi : jamais de score, le classement reste caché tant qu'on n'a pas joué. */
+const potesText = (c) => `${c.by} te lance un défi sur ${APP_NAME}, à toi !\n${potesLink(c.id)}`;
 /** Fin d'une partie de défi : mon score, partage, classement du défi. */
 function potesEnd() {
   const d = state.daily, c = d.challenge;
   const me = state.players.find((p) => p.id === state.you);
-  const text = `${APP_NAME} · Défi de ${c.by}\n${d.grid}\n${fmtPts(me?.score)} pts\nÀ toi : ${potesLink(c.id)}`;
   return `
     <main class="screen d-end">
       <div class="d-result">
@@ -138,7 +139,7 @@ function potesEnd() {
         ${cellsHtml(d.cells.map((x) => CELL_CLASS[x] || 'ko'), 'big')}
       </div>
       ${ratingEnd()}
-      <button class="btn primary" data-action="dailyshare" data-value="${esc(text)}">${ico('share')} Partager mon résultat</button>
+      ${shareRow(potesText(c))}
       <section class="card d-card">
         <h2>Classement du défi</h2>
         ${d.leaderboard ? dailyBoard(d.leaderboard, d.me) : '<p class="muted">Chargement…</p>'}
@@ -182,11 +183,6 @@ actions.defiplay = async () => {
   if (res.error) return toast(res.error);
   ui.sheet = null;
   enterRoom(res);
-};
-actions.defishare = () => {
-  const c = potes.info?.challenge;
-  if (!c) return;
-  shareDaily(`${c.by} te lance un défi sur ${APP_NAME} : ${c.rounds} questions (${c.modeName}). Une seule tentative, classement commun !\n${potesLink(c.id)}`);
 };
 actions.defihome = async () => {
   const code = state?.daily?.challenge?.id;

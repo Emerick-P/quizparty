@@ -58,7 +58,7 @@ const views = {
       <section class="code-card">
         <div class="label">Code du salon</div>
         <div class="code">${esc(state.code)}</div>
-        <button class="btn small ghost share-btn ${copied ? 'copied' : ''}" data-action="share" aria-live="polite">${copied ? 'Lien copié' : 'Copier le lien'}</button>
+        ${shareRow(`Rejoins-moi sur ${APP_NAME}, salon ${state.code} !\n${location.origin}/?code=${state.code}`, { cls: 'btn small ghost share-btn' })}
       </section>
       ${tvCard()}
       <div class="lobby-cols">

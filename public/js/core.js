@@ -24,8 +24,12 @@ const MODE_GROUPS = [
   { name: 'Lettres et mélange', ids: ['crossword', 'mix'] },
   { name: 'Entre amis', ids: ['bande'] },
 ];
-// Nom de l'app dans les textes partagés : celui que le serveur pose dans la page (server/brand.js)
-const APP_NAME = document.querySelector('meta[property="og:site_name"]')?.content || 'QuizParty';
+// Nom de l'app : posé dans la page par le serveur (server/brand.js, seul endroit où le changer)
+const BRAND = document.querySelector('meta[name="application-name"]');
+const APP_NAME = BRAND.content;
+const [LOGO_START, LOGO_END = ''] = BRAND.dataset.logo.split('|');
+/** Le logo : la mascotte à plat et le nom, second morceau en citron. */
+const LOGO_HTML = `<img class="logo-mark" src="/mascotte.svg" alt="" width="32" height="28">${LOGO_START}<b>${LOGO_END}</b>`;
 /** Icônes au trait (dessin façon lucide, 24×24, trait 1,75) : ico('tv') rend un <svg> qui prend la couleur du texte. */
 const ICONS = {
   tv: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="m17 2-5 5-5-5"/>',

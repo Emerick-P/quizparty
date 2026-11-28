@@ -23,9 +23,12 @@ Client francophone : code, commentaires, textes et messages en français.
   Supabase (`store.js`, `auth.js`, `stats.js`, `daily.js`) est facultatif : sans variables d'env, tout reste en local.
   Notifications des directs (`push.js`, côté client `notify.js` et `sw.js`) : facultatives aussi (clés `VAPID_*`).
   Partage (`share.js`, dessin dans `share-card.js`) : aperçus de liens posés dans la page selon l'adresse, images
-  `/partage/…` dessinées à la demande, scores portés par un jeton signé. Nom de l'app : `brand.js`, seul endroit à changer
-  pour les images et les textes partagés (« LoreBound » ; le reste de l'app dit encore « QuizParty ») ; mascotte :
-  `server/assets/mascotte.svg`. Jamais de score dans un défi entre potes.
+  `/partage/…` dessinées à la demande, scores portés par un jeton signé. Jamais de score dans un défi entre potes.
+  Un seul geste de partage partout (`public/js/partage.js`) : « Partager » (phrase courte + lien) et, pour un score,
+  « Image » (l'image seule), jamais les deux ensemble.
+- **Nom de l'app** (« LoreBound ») : `server/brand.js`, seul endroit à changer ; les pages portent `%APP%` / `%LOGO%`,
+  remplacés au service (`index.js`), et le client lit `APP_NAME`. Mascotte : `server/assets/mascotte.svg` (images de
+  partage), à plat `public/mascotte.svg` (en-tête) ; icônes PNG dans `public/`. Les clés `quizparty:` et l'adresse ne changent pas.
 - **Client** (`public/js/`) : une vingtaine de **scripts classiques, pas des modules**, chargés avec `defer` dans l'ordre d'`index.html`.
   Ils partagent leurs déclarations de premier niveau (`state`, `render`, `actions`…) sans import.
   - Un nouveau fichier s'ajoute dans `index.html`, à sa place dans l'ordre.

@@ -476,8 +476,7 @@ h2 { font-family: var(--display); font-size: 1.15rem; font-weight: 600; display:
 .lb-players { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .lb-settings .opt { flex-wrap: wrap; }
 .lb-settings .opt-hint { margin: 0; text-align: left; }
-.share-btn { min-width: 11em; transition: background .2s, color .2s; }
-.share-btn.copied { background: var(--good); color: #0b2a18; border-color: var(--good); }
+.share-btn { min-width: 11em; }
 @media (min-width: 1000px) {
   #app.wider { max-width: 1260px; }
   .lobby-cols { display: grid; grid-template-columns: 270px minmax(0, 1fr) 320px; gap: 20px; align-items: start; }

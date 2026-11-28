@@ -23,7 +23,7 @@ function appBar(phase) {
   const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || noName}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
-    <button class="ab-logo" data-action="${solo ? (state.daily.live ? 'livehome' : state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
+    <button class="ab-logo" data-action="${solo ? (state.daily.live ? 'livehome' : state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">${LOGO_HTML}</button>
     ${phase === 'home' && !state && !tv.sheet ? barTabs() : ''}
     ${away ? `<button class="ab-btn ab-back" data-action="toroom" aria-label="Retour au salon">${ico('back')} <span>Retour<span class="ab-long"> au salon</span></span></button>`
     : inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}

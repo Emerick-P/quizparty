@@ -66,14 +66,6 @@ async function copyCode() {
   render();
   setTimeout(render, COPIED_MS + 20);
 }
-async function share() {
-  const url = `${location.origin}/?code=${state.code}`;
-  try { await copyText(url); } catch { return toast(url); } // à défaut, on affiche le lien pour le copier à la main
-  copiedUntil = Date.now() + COPIED_MS;
-  render();
-  setTimeout(render, COPIED_MS + 20);
-}
-
 const actions = {
   rvpage(btn) {
     const el = document.querySelector('.rv-swipe.on');
@@ -112,7 +104,6 @@ const actions = {
   tvsheet() { tv.sheet = true; render(); setTimeout(() => $('#tv-pin')?.focus(), 50); },
   tvclose() { tv.sheet = false; render(); },
   async tvoff() { const r = await send('room:screen-off'); if (r.error) toast(r.error); },
-  share,
   copycode: copyCode,
   async start() { const r = await send('game:start'); if (r.error) toast(r.error); },
   async skip() { const r = await send('game:skip'); if (r.error) toast(r.error); },

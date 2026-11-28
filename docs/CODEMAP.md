@@ -1,6 +1,6 @@
 # Plan du code (généré par `npm run codemap`, ne pas modifier à la main)
 
-Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → daily → challenges → live → notify → views → render → main.
+Données (`server/data/*.js`) et tests (`test/`) non listés. Ordre de chargement du client : core → device → net → session → actions → propose → media → crossword → widgets → tv-views → home → stats → ranking → nav → partage → daily → challenges → live → notify → views → render → main.
 
 ### server/auth.js (183 l.)
 Comptes joueurs (facultatifs) : connexion Discord / Google via Supabase Auth.
@@ -13,7 +13,7 @@ Images de profil : galerie maison (un emoji sur une couleur), la photo du compte
 AVATAR_EMOJIS, AVATAR_HUES, cleanLook, photoOf, defaultLook, lookView
 
 ### server/brand.js (8 l.)
-Nom de l'app dans les aperçus de liens, les images de partage et les textes partagés.
+Nom de l'app, partout à l'écran : pages, logo, manifeste, notifications, aperçus de liens et images de partage.
 
 LOGO, APP_NAME
 
@@ -46,12 +46,12 @@ FEEDBACK_TYPES : accept, wrong, remove, other
 
 feedback : file, add, list
 
-### server/index.js (166 l.)
+### server/index.js (171 l.)
 
 
-__dirname, app, server, io, PUBLIC, auth, version, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
+__dirname, app, server, io, PUBLIC, auth, version, branded, sendIndex, siteOrigin, MANIFEST, mediaRoute, rooms, PORT, HOST
 
-### server/legal.js (147 l.)
+### server/legal.js (149 l.)
 Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 
 esc, UPDATED, page, contactLine, privacyPage, termsPage, installLegal
@@ -191,24 +191,24 @@ Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (282 l.)
+### public/js/actions.js (273 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
-getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
+getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, actions
 
 actions : rvpage, theme, create, join, leave, getapp, installhide, install, tvsheet, tvclose, tvoff, copycode, start, skip, stop, lobby, resetTotals, steamLink, steamSave, steamForget, steamHelp, steamHelpClose, noop, steamUnlink, kick, set, mixpart, answer, ban, replay, pause, login, logout, saveName, deleteAccount, flag, flagclose, resume, reportType, reportPick, reportSend
 
-### public/js/challenges.js (197 l.)
+### public/js/challenges.js (193 l.)
 Défis entre potes.
 
-DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, potesSettings, loadPotes, loadPote, potesTile, potesBody, poteBody, potesEnd
+DEVICE_KEY, POTES_KEY, potes, potesDevice, potesRemember, potesLink, potesLeft, potesSettings, loadPotes, loadPote, potesTile, potesBody, poteBody, potesText, potesEnd
 
-actions : defis, defiset, deficreate, defiopen, defiplay, defishare, defihome
+actions : defis, defiset, deficreate, defiopen, defiplay, defihome
 
-### public/js/core.js (128 l.)
+### public/js/core.js (132 l.)
 Utilitaires partagés : $, esc, stockage local, thème, toast, code dans l’URL.
 
-app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, APP_NAME, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
+app, esc, nf, hue, SHAPES, KIND_LABEL, kindLabel, LEVEL_LABEL, INPUT_LABEL, MIX_INPUT_LABEL, GUESS_KINDS, TYPED_KINDS, MODE_GROUPS, BRAND, APP_NAME, LOGO_HTML, ICONS, ico, MODE_ART, modeArt, store, SESSION_KEY, NAME_KEY, THEME_KEY, STEAM_KEY, AUTH_KEY, currentTheme, setTheme, themeToggle, emojiLine, toast, urlCode, setUrlCode
 
 ICONS : tv, bulb, copy, lock, info, trophy, gamepad, phone, download, bell, calendar, swords, flame, share, user, users, chart, palette, pencil, flag, pause, timer, zap, vol0, vol1, vol2, vol3, check, x, back, help, scale, target, image, chat, smile, music, grid, shuffle
 
@@ -221,12 +221,12 @@ Mots croisés : grille, saisie, envoi des mots.
 
 CW_IDLE_MS, cw, cwCells, cwLetters, cwPlaying, cwLocked, cwFound, LETTERS, cwLabels, cwWord, cwSync, cwSetTyped, cwNext, cwChoose, cwFocus, cwWrong, cwSubmit, cwOnInput, cwGrid, cwClues, crosswordQuestion
 
-### public/js/daily.js (225 l.)
+### public/js/daily.js (176 l.)
 Défi du jour.
 
-DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, MOCK_DAILY, mockDaily, loadDaily, cellsHtml, fmtPts, untilNext, shareTextOf, shareDaily, shareImages, shareImageFile, shareRow, dailyBoard, dailyCard, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
+DAILY_KEY, daily, CELL_CLASS, GRID_CELL, gridCells, prevDay, dailyMine, dailyStreak, MOCK_DAILY, mockDaily, loadDaily, cellsHtml, fmtPts, untilNext, dailyText, dailyBoard, dailyCard, dailyBody, rememberDaily, dailyProgress, dailyBar, dailyEnd
 
-actions : dailystart, dailyshare, shareimage, dailyhome
+actions : dailystart, dailyhome
 
 ### public/js/device.js (110 l.)
 Appareil : écran télé (/tv), app installée (PWA), vibrations.
@@ -277,6 +277,13 @@ Notifications des directs (cloches, profil) et programme de la semaine.
 NOTIFY_KEY, NOTIFY_ASKED_KEY, NO_PREFS, notify, NOTIFY_OK, NOTIFY_IOS, notifyShown, notifyAllowed, hasChoices, notifyHere, notifyAway, notifyPrefs, notifyCovers, WEEK_DAYS, DAYS_TEXT, hourText, daysText, ALL_OF, DIFFICULTY, liveFormats, programLink, notifyAsk, keyBytes, notifySubscription, notifyRemember, notifyForget, notifyError, notifyFetch, notifySave, notifySync, notifyOffer, notifyAccountChanged, notifyDrop, notifyInfo, notifyWith, notifyChange, bellPrefs, bellSlot, bellButton, notifyBlocked, notifyUnblock, notifyDevice, notifyAskBody, notifyRow, capital, everyRow, formatRows, bellBody, programBody, notifySection, openDirect
 
 actions : notifyset, notifyhere, notifyyes, notifyoff, notifybell, bell
+
+### public/js/partage.js (63 l.)
+Partage : le même geste partout (Défi du jour, direct, défi entre potes, salon).
+
+scoreText, resultLink, shareRow, shareImages, shareImageFile
+
+actions : partager, shareimage
 
 ### public/js/propose.js (123 l.)
 Panneau « Proposer » et saisie des réponses (rappel des essais avec ↑).

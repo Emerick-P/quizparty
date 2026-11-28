@@ -17,6 +17,7 @@ import { AVATAR_EMOJIS, AVATAR_HUES } from './avatars.js';
 import { installLegal } from './legal.js';
 import { Room } from './room.js';
 import { installShare, previewTags } from './share.js';
+import { APP_NAME, LOGO } from './brand.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -54,11 +55,12 @@ const version = (file) => {
     return '0';
   }
 };
+// Nom de l'app : les fichiers servis portent %APP% et %LOGO%, remplacés ici (server/brand.js)
+const branded = (file) => fs.readFileSync(path.join(PUBLIC, file), 'utf8').replaceAll('%APP%', APP_NAME).replaceAll('%LOGO%', LOGO.join('|'));
 async function sendIndex(req, res, screen = false) {
   // Aperçu du lien (image, titre) selon l'adresse ; en cas de souci, la page part sans
   const preview = screen ? '' : await previewTags(req, rooms, siteOrigin(req)).catch((err) => { console.error('[partage]', err.message); return ''; });
-  let html = fs
-    .readFileSync(path.join(PUBLIC, 'index.html'), 'utf8')
+  let html = branded('index.html')
     .replace(/"\/((?:js\/)?[\w-]+\.(?:js|css))"/g, (_m, f) => `"/${f}?v=${version(f)}"`);
   if (screen) html = html.replace('</head>', `  <link rel="stylesheet" href="/tv.css?v=${version('tv.css')}">\n</head>`);
   if (preview) html = html.replace('</head>', () => `${preview}</head>`);
@@ -90,11 +92,14 @@ app.get('/qr/app.svg', async (req, res) => {
 });
 // Manifeste de l'app : il se déclare lui-même comme « application liée », ce qui permet à Chrome Android
 // de dire au site si l'app est déjà installée (navigator.getInstalledRelatedApps)
-const MANIFEST = JSON.parse(fs.readFileSync(path.join(PUBLIC, 'manifest.webmanifest'), 'utf8'));
+const MANIFEST = JSON.parse(branded('manifest.webmanifest'));
 app.get('/manifest.webmanifest', (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.type('application/manifest+json').send(JSON.stringify({ ...MANIFEST, related_applications: [{ platform: 'webapp', url: `${siteOrigin(req)}/manifest.webmanifest` }] }));
 });
+// Le formulaire « Proposer » et le service worker portent aussi le nom
+app.get(['/proposer', '/proposer.html'], (_req, res) => res.set('Cache-Control', 'no-cache').type('html').send(branded('proposer.html')));
+app.get('/sw.js', (_req, res) => res.set('Cache-Control', 'no-cache').type('js').send(branded('sw.js')));
 // Les autres fichiers : toujours revérifiés auprès du serveur (pas de copie périmée)
 app.use(express.static(PUBLIC, { extensions: ['html'], setHeaders: (res) => res.set('Cache-Control', 'no-cache') }));
 app.get('/api/avatars', (_req, res) => res.json({ emojis: AVATAR_EMOJIS, hues: AVATAR_HUES }));
@@ -161,5 +166,5 @@ if (store.name === 'supabase') {
 }
 
 server.listen(PORT, HOST, () => {
-  console.log(`QuizParty prêt sur http://${HOST || 'localhost'}:${PORT}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
+  console.log(`${APP_NAME} prêt sur http://${HOST || 'localhost'}:${PORT}, soumissions : ${store.name}, comptes : ${auth.enabled ? 'oui' : 'non'}`);
 });

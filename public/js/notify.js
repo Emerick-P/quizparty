@@ -270,13 +270,13 @@ function notifyBlocked() {
       <button class="btn" data-action="sheet" data-value="getapp">${ico('download')} Installer l’app</button>`;
   }
   if (!NOTIFY_OK) return '<p class="sh-note">Ce navigateur ne permet pas les notifications.</p>';
-  if (Notification.permission === 'denied') return `<p class="sh-note">Les notifications sont bloquées pour QuizParty sur cet appareil. Pour les réautoriser, ${notifyUnblock()}, puis reviens ici.</p>`;
+  if (Notification.permission === 'denied') return `<p class="sh-note">Les notifications sont bloquées pour ${APP_NAME} sur cet appareil. Pour les réautoriser, ${notifyUnblock()}, puis reviens ici.</p>`;
   return '';
 }
 /** Où réautoriser des notifications bloquées, selon l'appareil. */
-const notifyUnblock = () => (IOS ? 'ouvre Réglages › Notifications › QuizParty'
-  : STANDALONE && TOUCH ? 'fais un appui long sur l’icône QuizParty et ouvre « Infos sur l’appli » › Notifications'
-  : `${STANDALONE ? 'ouvre QuizParty dans ton navigateur, ' : ''}touche l’icône à gauche de l’adresse du site et autorise « Notifications »`);
+const notifyUnblock = () => (IOS ? `ouvre Réglages › Notifications › ${APP_NAME}`
+  : STANDALONE && TOUCH ? `fais un appui long sur l’icône ${APP_NAME} et ouvre « Infos sur l’appli » › Notifications`
+  : `${STANDALONE ? `ouvre ${APP_NAME} dans ton navigateur, ` : ''}touche l’icône à gauche de l’adresse du site et autorise « Notifications »`);
 /**
  * Avec un compte : dit que cet appareil ne reçoit pas les rappels du compte, avec pourquoi (bloqué, iPhone…)
  * ou le bouton pour l'activer. main : le bouton est l'action principale de l'écran.

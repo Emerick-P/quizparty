@@ -18,7 +18,7 @@ function modeGroups() {
     .filter((g) => g.modes.length);
 }
 
-/** Carte vedette « Ta bande » en tête du choix du jeu : le mode propre à QuizParty (questions sur vos jeux Steam). */
+/** Carte vedette « Ta bande » en tête du choix du jeu : le mode propre à l'app (questions sur vos jeux Steam). */
 function bandeFeature() {
   const m = state.options.modes.find((x) => x.id === 'bande');
   if (!m) return '';

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="208" height="184" viewBox="24 40 208 184">
+<!-- Mascotte à plat (en-tête, pages) : fin contour sombre pour les fonds clairs -->
+<path fill="#d6f45b" stroke="#1b1030" stroke-width="6" stroke-linejoin="round" transform="rotate(-10 128 134)" d="M128 52C186 52 224 96 224 158C224 200 200 220 168 220Q128 212 88 220C56 220 32 200 32 158C32 96 70 52 128 52Z"/><g transform="rotate(-10 128 132)"><circle cx="92" cy="132" r="32" fill="#fbfaf5" stroke="#1b1030" stroke-width="8"/><circle cx="79" cy="128" r="9" fill="#1b1030"/><circle cx="164" cy="132" r="32" fill="#fbfaf5" stroke="#1b1030" stroke-width="8"/><circle cx="151" cy="128" r="9" fill="#1b1030"/><path d="M124 132Q128 122 132 132" fill="none" stroke="#1b1030" stroke-width="7"/></g><path d="M60 110Q70 84 98 76" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" opacity=".55"/>
+</svg>

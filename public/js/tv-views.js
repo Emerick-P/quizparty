@@ -36,7 +36,7 @@ function tvPairView() {
   const digits = (tv.pin || '····').split('');
   return `
   <main class="screen tv-pair">
-    <div class="logo">Quiz<b>Party</b> <span class="tv-sub">· écran télé</span></div>
+    <div class="logo">${LOGO_HTML} <span class="tv-sub">· écran télé</span></div>
     <div class="tv-label">Code de cet écran</div>
     <div class="tv-digits">${digits.map((d) => `<span>${esc(d)}</span>`).join('')}</div>
     <p class="tv-steps">Sur ton téléphone, dans le salon : <b>Afficher sur la télé</b>, puis tape ce code.<br>Rien à saisir avec la télécommande.</p>
@@ -51,7 +51,7 @@ function tvLobbyView() {
   const host = state.players.find((p) => p.id === state.hostId);
   return `
   <main class="screen tv-lobby">
-    <div class="tv-top"><div class="logo">Quiz<b>Party</b></div><span class="tv-site">${esc(location.host)}</span></div>
+    <div class="tv-top"><div class="logo">${LOGO_HTML}</div><span class="tv-site">${esc(location.host)}</span></div>
     <div class="tv-lob">
       <section class="tv-code">
         <div class="tv-label">Rejoins la partie</div>

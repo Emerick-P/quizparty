@@ -1,5 +1,6 @@
 // Pages légales, ouvertes à tous : Google les lit avant d'autoriser
 // la connexion « avec Google ». Adresse de contact : variable CONTACT_EMAIL (jamais écrite dans le code).
+import { APP_NAME, LOGO } from './brand.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const UPDATED = '28 novembre 2026';
@@ -8,15 +9,16 @@ function page(title, body) {
   return `<!DOCTYPE html>
 <html lang="fr"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(title)} · QuizParty</title>
+<title>${esc(title)} · ${APP_NAME}</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <style>
   :root { color-scheme: dark; --bg: #22262e; --card: #2a2f38; --line: #3a414c; --text: #f2f3f5; --muted: #a0a7b3; --accent: #5fd0e3; --bad: #ec7182; }
   @media (prefers-color-scheme: light) { :root { color-scheme: light; --bg: #eceef3; --card: #fff; --line: #d3d8e2; --text: #1a2040; --muted: #5b6386; --accent: #1f6fb2; --bad: #c62f45; } }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 720px; margin: 0 auto; padding: 28px 16px 60px; }
-  .logo { font-weight: 800; font-size: 1.3rem; text-decoration: none; color: var(--text); }
-  .logo b { color: var(--accent); }
+  .logo { display: inline-flex; align-items: center; gap: 8px; font-weight: 800; font-size: 1.3rem; text-decoration: none; color: var(--text); }
+  .logo b { color: #d6f45b; }
+  @media (prefers-color-scheme: light) { .logo b { text-shadow: -1px -1px 0 #1b1030, 1px -1px 0 #1b1030, -1px 1px 0 #1b1030, 1px 1px 0 #1b1030; } }
   h1 { font-size: 1.8rem; line-height: 1.2; margin: 22px 0 4px; }
   h2 { font-size: 1.15rem; margin: 28px 0 6px; }
   .muted { color: var(--muted); font-size: .92rem; }
@@ -28,7 +30,7 @@ function page(title, body) {
   button[disabled] { opacity: .5; cursor: default; }
 </style></head>
 <body><main>
-<a class="logo" href="/">Quiz<b>Party</b></a>
+<a class="logo" href="/"><img src="/mascotte.svg" alt="" width="34" height="30"><span>${LOGO[0]}<b>${LOGO[1]}</b></span></a>
 <h1>${esc(title)}</h1>
 <p class="muted">Dernière mise à jour : ${UPDATED}</p>
 ${body}
@@ -38,11 +40,11 @@ ${body}
 
 const contactLine = (email) => (email
   ? `Pour toute question ou demande sur tes données : <a href="mailto:${esc(email)}">${esc(email)}</a>.`
-  : 'Pour toute question ou demande sur tes données, écris à la personne qui t’a invité sur QuizParty : c’est elle qui gère le site.');
+  : `Pour toute question ou demande sur tes données, écris à la personne qui t’a invité sur ${APP_NAME} : c’est elle qui gère le site.`);
 
 export function privacyPage(email) {
   return page('Règles de confidentialité', `
-<p>QuizParty est un petit jeu de quiz entre amis, gratuit, sans publicité et sans but commercial. On collecte le moins de données possible, uniquement pour faire marcher le jeu.</p>
+<p>${APP_NAME} est un petit jeu de quiz entre amis, gratuit, sans publicité et sans but commercial. On collecte le moins de données possible, uniquement pour faire marcher le jeu.</p>
 
 <h2>Sans compte (invité)</h2>
 <ul>
@@ -78,7 +80,7 @@ export function privacyPage(email) {
 <h2>Durée et suppression</h2>
 <p>Ton compte est conservé tant que tu ne le supprimes pas. Tu peux le supprimer toi-même ici, avec ton nom et ta photo :</p>
 <div class="box" id="del">
-  <p id="del-text" class="muted">Connecte-toi sur QuizParty depuis cet appareil pour pouvoir supprimer ton compte ici.</p>
+  <p id="del-text" class="muted">Connecte-toi sur ${APP_NAME} depuis cet appareil pour pouvoir supprimer ton compte ici.</p>
   <button id="del-btn" type="button" hidden>Supprimer mon compte</button>
 </div>
 <p>${contactLine(email)} Tu peux aussi demander l’accès à tes données ou leur correction.</p>
@@ -113,7 +115,7 @@ export function privacyPage(email) {
 
 export function termsPage(email) {
   return page('Conditions d’utilisation', `
-<p>QuizParty est un jeu de quiz sur le jeu vidéo, à jouer entre amis dans le navigateur. En l’utilisant, tu acceptes ces quelques règles simples.</p>
+<p>${APP_NAME} est un jeu de quiz sur le jeu vidéo, à jouer entre amis dans le navigateur. En l’utilisant, tu acceptes ces quelques règles simples.</p>
 
 <h2>Le service</h2>
 <ul>
@@ -128,7 +130,7 @@ export function termsPage(email) {
 </ul>
 
 <h2>Ce que tu proposes</h2>
-<p>En proposant une question, une image ou un son, tu confirmes avoir le droit de le partager, et tu autorises son utilisation dans QuizParty. Une proposition peut être modifiée, refusée ou retirée.</p>
+<p>En proposant une question, une image ou un son, tu confirmes avoir le droit de le partager, et tu autorises son utilisation dans ${APP_NAME}. Une proposition peut être modifiée, refusée ou retirée.</p>
 
 <h2>Contenus des jeux</h2>
 <p>Les noms, jaquettes, images et sons des jeux appartiennent à leurs éditeurs respectifs. Les données et jaquettes de jeux viennent d’<a href="https://www.igdb.com" target="_blank" rel="noopener">IGDB.com</a>. Un contenu peut être retiré sur simple demande.</p>

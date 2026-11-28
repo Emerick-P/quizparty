@@ -8,12 +8,12 @@ self.addEventListener('fetch', () => {});
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data.json(); } catch {}
-  e.waitUntil(self.registration.showNotification(d.title || 'QuizParty', {
+  e.waitUntil(self.registration.showNotification(d.title || '%APP%', {
     body: d.body || '', tag: d.slot || 'direct', icon: '/icon-192.png', data: { slot: d.slot || '' },
   }));
 });
 
-// Toucher la notification : QuizParty déjà ouvert passe devant, sinon il s'ouvre sur le direct
+// Toucher la notification : l'app déjà ouverte passe devant, sinon il s'ouvre sur le direct
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const slot = e.notification.data?.slot || '';

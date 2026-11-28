@@ -17,7 +17,7 @@ if (potesUrl) {
   history.replaceState(null, '', location.pathname);
   setTimeout(() => { if (!state) actions.defiopen({ dataset: { value: potesUrl.toUpperCase() } }); }, 0);
 }
-// Notification d'un direct touchée alors que QuizParty était fermé (…/?direct=<créneau>)
+// Notification d'un direct touchée alors que l'app était fermée (…/?direct=<créneau>)
 const directUrl = !SCREEN && new URLSearchParams(location.search).get('direct');
 if (typeof directUrl === 'string') {
   history.replaceState(null, '', location.pathname);
