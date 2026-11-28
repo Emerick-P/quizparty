@@ -250,7 +250,7 @@ export class RoomManager {
       return { ok: true, look: l };
     });
     // Page Profil : profil Steam à garder sur le compte (texte collé par le joueur ; vide = retirer).
-    // Il n'est vérifié qu'en entrant dans un salon (steam:link). Invité : retenu sur l'appareil seulement.
+    // Il est vérifié par steam:link (tout de suite dans un salon, sinon au prochain). Invité : retenu sur l'appareil seulement.
     on('profile:steam', async ({ profile }) => {
       const p = String(profile ?? '').trim().slice(0, 200);
       if (socket.data.user) await this.auth.setSteam(socket.data.user, p || null);

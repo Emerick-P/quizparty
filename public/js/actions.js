@@ -145,7 +145,7 @@ const actions = {
     const r = await send('steam:link', { profile });
     if (r.error) toast(r.error);
   },
-  /** Page Profil : retient le profil Steam (appareil, et compte si connecté) ; il est vérifié en entrant dans un salon. */
+  /** Page Profil : retient le profil Steam (appareil, et compte si connecté), relié tout de suite si on est dans un salon. */
   async steamSave() {
     const profile = ($('#pf-steam')?.value || '').trim();
     if (!profile) return toast('Colle ton code de contact ou l\'adresse de ton profil Steam');
@@ -153,15 +153,19 @@ const actions = {
     const r = await send('profile:steam', { profile });
     if (r.error) return toast(r.error);
     // Déjà dans un salon : on relie tout de suite (sinon ce sera au prochain salon)
-    if (state && !r.error) {
+    if (state) {
       const l = await send('steam:link', { profile });
-      if (l.error) return toast(l.error);
-      toast('Steam lié à ce salon');
+      // La liaison peut « réussir » avec un profil introuvable ou privé : c'est le statut qui fait foi
+      if (l.error || l.status === 'error') return toast(l.error || l.message);
+      if (l.status === 'private') toast('Profil Steam non lisible : voir sous le champ');
+      else if (l.status === 'ok') toast('Steam lié à ce salon');
     } else toast('Steam retenu : il sera relié quand tu rejoins un salon');
     render();
   },
   async steamForget() {
     store.del(STEAM_KEY);
+    const field = $('#pf-steam');
+    if (field) field.value = ''; // le morph ne touche pas à une valeur tapée
     await send('profile:steam', { profile: '' });
     if (state?.phase === 'lobby' || state?.phase === 'end') send('steam:unlink');
     render();

@@ -169,7 +169,7 @@ Sons du mode « Quel jeu fait ce bruit ? ».
 
 ROOT, FILE_RE, readJson, SoundLibrary, sounds
 
-### public/js/actions.js (271 l.)
+### public/js/actions.js (280 l.)
 Actions des boutons (data-action) : créer/rejoindre, répondre, réglages de l’hôte…
 
 getName, answer, copiedUntil, COPIED_MS, copyText, copyCode, share, actions
@@ -211,7 +211,7 @@ Appareil : écran télé (/tv), app installée (PWA), vibrations.
 
 SCREEN, TV_KEY, tv, controller, fullHint, STANDALONE, IOS, pwa, INSTALLED_KEY, INSTALLED_MSG, appInstalled, NOINSTALL_KEY, installTop, getAppBody, keepAwake, buzz, buzzedFor, buzzOnPhase
 
-### public/js/home.js (359 l.)
+### public/js/home.js (363 l.)
 Accueil et salon : pages, panneaux, profil, avatar.
 
 WIDE_MQ, wide, ui, modeGroups, bandeFeature, HOME_TABS, homeUi, homeTab, tabButtons, tabBar, barTabs, COTE_KEY, coteCache, rankIndex, saveCote, loadHomeRating, ordinal, rankPreview, coteCard, homeComp, homePlay, settingsTags, heroCard, settingsBody, playersList, SHEETS, providerIcon, loginTop, lookUi, lookBody, profileBody, steamProfileBlock, accountBlock

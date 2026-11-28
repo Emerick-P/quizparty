@@ -11,7 +11,7 @@
   --text: #ecedef; --muted: #a6a9af; --accent: #d6f45b; --accent-ink: #14160b; --good: #4fd18b; --bad: #f2555a;
   --lime: #d6f45b; --lime-ink: #14160b; --ring: #d6f45b;
   --c0: #ff6a47; --c1: #4f8cff; --c2: #ffbe2e; --c3: #a46bff;
-  --key-mix: 20%; --on-tile: #14160b; --tile: #ecedef; --shadow: #0b0c0d; --accent-text: #d6f45b;
+  --key-mix: 20%; --on-tile: #14160b; --tile: #ecedef; --shadow: #0b0c0d; --accent-text: #d6f45b; --warn-text: #ffb020;
   color-scheme: dark;
   --radius: 12px; --r-ctl: 10px; --r-chip: 8px;
   --display: 'Space Grotesk', system-ui, sans-serif; --body: 'Space Grotesk', system-ui, sans-serif;
@@ -23,7 +23,7 @@
   --deep: #e8e7e2; --btn: #e8e7e2; --line: #d6d5cf; --glow: #f3f2ee; --ink: #18181a; --ink-soft: #85868b; --tint: #e8e7e2;
   --text: #18181a; --muted: #55565b; --accent: #d6f45b; --accent-ink: #14160b; --good: #127a45; --bad: #d9363b;
   --c0: #f25a36; --c1: #3a78f0; --c2: #f0a90f; --c3: #8f55f2; --ring: #18181a;
-  --key-mix: 16%; --on-tile: #18181a; --tile: #ffffff; --shadow: #d4d3cc; --accent-text: #18181a;
+  --key-mix: 16%; --on-tile: #18181a; --tile: #ffffff; --shadow: #d4d3cc; --accent-text: #18181a; --warn-text: #8a5200;
   color-scheme: light;
 }
 body { background: var(--bg); background-image: none; font-family: var(--body); }

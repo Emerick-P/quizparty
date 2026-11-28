@@ -578,7 +578,7 @@ body.propose-on { overflow: hidden; }
 .steam-me img { width: 40px; height: 40px; border-radius: 6px; }
 .steam-me .grow { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .steam-me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.steam-warn { margin: 0 0 8px; font-size: .9em; color: #ffb020; }
+.steam-warn { margin: 0 0 8px; font-size: .9em; color: var(--warn-text); }
 .steam-warn a { color: inherit; }
 .game-pic { margin: 8px auto; max-width: 460px; width: 100%; }
 .game-pic img { display: block; width: 100%; aspect-ratio: 460 / 215; object-fit: cover; border-radius: 10px; }

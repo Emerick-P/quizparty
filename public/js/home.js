@@ -330,7 +330,11 @@ function profileBody() {
 function steamProfileBlock(u) {
   const saved = store.get(STEAM_KEY) || '';
   const me = state?.players?.find((p) => p.id === state.you)?.steam;
-  const live = me?.status === 'ok' ? `<p class="sh-note small">Lié : ${esc(me.name)}, ${me.games} jeu${me.games > 1 ? 'x' : ''}.</p>` : '';
+  const live = !me ? ''
+    : me.status === 'ok' ? `<p class="sh-note small">Lié : ${esc(me.name)}, ${me.games} jeu${me.games > 1 ? 'x' : ''}.</p>`
+    : me.status === 'loading' ? '<p class="sh-note small">Chargement du profil…</p>'
+    : me.status === 'private' ? `<p class="steam-warn">${me.hiddenTime ? 'Ton temps de jeu est masqué' : 'Ton profil Steam est privé'} : rends-le public dans tes <a href="${esc(me.privacyUrl)}" target="_blank" rel="noopener">options de confidentialité</a>, puis réessaie.</p>`
+    : `<p class="steam-warn">${esc(me.message)}</p>`;
   return `<form class="sh-form pf-steam" data-form="steam-profile">
     <label class="field"><span>Mon Steam <span class="muted">facultatif</span></span><input id="pf-steam" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(saved)}" enterkeyhint="done"></label>
     ${live}
