@@ -1061,3 +1061,55 @@ button.nf-row { cursor: pointer; }
 .pick-feat .btn { align-self: flex-start; }
 .pick.feat:disabled:not(.sel) { opacity: .8; }
 @media (orientation: landscape) and (max-height: 520px) { .pick.feat .feat-txt > small:first-of-type { display: none; } }
+
+/* ---------- Bandeau : tout reste à l'écran, même sur petit téléphone (le menu de l'avatar ne doit jamais sortir).
+   Quand la place manque, les libellés partent avant les boutons. */
+.ab-end > * { flex: none; }
+.ab-end > .me-chip { flex: 0 1 auto; min-width: 38px; overflow: hidden; }
+.me-chip .me-ask { padding: 6px 7px; }
+.me-chip .me-q { display: none; background: var(--btn); color: var(--text); }
+.me-chip .avatar:only-child { padding: 0; } /* avatar seul (salon sur téléphone) : bien centré */
+@media (max-width: 480px) {
+  .ab-inst span { display: none; }
+  .ab-inst { padding-right: 2px; }
+  /* Dans un salon, « Installer » reste dans le menu de l'avatar */
+  .ab-in:has(.ab-room, .ab-back) .ab-install { display: none; }
+}
+@media (max-width: 430px) {
+  .ab-end:has(.login-top) .me-chip { padding: 3px; }
+  .ab-end:has(.login-top) .me-chip span:not(.avatar) { display: none; }
+  .ab-end:has(.login-top) .me-chip .me-q { display: grid; }
+}
+@media (max-width: 400px) { .ab-long { display: none; } }
+@media (max-width: 360px) {
+  .ab-in { gap: 8px; padding: 0 12px; }
+  .ab-end { gap: 6px; }
+  .ab-logo { font-size: 1.2rem; }
+  .ab-end .me-chip { padding: 3px; }
+  .ab-end .me-chip span:not(.avatar) { display: none; }
+  .ab-end .me-chip .me-q { display: grid; }
+}
+/* Très étroit, dans un salon : la connexion reste dans le menu de l'avatar (Profil) */
+@media (max-width: 340px) { .ab-in:has(.ab-room, .ab-back) .login-top { display: none; } }
+/* Téléphone en paysage : les onglets partagent le bandeau, on resserre par paliers */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 940px) {
+  .ab-join { padding: 8px; }
+  .ab-join span { display: none; }
+  .ab-end .me-chip span:not(.avatar) { max-width: 72px; }
+}
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 800px) {
+  .ab-tabs { margin-left: 4px; }
+  .ab-tabs .tab { padding: 7px 10px; }
+  .ab-inst span { display: none; }
+  .ab-inst { padding-right: 2px; }
+  .ab-end .me-chip { padding: 3px; }
+  .ab-end .me-chip span:not(.avatar) { display: none; }
+  .ab-end .me-chip .me-q { display: grid; }
+}
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 620px) {
+  .ab-in { gap: 6px; padding: 0 10px; }
+  .ab-end { gap: 5px; }
+  .ab-logo { font-size: 1.15rem; }
+  .ab-tabs .tab { padding: 7px 8px; font-size: .88rem; }
+  .ab-tabs .tab-ico { display: none; }
+}

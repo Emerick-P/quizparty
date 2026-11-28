@@ -18,15 +18,17 @@ function appBar(phase) {
   const away = inRoom && onPage(); // profil, stats… ouverts depuis le salon : le chemin du retour bien en vue
   const compact = inRoom && !wide(); // téléphone dans un salon : avatar seul, la place va à Quitter et ⋯
   const face = name || u ? myAvatar(name || u?.name) : '';
-  const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || '<span>Ton pseudo ✎</span>'}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
+  // Sans pseudo : « Ton pseudo ✎ », réduit à une pastille « ? » quand la place manque (salon.css)
+  const noName = '<span class="me-ask">Ton pseudo ✎</span><span class="avatar me-q" aria-hidden="true">?</span>';
+  const chip = `<button class="me-chip ${compact || !name ? 'mini' : ''} ${ui.sheet === 'menu' ? 'on' : ''}" data-action="sheet" data-value="menu" aria-label="Ton menu" aria-haspopup="menu">${face || noName}${!compact && name ? `<span>${esc(name)}</span>` : ''}</button>`;
   return `
   <header class="appbar" data-key="appbar"><div class="ab-in">
     <button class="ab-logo" data-action="${solo ? (state.daily.live ? 'livehome' : state.daily.challenge ? 'defihome' : 'dailyhome') : 'navhome'}" aria-label="${inRoom ? 'Retour au salon' : 'Accueil'}">Quiz<b>Party</b></button>
     ${phase === 'home' && !state && !tv.sheet ? barTabs() : ''}
-    ${away ? `<button class="ab-btn ab-back" data-action="toroom">${ico('back')} Retour au salon</button>`
+    ${away ? `<button class="ab-btn ab-back" data-action="toroom" aria-label="Retour au salon">${ico('back')} <span>Retour<span class="ab-long"> au salon</span></span></button>`
     : inRoom ? `<span class="ab-room">Salon <b>${esc(state.code)}</b></span>` : ''}
     <span class="ab-end">
-      ${inRoom && !away ? '<button class="ab-btn" data-action="leave">Quitter le salon</button>' : ''}
+      ${inRoom && !away ? '<button class="ab-btn" data-action="leave" aria-label="Quitter le salon">Quitter<span class="ab-long"> le salon</span></button>' : ''}
       ${inRoom && phase === 'lobby' && !wide() ? '<button class="ib ab-more" data-action="sheet" data-value="more" aria-label="Plus d’options">⋯</button>' : ''}
       ${phase === 'home' && !state && homeTab() !== 'play' ? `<button class="ab-join" data-action="sheet" data-value="join" aria-label="Rejoindre un salon">${ico('users')}<span>Rejoindre</span></button>` : ''}
       ${phase === 'home' && !state ? `<button class="ab-prop" data-action="propose" aria-label="Proposer une question" title="Proposer une question">${ico('bulb')}</button>` : ''}
