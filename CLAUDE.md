@@ -65,6 +65,10 @@ Toujours vérifier les deux thèmes (Clair / Obscur), en portrait et en paysage 
 - Changement de schéma : un fichier `supabase/migrations/AAAA-MM-JJ-nom.sql` + la même chose dans `schema.sql`.
   On l'applique **d'abord au dev**, on teste, puis à la prod seulement avec l'accord écrit du client.
 - Le compte gratuit n'a droit qu'à 2 projets actifs : `gamerdex-prod` est en pause pour laisser la place au dev.
+- **Anti-veille de Render — À SUPPRIMER si le serveur Render passe en payant** : la base de **prod** (pg_cron + pg_net,
+  migration `2026-11-28-reveil-render.sql`) appelle `/health` toutes les 10 min. Retrait :
+  `select cron.unschedule('quizparty-reveil');`, et `live-wake.yml` devient inutile aussi. Jamais sur le dev (hors essai),
+  ni dans `schema.sql`. Quota gratuit : 750 h/mois pour tout l'espace Render, donc **un seul** service gratuit.
 
 ## Règles du projet
 - `main` = la prod : chaque push redéploie Render et coupe les parties en cours. On travaille sur une branche `feature/…`.

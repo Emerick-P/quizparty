@@ -1,3 +1,6 @@
+# SECOURS de l'anti-veille (Supabase appelle /health toutes les 10 min, migration 2026-11-28-reveil-render.sql).
+# À supprimer avec elle si le serveur Render passe en payant.
+#
 # Réveil du serveur avant chaque quiz en direct (Render gratuit s'endort après 15 min sans visite).
 # La notification des abonnés part à l'ouverture de la salle d'attente, 5 min avant le départ : le serveur
 # doit donc être debout à ce moment-là. GitHub lance ces tâches en heure UTC, souvent avec du retard : chaque
