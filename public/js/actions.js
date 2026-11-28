@@ -152,7 +152,12 @@ const actions = {
     store.set(STEAM_KEY, profile);
     const r = await send('profile:steam', { profile });
     if (r.error) return toast(r.error);
-    toast('Steam retenu : il sera relié quand tu rejoins un salon');
+    // Déjà dans un salon : on relie tout de suite (sinon ce sera au prochain salon)
+    if (state && !r.error) {
+      const l = await send('steam:link', { profile });
+      if (l.error) return toast(l.error);
+      toast('Steam lié à ce salon');
+    } else toast('Steam retenu : il sera relié quand tu rejoins un salon');
     render();
   },
   async steamForget() {
