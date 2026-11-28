@@ -1004,3 +1004,4 @@ html { overflow-x: clip; }
 .pick.feat .feat-n { color: var(--accent-text); font-family: var(--mono); font-size: .75rem; }
 .pick-feat .btn { align-self: flex-start; }
 .pick.feat:disabled:not(.sel) { opacity: .8; }
+@media (orientation: landscape) and (max-height: 520px) { .pick.feat .feat-txt > small:first-of-type { display: none; } }

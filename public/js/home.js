@@ -332,7 +332,7 @@ function steamProfileBlock(u) {
   const me = state?.players?.find((p) => p.id === state.you)?.steam;
   const live = me?.status === 'ok' ? `<p class="sh-note small">Lié : ${esc(me.name)}, ${me.games} jeu${me.games > 1 ? 'x' : ''}.</p>` : '';
   return `<form class="sh-form pf-steam" data-form="steam-profile">
-    <label class="field"><span>Mon Steam <em class="muted">facultatif</em></span><input id="pf-steam" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(saved)}" enterkeyhint="done"></label>
+    <label class="field"><span>Mon Steam <span class="muted">facultatif</span></span><input id="pf-steam" autocomplete="off" placeholder="Code de contact ou adresse du profil" value="${esc(saved)}" enterkeyhint="done"></label>
     ${live}
     <button class="btn" type="submit">${ico('gamepad')} ${saved ? 'Mettre à jour' : 'Lier mon Steam'}</button>
     ${saved ? '<button class="link" type="button" data-action="steamForget">Retirer mon Steam</button>' : ''}
